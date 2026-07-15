@@ -1,0 +1,21 @@
+# datasource / jpa 는 data-mod 의 application-postgresql.yml 을 사용한다.
+spring:
+  profiles:
+    active: postgresql
+  application:
+    name: money-backend-app
+
+server:
+  port: 8081
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: debug
+        type: trace
+      springframework:
+        jdbc: info
+    com:
+      dbdomino:
+        moneylog: info

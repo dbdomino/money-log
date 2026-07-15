@@ -1,0 +1,23 @@
+# 메모리db에서 돌림 postgre에서 돌리는거 아님
+spring:
+#  datasource:
+#    url: jdbc:h2:mem:testdb
+#    username: sa
+#    password:
+#    driver-class-name: org.h2.Driver
+  jpa:
+    show-sql: true
+#    hibernate:
+#      ddl-auto: create
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+#    open-in-view: false
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE #파라미터 머 들어갔는지 보는 명령
+
+
+#  org.hibernate.type: trace

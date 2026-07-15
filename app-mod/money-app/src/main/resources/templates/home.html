@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>vanilla</title>
+</head>
+<body>
+<h1>Welcome to the Home Page</h1>
+<p>Login successful! Hello, <span th:text="${memberId}"></span>!</p>
+
+<div>
+    <a href="/profile">View Profile</a> |
+    <a href="/logout">Logout</a>
+</div>
+</body>
+</html>

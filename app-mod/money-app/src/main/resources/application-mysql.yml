@@ -1,0 +1,93 @@
+# yaml로 프로퍼티를 대신할 수 있다. 띄워쓰기 간격설정 매우중요
+#spring.profiles.active=prd
+
+# Postgresql DataSource 자동 주입을 위한 설정.  https://effectivesquid.tistory.com/entry/HikariCP-%EC%84%B8%ED%8C%85%EC%8B%9C-%EC%98%B5%EC%85%98-%EC%84%A4%EB%AA%85
+spring:
+  application:
+    name: vanilla_v1
+  datasource:
+    url: jdbc:mysql://localhost:3306/dbvanilla?useSSL=false
+    username: minod
+    password: minod
+    driver-class-name: com.mysql.cj.jdbc.Driver
+#    driver-class-name: org.h2.Driver
+#    url: jdbc:h2:mem:testdb
+#    username: sa
+#    password:
+    #driver-class-name: org.postgresql.Driver
+    #url: jdbc:postgresql://localhost:5432/shop
+    #username: minod
+    #password: minodminod
+    hikari:
+      minimum-idle: 5
+      idle-timeout: 30000
+      maximum-pool-size: 10
+      auto-commit: false
+      pool-name: HikariCP
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      leak-detection-threshold: 2000
+  jpa:
+    hibernate:
+      ddl-auto: update
+      dialect: org.hibernate.dialect.PostgreSQL10Dialect # 밑줄뜨더라도 정상...
+      default_schema: public  # 밑줄뜨더라도 정상...
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+  ## Thymeleaf 설정 https://docs.spring.io/spring-boot/docs/2.1.7.RELEASE/reference/html/common-application-properties.html
+  ## 스프링 부트 타임리프 viewName 매핑을 아래처럼 하겠다는 설정이다. 반환한 문자( `home` )과 스프링부트 설정 `prefix` , `suffix` 정보를 사용해서 렌더링할 뷰( `html` )를 찾는다.
+  #`resources:templates/` +{ViewName}+ `.html`
+  #`resources:templates/home.html`
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+
+server:
+  servlet:
+    session:
+      timeout: 60  # 세션. 스프링 부트로 세션 타임아웃 글로벌 설정  (주의, 글로벌 설정은 분 단위로 설정해야 한다. ) 60초    (기본은 1800   30분)
+      tracking-modes: cookie   # 세션, TrackingModes 를 꺼서 로그인시 jsessionId 안나오게 하기.
+  error:
+    whitelabel:
+      enabled: false  # 에러시 white 페이지 띄울건지 말건지 선택하는 옵션
+    include-exception: false
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: debug
+        type: trace
+      springframework:
+        jdbc: info
+    com:
+      minod:
+        controller: info
+
+# MyBatis 설정 추가
+#mybatis.type-aliases-package=com.minod.itemservice.domain
+#mybatis.configuration.map-underscore-to-camel-case=true
+# mybatis 로그레벨 추가
+#logging.level.com.minod.itemservice.repository.mybatis=trace
+
+
+
+
+
+
+
+## 실행해보면 logging.level.org.apache.coyote.http11 옵션을 통한 로그에서
+# multipart/form-data 방식으로 전송된 것을 확인할 수 있다.
+# 업로드시 멀티파트 관련 로그를 보려면 debug 하면 된다. 기본 info
+#logging.level.org.apache.coyote.http11=debug
+

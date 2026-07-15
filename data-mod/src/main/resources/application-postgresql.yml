@@ -1,0 +1,28 @@
+# PostgreSQL 18 — local moneylogdb (data-mod)
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/moneylogdb
+    username: moneyloguser
+    password: 1q2w3e4r
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      minimum-idle: 5
+      idle-timeout: 30000
+      maximum-pool-size: 10
+      auto-commit: false
+      pool-name: HikariCP
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      leak-detection-threshold: 2000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        default_schema: public
+        show_sql: true
+        format_sql: true
+    open-in-view: false
+  sql:
+    init:
+      platform: postgresql
