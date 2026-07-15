@@ -1,1 +1,11 @@
-rootProject.name = 'Vanilla'
+rootProject.name = 'money-log'
+
+include 'core-mod'
+include 'data-mod'
+include 'common-mod'
+
+include 'app-mod:money-app'
+findProject(':app-mod:money-app')?.name = 'money-app'
+
+include 'app-mod:money-backend-app'
+findProject(':app-mod:money-backend-app')?.name = 'money-backend-app'
