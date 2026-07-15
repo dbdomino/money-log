@@ -1,4 +1,13 @@
 /bin/
+
+# Local tooling / IDE / build outputs (do not commit)
+.cursor/
+.claude/
+.idea/
+.gradle/
+build/
+**/build/
+
 # Created by https://www.toptal.com/developers/gitignore/api/intellij,eclipse,java,maven,gradle
 # Edit at https://www.toptal.com/developers/gitignore?templates=intellij,eclipse,java,maven,gradle
 
