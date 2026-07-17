@@ -1,18 +1,18 @@
-# 엑셀 업로드·일괄 등록
+# 지출·소득 엑셀 일괄 등록
 
-> API: `LedgerExcelUpload` · Phase 4 · 구현순서 49  
+> API: `ExpenseIncomeExcelUpload` · Phase 3 · 구현순서 49  
 > 인덱스: [README.md](../README.md)
 
 ## 메타
 
 | 항목 | 내용 |
 |------|------|
-| Phase | 4 (가계부·고정지출·엑셀) |
-| 기능 이름 | 엑셀 업로드·일괄 등록 |
+| Phase | 3 (지출·소득) |
+| 기능 이름 | 지출·소득 엑셀 일괄 등록 |
 | 구현순서 | 49 |
-| API 이름 | `LedgerExcelUpload` |
+| API 이름 | `ExpenseIncomeExcelUpload` |
 | Method | `POST` |
-| URL | `/api/v1/ledger/excel/upload` |
+| URL | `/api/v1/expense-incomes/excel/upload` |
 | 권한 | 로그인 |
 | Content-Type | `multipart/form-data` |
 
@@ -37,7 +37,7 @@
 
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|:----:|------|
-| `file` | file | ✅ | `.xlsx` only, **최대 300행** (헤더 제외) |
+| `file` | file | ✅ | `.xlsx` only, **최대 300행** (헤더 제외). `ExpenseIncomeExcelTemplateDownload` 양식과 동일 컬럼 |
 
 ## 응답
 
@@ -47,9 +47,9 @@
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| `importedCount` | number | 등록된 건수 |
-| `expenseCount` | number | 지출 건수 |
-| `incomeCount` | number | 소득 건수 |
+| `importedCount` | number | 등록된 전체 건수 (지출+소득) |
+| `expenseCount` | number | 등록된 지출 건수 |
+| `incomeCount` | number | 등록된 소득 건수 |
 | `message` | string | 예: `150건이 등록되었습니다` |
 
 ### 실패 — 검증 오류 (`resCode: 3502`)
@@ -80,7 +80,7 @@
 **Request**
 
 ```http
-POST /api/v1/ledger/excel/upload HTTP/1.1
+POST /api/v1/expense-incomes/excel/upload HTTP/1.1
 Host: localhost:8081
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Content-Type: multipart/form-data; boundary=----Boundary
@@ -132,7 +132,9 @@ Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 
 ## 비고
 
+- **가계부 월 목록을 만들지 않는다.** 각 행은 지출 또는 소득으로 저장되며, 규칙은 `ExpenseCreate`·`IncomeCreate`와 동일하다.
+- 등록 결과는 `LedgerMonthlyList`(월별 가계부 목록 조회) 등 **조회 API**로 확인한다.
 - `.xlsx`만 허용. **최대 300행**.
 - **중복 행 허용** (동일 내용 여러 번 등록 가능).
 - 검증 실패 시 **전체 롤백**, `row`·`column`·`message`로 위치 안내.
-- 지출·소득은 각각 `ExpenseCreate`·`IncomeCreate`와 동일 규칙 적용.
+- 이전 API: `LedgerExcelUpload` (`POST /api/v1/ledger/excel/upload`) → 본 명세로 대체.

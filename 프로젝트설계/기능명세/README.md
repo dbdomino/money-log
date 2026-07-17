@@ -75,9 +75,11 @@
 | 37 | 소득 상세 조회 | `IncomeGet` | [37-IncomeGet.md](./phase3-지출-소득/37-IncomeGet.md) |
 | 38 | 소득 수정 | `IncomeUpdate` | [38-IncomeUpdate.md](./phase3-지출-소득/38-IncomeUpdate.md) |
 | 39 | 소득 삭제 | `IncomeDelete` | [39-IncomeDelete.md](./phase3-지출-소득/39-IncomeDelete.md) |
+| 48 | 지출·소득 엑셀 양식 다운로드 | `ExpenseIncomeExcelTemplateDownload` | [48-ExpenseIncomeExcelTemplateDownload.md](./phase3-지출-소득/48-ExpenseIncomeExcelTemplateDownload.md) |
+| 49 | 지출·소득 엑셀 일괄 등록 | `ExpenseIncomeExcelUpload` | [49-ExpenseIncomeExcelUpload.md](./phase3-지출-소득/49-ExpenseIncomeExcelUpload.md) |
 
 
-### Phase 4 — 가계부·고정지출·엑셀
+### Phase 4 — 가계부·고정지출
 
 | 순서 | 기능 이름 | API 이름 | 문서 |
 |------|-----------|----------|------|
@@ -88,9 +90,7 @@
 | 44 | 고정지출 월별 수정 조회 | `FixedExpenseMonthlyOverrideGet` | [44-FixedExpenseMonthlyOverrideGet.md](./phase4-가계부/44-FixedExpenseMonthlyOverrideGet.md) |
 | 45 | 고정지출 월별 수정 저장 | `FixedExpenseMonthlyOverrideUpsert` | [45-FixedExpenseMonthlyOverrideUpsert.md](./phase4-가계부/45-FixedExpenseMonthlyOverrideUpsert.md) |
 | 46 | 고정지출 삭제 | `FixedExpenseDelete` | [46-FixedExpenseDelete.md](./phase4-가계부/46-FixedExpenseDelete.md) |
-| 47 | 월별 통합 목록 | `LedgerMonthlyList` | [47-LedgerMonthlyList.md](./phase4-가계부/47-LedgerMonthlyList.md) |
-| 48 | 엑셀 양식 다운로드 | `LedgerExcelTemplateDownload` | [48-LedgerExcelTemplateDownload.md](./phase4-가계부/48-LedgerExcelTemplateDownload.md) |
-| 49 | 엑셀 업로드·일괄 등록 | `LedgerExcelUpload` | [49-LedgerExcelUpload.md](./phase4-가계부/49-LedgerExcelUpload.md) |
+| 47 | 월별 가계부 목록 조회 | `LedgerMonthlyList` | [47-LedgerMonthlyList.md](./phase4-가계부/47-LedgerMonthlyList.md) |
 
 
 ### Phase 5 — 목표금액·통계

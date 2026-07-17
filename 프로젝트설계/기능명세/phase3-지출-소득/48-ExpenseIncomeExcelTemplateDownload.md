@@ -1,18 +1,18 @@
-# 엑셀 양식 다운로드
+# 지출·소득 엑셀 양식 다운로드
 
-> API: `LedgerExcelTemplateDownload` · Phase 4 · 구현순서 48  
+> API: `ExpenseIncomeExcelTemplateDownload` · Phase 3 · 구현순서 48  
 > 인덱스: [README.md](../README.md)
 
 ## 메타
 
 | 항목 | 내용 |
 |------|------|
-| Phase | 4 (가계부·고정지출·엑셀) |
-| 기능 이름 | 엑셀 양식 다운로드 |
+| Phase | 3 (지출·소득) |
+| 기능 이름 | 지출·소득 엑셀 양식 다운로드 |
 | 구현순서 | 48 |
-| API 이름 | `LedgerExcelTemplateDownload` |
+| API 이름 | `ExpenseIncomeExcelTemplateDownload` |
 | Method | `GET` |
-| URL | `/api/v1/ledger/excel/template` |
+| URL | `/api/v1/expense-incomes/excel/template` |
 | 권한 | 로그인 |
 | Content-Type | — (xlsx 바이너리 응답) |
 
@@ -46,7 +46,7 @@
 |------|------|
 | HTTP Status | `200 OK` |
 | `Content-Type` | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` |
-| `Content-Disposition` | `attachment; filename="ledger_template.xlsx"` |
+| `Content-Disposition` | `attachment; filename="expense_income_template.xlsx"` |
 | Body | `.xlsx` 바이너리 |
 
 #### 양식 시트 구조 (참고)
@@ -75,7 +75,7 @@
 **Request**
 
 ```http
-GET /api/v1/ledger/excel/template HTTP/1.1
+GET /api/v1/expense-incomes/excel/template HTTP/1.1
 Host: localhost:8081
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
@@ -85,7 +85,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```http
 HTTP/1.1 200 OK
 Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-Content-Disposition: attachment; filename="ledger_template.xlsx"
+Content-Disposition: attachment; filename="expense_income_template.xlsx"
 
 (binary xlsx data)
 ```
@@ -103,6 +103,8 @@ Content-Disposition: attachment; filename="ledger_template.xlsx"
 
 ## 비고
 
+- **지출·소득 일괄 등록용 양식**이다. 가계부(`LedgerMonthlyList`) 전용 파일이 아니다.
 - 본인 **활성 수단·지출유형**을 셀 데이터 유효성(드롭다운)에 포함.
 - `{ resCode, data }` JSON 래퍼 **미사용** (파일 다운로드).
-- 업로드 양식과 컬럼 정의가 일치해야 한다.
+- `ExpenseIncomeExcelUpload` 업로드 양식과 컬럼 정의가 일치해야 한다.
+- 이전 API: `LedgerExcelTemplateDownload` (`GET /api/v1/ledger/excel/template`) → 본 명세로 대체.

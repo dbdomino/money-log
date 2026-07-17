@@ -7,7 +7,7 @@
 
 | 항목 | 내용 |
 |------|------|
-| Phase | 4 (가계부·고정지출·엑셀) |
+| Phase | 4 (가계부·고정지출) |
 | 기능 이름 | 고정지출 월별 수정 저장 |
 | 구현순서 | 45 |
 | API 이름 | `FixedExpenseMonthlyOverrideUpsert` |

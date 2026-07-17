@@ -1,4 +1,4 @@
-# 월별 통합 목록
+# 월별 가계부 목록 조회
 
 > API: `LedgerMonthlyList` · Phase 4 · 구현순서 47  
 > 인덱스: [README.md](../README.md)
@@ -7,8 +7,8 @@
 
 | 항목 | 내용 |
 |------|------|
-| Phase | 4 (가계부·고정지출·엑셀) |
-| 기능 이름 | 월별 통합 목록 |
+| Phase | 4 (가계부·고정지출) |
+| 기능 이름 | 월별 가계부 목록 조회 |
 | 구현순서 | 47 |
 | API 이름 | `LedgerMonthlyList` |
 | Method | `GET` |
@@ -26,15 +26,15 @@
 
 | 이름 | 타입 | 필수 | 설명 |
 |------|------|:----:|------|
-| `year` | number | ✅ | 조회 연도 |
-| `month` | number | ✅ | 조회 월 1~12 |
-| `paymentMethodId` | number | ❌ | 수단 필터 |
-| `expendGroupId` | number | ❌ | 지출유형 필터 |
-| `dateFrom` | string | ❌ | `YYYY-MM-DD` 시작일 |
-| `dateTo` | string | ❌ | `YYYY-MM-DD` 종료일 |
-| `keyword` | string | ❌ | 장소·내용 검색 |
-| `sort` | string | ❌ | `paymentDate` \| `amount` (기본 `paymentDate`) |
-| `order` | string | ❌ | `asc` \| `desc` (기본 `desc`) |
+| `year` | number | ✅ | 조회할 가계부 연도 |
+| `month` | number | ✅ | 조회할 가계부 월 (1~12) |
+| `paymentMethodId` | number | ❌ | 지출·소득·고정지출 **수단**으로 필터 |
+| `expendGroupId` | number | ❌ | **지출유형**으로 필터 (지출·고정·할부 행) |
+| `dateFrom` | string | ❌ | **결제일(`paymentDate`) 필터 시작일**. 형식 `YYYY-MM-DD`. 이 날짜 **이상**(포함). `year`·`month`로 잡은 달 안에서 추가 좁히기용 |
+| `dateTo` | string | ❌ | **결제일(`paymentDate`) 필터 종료일**. 형식 `YYYY-MM-DD`. 이 날짜 **이하**(포함). `dateFrom`과 함께 쓰면 그 사이 결제일만 |
+| `keyword` | string | ❌ | 장소·내용 **부분 일치** 검색 |
+| `sort` | string | ❌ | 정렬 기준. `paymentDate`(결제일) \| `amount`(금액). 기본 `paymentDate` |
+| `order` | string | ❌ | 정렬 방향. `asc` \| `desc`. 기본 `desc` |
 
 ### Headers
 
@@ -68,7 +68,7 @@
 | `ledgerItemId` | string | 목록 행 식별자 (예: `expense:101`, `fixed:1`, `income:501`) |
 | `type` | string | `EXPENSE` \| `INCOME` \| `FIXED` \| `INSTALLMENT` |
 | `sourceId` | number | 원본 PK (`expenseId`, `incomeId`, `fixedExpenseId` 등) |
-| `paymentDate` | string | `YYYY-MM-DD` |
+| `paymentDate` | string | 해당 행의 **결제일**(또는 고정지출의 그 달 결제일). 형식 `YYYY-MM-DD`. `dateFrom`/`dateTo`·`sort=paymentDate`의 기준 필드 |
 | `amount` | number | 금액 (지출·소득 부호는 type으로 구분) |
 | `paymentMethodId` | number \| null | 소득·지출 수단 |
 | `paymentMethodName` | string | 스냅샷 이름 |
@@ -185,3 +185,4 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - 고정지출은 DB 월별 행 없이 **조회 시 전개** (override 반영).
 - `type=INSTALLMENT`는 할부 지출 건 (`installmentGroupId` 있음).
 - Path·Query **혼용 없음** (Query only).
+- `dateFrom`/`dateTo`는 행의 **결제일(`paymentDate`)** 범위다. `year`·`month`가 가계부 달을 정하고, 그 안에서 결제일로 더 좁힐 때 쓴다.
