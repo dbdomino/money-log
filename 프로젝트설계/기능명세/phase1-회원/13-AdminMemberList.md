@@ -26,8 +26,8 @@
 
 | 이름 | 타입 | 필수 | 설명 |
 |------|------|:----:|------|
-| `page` | number | ✅ | 페이지 번호 (1-based) |
-| `pageSize` | number | ✅ | 페이지 크기 (예: 10, 20) |
+| `offset` | number | ✅ | 건너뛸 건수. 0 이상, `limit`의 배수 |
+| `limit` | number | ✅ | 가져올 건수. 1 이상 (예: 10, 20) |
 | `memberId` | string | ❌ | 아이디 부분 일치 검색 |
 | `nickname` | string | ❌ | 닉네임 부분 일치 검색 |
 
@@ -59,10 +59,9 @@
 | `list[].intro` | string \| null | |
 | `list[].role` | number | `1` \| `3` |
 | `list[].active` | boolean | 활성 여부 |
-| `page` | number | 현재 페이지 |
-| `pageSize` | number | 페이지 크기 |
+| `offset` | number | 요청 에코 |
+| `limit` | number | 요청 에코 |
 | `totalCount` | number | 전체 건수 |
-| `totalPages` | number | 전체 페이지 수 |
 
 ### 실패 — 대표 `resCode`
 
@@ -70,7 +69,7 @@
 |---------|------|
 | 1001 | 로그인 필요 |
 | 1002 | 관리자 권한 없음 |
-| 9001 | page·pageSize 누락·범위 오류 |
+| 9001 | offset·limit 누락·범위 오류 (`limit<=0`, `offset`이 `limit` 배수 아님 등) |
 
 ## 예시
 
@@ -79,7 +78,7 @@
 **Request**
 
 ```http
-GET /api/v1/admin/members?page=1&pageSize=10&nickname=가계 HTTP/1.1
+GET /api/v1/admin/members?offset=0&limit=10&nickname=가계 HTTP/1.1
 Host: localhost:8081
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... (관리자)
 ```
@@ -101,10 +100,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... (관리자)
         "active": true
       }
     ],
-    "page": 1,
-    "pageSize": 10,
-    "totalCount": 1,
-    "totalPages": 1
+    "offset": 0,
+    "limit": 10,
+    "totalCount": 1
   }
 }
 ```
@@ -123,6 +121,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... (관리자)
 ## 비고
 
 - 목록 응답 표준: `data.list` = **object 배열** ([_공통 § 목록 응답 규칙](../_공통.md#목록-응답-규칙)).
+- 페이징: 요청·응답 `offset`/`limit`, 응답 `totalCount`. 현재·전체 페이지는 프론트 환산 ([_공통 § 페이징](../_공통.md#공유-타입--페이징)).
 - Query **페이징·검색** 패턴 확립 API.
 - `memberId`·`nickname`은 AND 조건으로 필터 가능.
 - 비밀번호는 목록에 포함하지 않는다.

@@ -26,8 +26,8 @@
 
 | 이름 | 타입 | 필수 | 설명 |
 |------|------|:----:|------|
-| `page` | number | ✅ | 페이지 (1-based) |
-| `pageSize` | number | ✅ | 페이지 크기 |
+| `offset` | number | ✅ | 건너뛸 건수. 0 이상, `limit`의 배수 |
+| `limit` | number | ✅ | 가져올 건수. 1 이상 |
 
 ### Headers
 
@@ -49,17 +49,16 @@
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | `list` | array (object[]) | FixedExpense 목록 |
-| `page` | number | |
-| `pageSize` | number | |
-| `totalCount` | number | |
-| `totalPages` | number | |
+| `offset` | number | 요청 에코 |
+| `limit` | number | 요청 에코 |
+| `totalCount` | number | 전체 건수 |
 
 ### 실패 — 대표 `resCode`
 
 | resCode | 조건 |
 |---------|------|
 | 1001 | 로그인 필요 |
-| 9001 | page·pageSize 누락 |
+| 9001 | offset·limit 누락·범위 오류 |
 
 ## 예시
 
@@ -68,7 +67,7 @@
 **Request**
 
 ```http
-GET /api/v1/fixed-expenses?page=1&pageSize=10 HTTP/1.1
+GET /api/v1/fixed-expenses?offset=0&limit=10 HTTP/1.1
 Host: localhost:8081
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
@@ -92,10 +91,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         "endYearMonth": "2026-12"
       }
     ],
-    "page": 1,
-    "pageSize": 10,
-    "totalCount": 1,
-    "totalPages": 1
+    "offset": 0,
+    "limit": 10,
+    "totalCount": 1
   }
 }
 ```
@@ -106,7 +104,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 {
   "resCode": 9001,
   "data": {
-    "message": "page와 pageSize는 필수입니다"
+    "message": "offset과 limit은 필수입니다"
   }
 }
 ```
@@ -114,5 +112,6 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ## 비고
 
 - 목록 응답 표준: `data.list` = **object 배열** ([_공통 § 목록 응답 규칙](../_공통.md#목록-응답-규칙)).
+- 페이징: 요청·응답 `offset`/`limit`, 응답 `totalCount`. 현재·전체 페이지는 프론트 환산 ([_공통 § 페이징](../_공통.md#공유-타입--페이징)).
 - **설정 화면**용. 가계부 월 목록과 별도.
 - 본인 고정지출만 조회.
