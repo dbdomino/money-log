@@ -124,5 +124,5 @@ Content-Type: application/json
 - 로그인 이력(`LoginHistory`)을 기록할 수 있다.
 - 비활성(`active=false`) 계정은 로그인 거부 (`1004`).
 - 이후 API 호출 시 `Authorization: Bearer <accessToken>`. 서버는 [_공통 § 토큰 검증](../_공통.md#토큰-검증-공통--로그인-필요-api)으로 DB 대조·만료 확인.
-- Access Token 만료 시 [04 토큰 갱신](./04-MemberTokenRefresh.md). 로그아웃 시 [05 로그아웃 (JWT Token 비활성화)](./05-MemberTokenRevoke.md).
+- 앱 기동·화면 진입 시 [04 토큰 검증](./04-MemberTokenValidate.md). Access 만료 시 [05 토큰 갱신](./05-MemberTokenRefresh.md). 로그아웃 시 [06 로그아웃 (JWT Token 비활성화)](./06-MemberTokenRevoke.md).
 - 관련: [_인증·토큰 공통](./_인증-토큰.md)

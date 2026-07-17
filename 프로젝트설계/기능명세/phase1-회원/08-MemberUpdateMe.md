@@ -1,0 +1,124 @@
+# 본인 정보 수정
+
+> API: `MemberUpdateMe` · Phase 1 · 구현순서 8  
+> 인덱스: [README.md](../README.md)
+
+## 메타
+
+| 항목 | 내용 |
+|------|------|
+| Phase | 1 (회원·인증) |
+| 기능 이름 | 본인 정보 수정 |
+| 구현순서 | 8 |
+| API 이름 | `MemberUpdateMe` |
+| Method | `PATCH` |
+| URL | `/api/v1/members/me` |
+| 권한 | 로그인 |
+| Content-Type | `application/json` |
+
+## 요청
+
+### Path Variables
+
+| 이름 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| — | — | — | 고정 URL `/members/me` |
+
+### Query Parameters
+
+없음
+
+### Headers
+
+| 이름 | 필수 | 설명 |
+|------|:----:|------|
+| `Authorization` | ✅ | `Bearer <accessToken>` |
+| `Content-Type` | ✅ | `application/json` |
+
+### Body
+
+PATCH omit 규칙: [_공통.md § PATCH Body 규칙](../_공통.md#patch-body-규칙)
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| `password` | string | ❌ | 새 비밀번호 평문. 규칙 검증 후 bcrypt 해시 저장 → [_공통 § 비밀번호](../_공통.md#비밀번호-저장--bcrypt) |
+| `nickname` | string | ❌ | 닉네임 |
+| `email` | string \| null | ❌ | 이메일. `null`이면 비움 |
+| `phone` | string \| null | ❌ | 연락처 |
+| `intro` | string \| null | ❌ | 자기소개 |
+
+## 응답
+
+공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)
+
+### 성공 (`resCode: 0`) — `data`
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `memberId` | string | 아이디 |
+| `nickname` | string | 갱신된 닉네임 |
+| `email` | string \| null | |
+| `phone` | string \| null | |
+| `intro` | string \| null | |
+| `role` | number | 권한 (본인은 변경 불가) |
+
+### 실패 — 대표 `resCode`
+
+| resCode | 조건 |
+|---------|------|
+| 1001 | 로그인 필요 |
+| 2003 | 이메일 중복 (다른 회원 사용 중) |
+| 2004 | 비밀번호 규칙 위반 |
+| 9001 | 잘못된 요청 |
+
+## 예시
+
+### 성공
+
+**Request**
+
+```http
+PATCH /api/v1/members/me HTTP/1.1
+Host: localhost:8081
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
+{
+  "nickname": "절약왕",
+  "intro": "이번 달 목표 달성!"
+}
+```
+
+**Response**
+
+```json
+{
+  "resCode": 0,
+  "data": {
+    "memberId": "user01",
+    "nickname": "절약왕",
+    "email": "user01@example.com",
+    "phone": null,
+    "intro": "이번 달 목표 달성!",
+    "role": 3
+  }
+}
+```
+
+### 실패
+
+```json
+{
+  "resCode": 2004,
+  "data": {
+    "message": "비밀번호 규칙을 만족하지 않습니다"
+  }
+}
+```
+
+## 비고
+
+- **PATCH omit=유지** 패턴 확립 API.
+- `role`·`memberId`는 본인 수정 불가.
+- 비밀번호 변경 시 규칙 검증 후 **bcrypt** 해시 저장 ([_공통](../_공통.md#비밀번호-저장--bcrypt)).
+- 이메일 변경 시 타 회원과 중복 검사.
