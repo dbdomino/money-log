@@ -44,19 +44,15 @@
 
 ## 응답
 
-공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)  
-공유 타입: [_공통.md § Income](../_공통.md#공유-타입--income)
+공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)
 
 ### 성공 (`resCode: 0`) — `data`
 
+등록 성공 시 **생성 PK만** 반환한다. 상세는 `IncomeGet`으로 조회한다.
+
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| `incomeId` | number | PK |
-| `paymentMethodId` | number | |
-| `paymentMethodName` | string | 스냅샷 |
-| `amount` | number | |
-| `paymentDate` | string | |
-| `content` | string \| null | |
+| `incomeId` | number | 생성된 소득 PK |
 
 ### 실패 — 대표 `resCode`
 
@@ -93,12 +89,7 @@ Content-Type: application/json
 {
   "resCode": 0,
   "data": {
-    "incomeId": 501,
-    "paymentMethodId": 3,
-    "paymentMethodName": "월급통장",
-    "amount": 3500000,
-    "paymentDate": "2026-07-25",
-    "content": "7월 급여"
+    "incomeId": 501
   }
 }
 ```
@@ -117,4 +108,5 @@ Content-Type: application/json
 ## 비고
 
 - 소득 수단은 `PaymentMethodListActive`의 `purpose=INCOME` 목록에서 선택.
-- `paymentMethodName` 스냅샷 저장.
+- 수단 이름은 DB에 **스냅샷**으로 저장. 응답에는 포함하지 않음.
+- 성공 후 화면 표시가 필요하면 `incomeId`로 `IncomeGet` 호출.
