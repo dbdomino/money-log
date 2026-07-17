@@ -1,6 +1,6 @@
 # {기능이름}
 
-> API: `{ApiName}` · Phase {phase} · 구현순서 {order}  
+> API: `{ApiName}` · Phase {phase} · 기능번호 {order}  
 > 인덱스: [README.md](./README.md)
 
 > **필드 설명:** Path/Query/Body/응답 표의 설명은 **그 칸만 보고 의미가 읽혀야** 한다.  
@@ -12,7 +12,7 @@
 |------|------|
 | Phase | {phase} |
 | 기능 이름 | {기능이름} |
-| 구현순서 | {order} |
+| 기능번호 | {order} |
 | API 이름 | `{ApiName}` |
 | Method | `{METHOD}` |
 | URL | `/api/v1/...` |
