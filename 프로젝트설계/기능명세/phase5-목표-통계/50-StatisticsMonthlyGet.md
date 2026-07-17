@@ -1,0 +1,180 @@
+# 월별 통계 조회
+
+> API: `StatisticsMonthlyGet` · Phase 5 · 구현순서 50  
+> 인덱스: [README.md](../README.md)
+
+## 메타
+
+| 항목 | 내용 |
+|------|------|
+| Phase | 5 (목표금액·통계) |
+| 기능 이름 | 월별 통계 조회 |
+| 구현순서 | 50 |
+| API 이름 | `StatisticsMonthlyGet` |
+| Method | `GET` |
+| URL | `/api/v1/statistics/monthly/{year}/{month}` |
+| 권한 | 로그인 |
+| Content-Type | — (Body 없음) |
+
+## 요청
+
+### Path Variables
+
+| 이름 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| `year` | number | ✅ | 조회 연도 |
+| `month` | number | ✅ | 조회 월 1~12 |
+
+### Query Parameters
+
+없음
+
+### Headers
+
+| 이름 | 필수 | 설명 |
+|------|:----:|------|
+| `Cookie` | ✅ | `JSESSIONID=...` |
+
+### Body
+
+없음
+
+## 응답
+
+공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)
+
+### 성공 (`resCode: 0`) — `data`
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `year` | number | 조회 연도 |
+| `month` | number | 조회 월 |
+| `source` | string | `SAVED` (DB 저장본) \| `CALCULATED` (실시간 계산) |
+| `savedAt` | string \| null | 저장 시각 ISO-8601. `CALCULATED`면 `null` |
+| `incomeTotal` | number | 월 소득 합계 |
+| `expenseTotal` | number | 월 지출 합계 (일반+할부+고정) |
+| `fixedVsRegularRatio` | object | 고정 vs 일반 지출 비율 |
+| `fixedVsRegularRatio.fixedAmount` | number | 고정지출 합계 |
+| `fixedVsRegularRatio.regularAmount` | number | 일반·할부 지출 합계 |
+| `fixedVsRegularRatio.fixedPercent` | number | 고정 비율 (0~100) |
+| `fixedVsRegularRatio.regularPercent` | number | 일반 비율 (0~100) |
+| `weeklyExpenses` | array | 주별 지출 |
+| `weeklyExpenses[].weekIndex` | number | 주차 (1부터) |
+| `weeklyExpenses[].weekStart` | string | 주 시작일 `YYYY-MM-DD` (월요일 기준, 1일≠월요일이면 첫 주는 1일부터) |
+| `weeklyExpenses[].weekEnd` | string | 주 종료일 |
+| `weeklyExpenses[].amount` | number | 해당 주 지출 합계 |
+| `expendGroupSummaries` | array | 유형별 요약 (**0원 유형 제외**) |
+| `expendGroupSummaries[].expendGroupId` | number | |
+| `expendGroupSummaries[].expendGroupName` | string | |
+| `expendGroupSummaries[].amount` | number | 유형별 지출 합계 |
+| `expendGroupSummaries[].target` | number | 목표금액 (월별 우선, 없으면 기본) |
+| `expendGroupSummaries[].usageRate` | number | 사용률 % (`amount/target*100`, target=0이면 0) |
+| `expendGroupSummaries[].status` | string | `UNDER` (절약) \| `OK` (적정) \| `OVER` (초과) |
+| `paymentMethodSummaries` | array | 수단별 합계 (**0원 포함**) |
+| `paymentMethodSummaries[].paymentMethodId` | number | |
+| `paymentMethodSummaries[].paymentMethodName` | string | |
+| `paymentMethodSummaries[].amount` | number | 해당 수단 지출 합계 |
+
+### 실패 — 대표 `resCode`
+
+| resCode | 조건 |
+|---------|------|
+| 1001 | 로그인 필요 |
+| 3603 | year·month 범위 오류 |
+
+## 예시
+
+### 성공
+
+**Request**
+
+```http
+GET /api/v1/statistics/monthly/2026/7 HTTP/1.1
+Host: localhost:8081
+Cookie: JSESSIONID=A1B2C3D4E5F6
+```
+
+**Response**
+
+```json
+{
+  "resCode": 0,
+  "data": {
+    "year": 2026,
+    "month": 7,
+    "source": "CALCULATED",
+    "savedAt": null,
+    "incomeTotal": 3500000,
+    "expenseTotal": 1250000,
+    "fixedVsRegularRatio": {
+      "fixedAmount": 500000,
+      "regularAmount": 750000,
+      "fixedPercent": 40.0,
+      "regularPercent": 60.0
+    },
+    "weeklyExpenses": [
+      {
+        "weekIndex": 1,
+        "weekStart": "2026-07-01",
+        "weekEnd": "2026-07-05",
+        "amount": 620000
+      },
+      {
+        "weekIndex": 2,
+        "weekStart": "2026-07-06",
+        "weekEnd": "2026-07-12",
+        "amount": 180000
+      }
+    ],
+    "expendGroupSummaries": [
+      {
+        "expendGroupId": 1,
+        "expendGroupName": "식비",
+        "amount": 320000,
+        "target": 400000,
+        "usageRate": 80.0,
+        "status": "OK"
+      },
+      {
+        "expendGroupId": 2,
+        "expendGroupName": "주거",
+        "amount": 500000,
+        "target": 500000,
+        "usageRate": 100.0,
+        "status": "OK"
+      }
+    ],
+    "paymentMethodSummaries": [
+      {
+        "paymentMethodId": 1,
+        "paymentMethodName": "국민카드",
+        "amount": 900000
+      },
+      {
+        "paymentMethodId": 2,
+        "paymentMethodName": "옛 카드",
+        "amount": 0
+      }
+    ]
+  }
+}
+```
+
+### 실패
+
+```json
+{
+  "resCode": 3603,
+  "data": {
+    "message": "month는 1~12 사이여야 합니다"
+  }
+}
+```
+
+## 비고
+
+- **저장본 우선**: `StatisticsMonthlySave`로 저장된 데이터가 있으면 `source=SAVED`.
+- 없으면 가계부·고정지출·목표금액을 **실시간 계산** (`source=CALCULATED`).
+- 주별 지출: **월요일 시작**. 해당 월 1일이 월요일이 아니면 첫 주는 1일~첫 일요일.
+- `status` 기준 예: 90% 미만 `UNDER`, 90~110% `OK`, 110% 초과 `OVER` (구현 시 조정 가능).
+- 지출 변경 후 저장본은 자동 갱신되지 않음 → **다시 저장** 필요.

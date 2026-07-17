@@ -1,0 +1,109 @@
+# 고정지출 월별 수정 저장
+
+> API: `FixedExpenseMonthlyOverrideUpsert` · Phase 4 · 구현순서 42  
+> 인덱스: [README.md](../README.md)
+
+## 메타
+
+| 항목 | 내용 |
+|------|------|
+| Phase | 4 (가계부·고정지출·엑셀) |
+| 기능 이름 | 고정지출 월별 수정 저장 |
+| 구현순서 | 42 |
+| API 이름 | `FixedExpenseMonthlyOverrideUpsert` |
+| Method | `PATCH` |
+| URL | `/api/v1/fixed-expenses/{fixedExpenseId}/monthly-overrides/{year}/{month}` |
+| 권한 | 로그인 |
+| Content-Type | `application/json` |
+
+## 요청
+
+### Path Variables
+
+| 이름 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| `fixedExpenseId` | number | ✅ | 고정지출 PK |
+| `year` | number | ✅ | 연도 |
+| `month` | number | ✅ | 월 1~12 |
+
+### Body
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| `amount` | number | ❌ | 해당 월 금액 |
+| `paymentDayOfMonth` | number | ❌ | 해당 월 결제일 |
+| `content` | string \| null | ❌ | 해당 월 내용 |
+
+### Headers
+
+| 이름 | 필수 | 설명 |
+|------|:----:|------|
+| `Cookie` | ✅ | `JSESSIONID=...` |
+| `Content-Type` | ✅ | `application/json` |
+
+## 응답
+
+### 성공 (`resCode: 0`) — `data`
+
+`FixedExpenseMonthlyOverrideGet`과 동일 구조 (저장 후)
+
+### 실패 — 대표 `resCode`
+
+| resCode | 조건 |
+|---------|------|
+| 1001 | 로그인 필요 |
+| 3402 | 고정지출 없음 |
+| 3404 | 적용 기간 밖 연·월 |
+
+## 예시
+
+### 성공
+
+**Request**
+
+```http
+PATCH /api/v1/fixed-expenses/1/monthly-overrides/2026/7 HTTP/1.1
+Host: localhost:8081
+Cookie: JSESSIONID=A1B2C3D4E5F6
+Content-Type: application/json
+
+{
+  "amount": 550000,
+  "paymentDayOfMonth": 10,
+  "content": "7월만 관리비 포함"
+}
+```
+
+**Response**
+
+```json
+{
+  "resCode": 0,
+  "data": {
+    "fixedExpenseId": 1,
+    "year": 2026,
+    "month": 7,
+    "override": {
+      "amount": 550000,
+      "paymentDayOfMonth": 10,
+      "content": "7월만 관리비 포함"
+    }
+  }
+}
+```
+
+### 실패
+
+```json
+{
+  "resCode": 3404,
+  "data": {
+    "message": "고정지출 적용 기간에 포함되지 않는 연월입니다"
+  }
+}
+```
+
+## 비고
+
+- 최초 설정·변경 모두 PATCH upsert.
+- `startYearMonth`~`endYearMonth` 범위 내 연·월만 허용.

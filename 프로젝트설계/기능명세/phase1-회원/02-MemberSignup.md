@@ -1,0 +1,121 @@
+# 회원가입
+
+> API: `MemberSignup` · Phase 1 · 구현순서 2  
+> 인덱스: [README.md](../README.md)
+
+## 메타
+
+| 항목 | 내용 |
+|------|------|
+| Phase | 1 (회원·인증) |
+| 기능 이름 | 회원가입 |
+| 구현순서 | 2 |
+| API 이름 | `MemberSignup` |
+| Method | `POST` |
+| URL | `/api/v1/auth/signup` |
+| 권한 | 없음 |
+| Content-Type | `application/json` |
+
+## 요청
+
+### Path Variables
+
+없음
+
+### Query Parameters
+
+없음
+
+### Headers
+
+| 이름 | 필수 | 설명 |
+|------|:----:|------|
+| `Content-Type` | ✅ | `application/json` |
+
+### Body
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| `memberId` | string | ✅ | 로그인 아이디. 4~20자, 영문·숫자·`_` |
+| `password` | string | ✅ | 비밀번호 평문 (HTTPS). 저장 시 bcrypt 해시 저장 → [_공통 § 비밀번호](../_공통.md#비밀번호-저장--bcrypt) |
+| `passwordConfirm` | string | ✅ | 비밀번호 확인. `password`와 일치 |
+| `nickname` | string | ✅ | 닉네임. 2~20자 |
+| `email` | string | ❌ | 이메일. 가입 시 중복 검사 |
+| `phone` | string | ❌ | 연락처 |
+| `intro` | string | ❌ | 자기소개 |
+
+## 응답
+
+공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)
+
+### 성공 (`resCode: 0`) — `data`
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `memberId` | string | 가입된 아이디 |
+| `nickname` | string | 닉네임 |
+| `role` | number | `3` (일반 회원) |
+
+비밀번호는 응답에 포함하지 않는다.
+
+### 실패 — 대표 `resCode`
+
+| resCode | 조건 |
+|---------|------|
+| 2002 | 아이디 중복 |
+| 2003 | 이메일 중복 (email 제공 시) |
+| 2004 | 비밀번호 규칙 위반 |
+| 2005 | 비밀번호 확인 불일치 |
+| 9001 | 필수 필드 누락·형식 오류 |
+
+## 예시
+
+### 성공
+
+**Request**
+
+```http
+POST /api/v1/auth/signup HTTP/1.1
+Host: localhost:8081
+Content-Type: application/json
+
+{
+  "memberId": "user01",
+  "password": "Passw0rd!",
+  "passwordConfirm": "Passw0rd!",
+  "nickname": "가계부초보",
+  "email": "user01@example.com"
+}
+```
+
+**Response**
+
+```json
+{
+  "resCode": 0,
+  "data": {
+    "memberId": "user01",
+    "nickname": "가계부초보",
+    "role": 3
+  }
+}
+```
+
+### 실패
+
+```json
+{
+  "resCode": 2002,
+  "data": {
+    "message": "이미 사용 중인 아이디입니다"
+  }
+}
+```
+
+## 비고
+
+- 가입 성공 시 **권한은 일반(3)** 으로 저장한다.
+- **기본 지출유형**(식비, 교통, 주거 등)을 내부 로직으로 자동 등록한다 (Phase 2 API 전 선행 처리).
+- 비밀번호 규칙: **8자 이상**, 영문 대·소문자·숫자·특수문자 중 **3종류 이상**.
+- **저장**: 요청 Body의 `password` 평문을 검증한 뒤 **bcrypt** 로 해시해 `tbl_member.pw`에 저장. cost factor 등은 [_공통.md § 비밀번호 저장](../_공통.md#비밀번호-저장--bcrypt) 참고.
+- 이메일·전화번호는 nullable. 미입력 시 `null` 저장.

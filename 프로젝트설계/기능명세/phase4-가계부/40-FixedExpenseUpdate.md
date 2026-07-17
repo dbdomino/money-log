@@ -1,0 +1,111 @@
+# 고정지출 기본값 수정
+
+> API: `FixedExpenseUpdate` · Phase 4 · 구현순서 40  
+> 인덱스: [README.md](../README.md)
+
+## 메타
+
+| 항목 | 내용 |
+|------|------|
+| Phase | 4 (가계부·고정지출·엑셀) |
+| 기능 이름 | 고정지출 기본값 수정 |
+| 구현순서 | 40 |
+| API 이름 | `FixedExpenseUpdate` |
+| Method | `PATCH` |
+| URL | `/api/v1/fixed-expenses/{fixedExpenseId}` |
+| 권한 | 로그인 |
+| Content-Type | `application/json` |
+
+## 요청
+
+### Path Variables
+
+| 이름 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| `fixedExpenseId` | number | ✅ | 고정지출 PK |
+
+### Body
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| `name` | string | ❌ | 이름 |
+| `paymentMethodId` | number | ❌ | 수단 |
+| `amount` | number | ❌ | **기본** 금액 |
+| `paymentDayOfMonth` | number | ❌ | 1~31 |
+| `content` | string | ❌ | 내용 |
+| `expendGroupId` | number | ❌ | 유형 |
+| `startYearMonth` | string | ❌ | 시작 연월 |
+| `endYearMonth` | string | ❌ | 종료 연월 |
+
+### Headers
+
+| 이름 | 필수 | 설명 |
+|------|:----:|------|
+| `Cookie` | ✅ | `JSESSIONID=...` |
+| `Content-Type` | ✅ | `application/json` |
+
+## 응답
+
+### 성공 (`resCode: 0`) — `data`
+
+갱신된 FixedExpense
+
+### 실패 — 대표 `resCode`
+
+| resCode | 조건 |
+|---------|------|
+| 1001 | 로그인 필요 |
+| 3402 | 고정지출 없음 |
+| 3401 | 기간 검증 실패 |
+
+## 예시
+
+### 성공
+
+**Request**
+
+```http
+PATCH /api/v1/fixed-expenses/1 HTTP/1.1
+Host: localhost:8081
+Cookie: JSESSIONID=A1B2C3D4E5F6
+Content-Type: application/json
+
+{
+  "amount": 520000
+}
+```
+
+**Response**
+
+```json
+{
+  "resCode": 0,
+  "data": {
+    "fixedExpenseId": 1,
+    "name": "월세",
+    "paymentMethodId": 1,
+    "amount": 520000,
+    "paymentDayOfMonth": 5,
+    "content": "원룸 월세",
+    "expendGroupId": 2,
+    "startYearMonth": "2026-01",
+    "endYearMonth": "2026-12"
+  }
+}
+```
+
+### 실패
+
+```json
+{
+  "resCode": 3402,
+  "data": {
+    "message": "고정지출을 찾을 수 없습니다"
+  }
+}
+```
+
+## 비고
+
+- **월별 override가 없는 달**에 적용되는 기본값 수정.
+- override가 있는 달은 해당 API로 별도 수정.
