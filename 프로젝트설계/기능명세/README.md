@@ -98,8 +98,9 @@
 
 | 기능번호 | 기능 이름 | API 이름 | 문서 |
 |----------|-----------|----------|------|
-| 5.1 | 기본 목표금액 목록 | `ExpendTargetDefaultList` | [5.1-ExpendTargetDefaultList.md](./phase5-목표-통계/5.1-ExpendTargetDefaultList.md) |
-| 5.2 | 기본 목표금액 등록·수정 | `ExpendTargetDefaultUpsert` | [5.2-ExpendTargetDefaultUpsert.md](./phase5-목표-통계/5.2-ExpendTargetDefaultUpsert.md) |
-| 5.3 | 월별 목표금액 등록·수정 | `ExpendTargetMonthlyUpsert` | [5.3-ExpendTargetMonthlyUpsert.md](./phase5-목표-통계/5.3-ExpendTargetMonthlyUpsert.md) |
-| 5.4 | 월별 통계 조회 | `StatisticsMonthlyGet` | [5.4-StatisticsMonthlyGet.md](./phase5-목표-통계/5.4-StatisticsMonthlyGet.md) |
-| 5.5 | 월별 통계 저장 | `StatisticsMonthlySave` | [5.5-StatisticsMonthlySave.md](./phase5-목표-통계/5.5-StatisticsMonthlySave.md) |
+| 5.1 | 목표금액 목록 | `ExpendTargetList` | [5.1-ExpendTargetList.md](./phase5-목표-통계/5.1-ExpendTargetList.md) |
+| 5.2 | 목표금액 상세 조회 | `ExpendTargetGet` | [5.2-ExpendTargetGet.md](./phase5-목표-통계/5.2-ExpendTargetGet.md) |
+| 5.3 | 기본 목표금액 등록·수정 | `ExpendTargetDefaultUpsert` | [5.3-ExpendTargetDefaultUpsert.md](./phase5-목표-통계/5.3-ExpendTargetDefaultUpsert.md) |
+| 5.4 | 월별 목표금액 등록·수정 | `ExpendTargetMonthlyUpsert` | [5.4-ExpendTargetMonthlyUpsert.md](./phase5-목표-통계/5.4-ExpendTargetMonthlyUpsert.md) |
+| 5.5 | 월별 통계 조회 | `StatisticsMonthlyGet` | [5.5-StatisticsMonthlyGet.md](./phase5-목표-통계/5.5-StatisticsMonthlyGet.md) |
+| 5.6 | 월별 통계 저장 | `StatisticsMonthlySave` | [5.6-StatisticsMonthlySave.md](./phase5-목표-통계/5.6-StatisticsMonthlySave.md) |
