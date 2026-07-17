@@ -1,20 +1,17 @@
 package com.dbdomino.moneylog.backend.controller;
 
-import java.util.Map;
-
+import com.dbdomino.moneylog.backend.dto.response.HealthResponseDto;
+import com.dbdomino.moneylog.common.api.RestResponseDto;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/v1")
 public class HealthController {
 
-	@GetMapping("/health")
-	public Map<String, String> health() {
-		return Map.of(
-				"status", "UP",
-				"module", "money-backend-app"
-		);
-	}
+    @GetMapping("/ha")
+    public RestResponseDto<HealthResponseDto> health() {
+        return RestResponseDto.ok(new HealthResponseDto("UP", "money-backend-app"));
+    }
 }
