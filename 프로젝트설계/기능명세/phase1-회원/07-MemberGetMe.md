@@ -50,7 +50,7 @@
 | `memberId` | string | 로그인 id |
 | `nickname` | string | 닉네임 |
 | `email` | string \| null | 이메일 |
-| `phone` | string \| null | 연락처 |
+| `phone` | string \| null | 연락처. **하이픈(-) 없이 숫자만** 저장값 |
 | `intro` | string \| null | 자기소개 |
 | `role` | number | `1` 관리자, `3` 일반 |
 

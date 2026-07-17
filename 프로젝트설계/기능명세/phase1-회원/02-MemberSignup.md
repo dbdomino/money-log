@@ -41,7 +41,7 @@
 | `passwordConfirm` | string | ✅ | 비밀번호 확인. `password`와 일치 |
 | `nickname` | string | ✅ | 닉네임. 2~20자 |
 | `email` | string | ❌ | 이메일. 가입 시 중복 검사 |
-| `phone` | string | ❌ | 연락처 |
+| `phone` | string | ❌ | 연락처. **하이픈(-) 없이 숫자만** (예: `01012345678`) → [_공통 § 전화번호](../_공통.md#전화번호-형식) |
 | `intro` | string | ❌ | 자기소개 |
 
 ## 응답
@@ -119,3 +119,4 @@ Content-Type: application/json
 - 비밀번호 규칙: **8자 이상**, 영문 대·소문자·숫자·특수문자 중 **3종류 이상**.
 - **저장**: 요청 Body의 `password` 평문을 검증한 뒤 **bcrypt** 로 해시해 `tbl_member.pw`에 저장. cost factor 등은 [_공통.md § 비밀번호 저장](../_공통.md#비밀번호-저장--bcrypt) 참고.
 - 이메일·전화번호는 nullable. 미입력 시 `null` 저장.
+- 전화번호는 **하이픈(-) 없이 숫자만** 입력·저장 ([_공통 § 전화번호](../_공통.md#전화번호-형식)).

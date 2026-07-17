@@ -1,0 +1,100 @@
+# 고정지출 상세 조회
+
+> API: `FixedExpenseGet` · Phase 4 · 구현순서 42  
+> 인덱스: [README.md](../README.md)
+
+## 메타
+
+| 항목 | 내용 |
+|------|------|
+| Phase | 4 (가계부·고정지출·엑셀) |
+| 기능 이름 | 고정지출 상세 조회 |
+| 구현순서 | 42 |
+| API 이름 | `FixedExpenseGet` |
+| Method | `GET` |
+| URL | `/api/v1/fixed-expenses/{fixedExpenseId}` |
+| 권한 | 로그인 |
+| Content-Type | — (Body 없음) |
+
+## 요청
+
+### Path Variables
+
+| 이름 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| `fixedExpenseId` | number | ✅ | 고정지출 PK |
+
+### Query Parameters
+
+없음
+
+### Headers
+
+| 이름 | 필수 | 설명 |
+|------|:----:|------|
+| `Authorization` | ✅ | `Bearer <accessToken>` |
+
+### Body
+
+없음
+
+## 응답
+
+### 성공 (`resCode: 0`) — `data`
+
+FixedExpense 전체 + 스냅샷 필드
+
+### 실패 — 대표 `resCode`
+
+| resCode | 조건 |
+|---------|------|
+| 1001 | 로그인 필요 |
+| 3402 | 고정지출 없음 |
+
+## 예시
+
+### 성공
+
+**Request**
+
+```http
+GET /api/v1/fixed-expenses/1 HTTP/1.1
+Host: localhost:8081
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Response**
+
+```json
+{
+  "resCode": 0,
+  "data": {
+    "fixedExpenseId": 1,
+    "name": "월세",
+    "paymentMethodId": 1,
+    "paymentMethodName": "국민카드",
+    "amount": 500000,
+    "paymentDayOfMonth": 5,
+    "content": "원룸 월세",
+    "expendGroupId": 2,
+    "expendGroupName": "주거",
+    "startYearMonth": "2026-01",
+    "endYearMonth": "2026-12"
+  }
+}
+```
+
+### 실패
+
+```json
+{
+  "resCode": 3402,
+  "data": {
+    "message": "고정지출을 찾을 수 없습니다"
+  }
+}
+```
+
+## 비고
+
+- 상세·수정 폼 진입용.
