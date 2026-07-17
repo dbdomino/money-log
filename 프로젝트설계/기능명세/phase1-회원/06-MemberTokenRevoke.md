@@ -42,7 +42,7 @@
 
 공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
@@ -84,7 +84,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "message": "로그아웃되었습니다"
   }

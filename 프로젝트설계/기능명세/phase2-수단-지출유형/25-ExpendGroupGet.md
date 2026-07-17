@@ -42,7 +42,7 @@
 
 공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
 ExpendGroup 전체 필드 ( [_공통.md § ExpendGroup](../_공통.md#공유-타입--expendgroup) )
 
@@ -69,7 +69,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "expendGroupId": 1,
     "name": "식비",

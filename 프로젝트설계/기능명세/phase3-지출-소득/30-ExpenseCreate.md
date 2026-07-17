@@ -39,7 +39,7 @@
 |------|------|:----:|------|
 | `paymentMethodId` | number | ✅ | 지출 수단 PK |
 | `amount` | number | ✅ | 금액 (원, 양의 정수) |
-| `paymentDate` | string | ✅ | `YYYY-MM-DD` |
+| `paymentDate` | string | ✅ | 지출 결제일. 형식 `YYYY-MM-DD` |
 | `place` | string | ✅ | 장소 |
 | `content` | string | ✅ | 내용 |
 | `expendGroupId` | number | ✅ | 지출유형 PK |
@@ -48,7 +48,7 @@
 
 공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
 등록 성공 시 **생성 PK만** 반환한다. 상세는 `ExpenseGet`으로 조회한다.
 
@@ -92,7 +92,7 @@ Content-Type: application/json
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "expenseId": 101
   }

@@ -40,7 +40,7 @@
 | `paymentMethodId` | number | ✅ | 지출 수단 |
 | `monthlyAmount` | number | ✅ | 월 납부액 (원) |
 | `installmentMonths` | number | ✅ | 할부 개월 수 (2 이상) |
-| `startYearMonth` | string | ✅ | 시작 연월 `YYYY-MM` |
+| `startYearMonth` | string | ✅ | 할부 시작 연월. 형식 `YYYY-MM` |
 | `place` | string | ✅ | 장소 |
 | `content` | string | ✅ | 내용 (할부 표시용) |
 | `expendGroupId` | number | ✅ | 지출유형 |
@@ -49,7 +49,7 @@
 
 공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
 등록 성공 시 **할부 그룹 식별에 필요한 최소 정보만** 반환한다. 개별 지출 상세는 월별 가계부·`ExpenseGet`으로 조회한다.
 
@@ -94,7 +94,7 @@ Content-Type: application/json
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "installmentGroupId": 50,
     "createdCount": 12

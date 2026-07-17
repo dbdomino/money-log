@@ -44,7 +44,7 @@
 공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)  
 인증: [_공통.md § 인증](../_공통.md#인증) · [_공통.md § 토큰 검증](../_공통.md#토큰-검증-공통--로그인-필요-api)
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
@@ -91,7 +91,7 @@ Content-Type: application/json
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "memberId": "user01",
     "nickname": "가계부초보",

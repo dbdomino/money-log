@@ -51,7 +51,7 @@
 공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)  
 공유 타입: [_공통.md § FixedExpense](../_공통.md#공유-타입--fixedexpense)
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
 FixedExpense 전체 + `paymentMethodName`, `expendGroupName` 스냅샷
 
@@ -92,7 +92,7 @@ Content-Type: application/json
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "fixedExpenseId": 1,
     "name": "월세",

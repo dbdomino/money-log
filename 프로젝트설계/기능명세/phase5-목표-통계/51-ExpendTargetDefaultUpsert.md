@@ -39,7 +39,7 @@
 
 ## 응답
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
@@ -77,7 +77,7 @@ Content-Type: application/json
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "expendGroupId": 1,
     "expendGroupName": "식비",

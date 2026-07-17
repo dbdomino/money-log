@@ -79,7 +79,7 @@ Spring Boot 기반 **멀티 모듈** 가계부 웹 애플리케이션이다.
 ### API 공통 규칙
 
 - Base URL: `http://localhost:8081/api/v1`
-- 응답: `{ "resCode": 0, "data": { ... } }` (실패 시 4자리 `resCode`)
+- 응답: `{ "resCode": 200, "data": { ... } }` (실패 시 4자리 `resCode`)
 - HTTP: **GET** 조회 · **POST** 생성·로그인 · **PATCH** 수정(omit=유지) · **DELETE** 삭제 — **PUT 미사용**
 - 인증: JWT `Authorization: Bearer`. 본인 데이터만 접근, 관리자 API는 권한 `1` 필요
 

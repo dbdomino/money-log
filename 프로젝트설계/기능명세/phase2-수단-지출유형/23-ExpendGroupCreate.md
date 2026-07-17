@@ -46,7 +46,7 @@
 공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)  
 공유 타입: [_공통.md § ExpendGroup](../_공통.md#공유-타입--expendgroup)
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
@@ -97,7 +97,7 @@ Content-Type: image/png
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "expendGroupId": 10,
     "name": "취미",

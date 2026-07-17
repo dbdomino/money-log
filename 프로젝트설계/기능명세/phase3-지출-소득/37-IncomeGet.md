@@ -43,7 +43,7 @@
 공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)  
 공유 타입: [_공통.md § Income](../_공통.md#공유-타입--income)
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
 Income 전체 필드
 
@@ -70,7 +70,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "incomeId": 501,
     "paymentMethodId": 3,

@@ -49,7 +49,7 @@ PATCH omit: 전송한 필드만 갱신.
 
 공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
 ExpendGroup 전체 필드 (갱신 후)
 
@@ -85,7 +85,7 @@ false
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "expendGroupId": 10,
     "name": "취미",

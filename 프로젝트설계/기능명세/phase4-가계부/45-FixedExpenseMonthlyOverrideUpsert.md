@@ -43,7 +43,7 @@
 
 ## 응답
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
 `FixedExpenseMonthlyOverrideGet`과 동일 구조 (저장 후)
 
@@ -78,7 +78,7 @@ Content-Type: application/json
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "fixedExpenseId": 1,
     "year": 2026,

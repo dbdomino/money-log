@@ -46,7 +46,7 @@
 
 ## 응답
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
 갱신된 FixedExpense
 
@@ -79,7 +79,7 @@ Content-Type: application/json
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "fixedExpenseId": 1,
     "name": "월세",

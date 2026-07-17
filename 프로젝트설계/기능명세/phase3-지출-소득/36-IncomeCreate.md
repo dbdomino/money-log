@@ -37,16 +37,16 @@
 
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|:----:|------|
-| `paymentMethodId` | number | ✅ | 소득 수단 PK |
-| `amount` | number | ✅ | 금액 (원, 양의 정수) |
-| `paymentDate` | string | ✅ | `YYYY-MM-DD` |
-| `content` | string | ❌ | 내용 |
+| `paymentMethodId` | number | ✅ | 소득 수단 PK (`PaymentMethodListActive`의 `purpose=INCOME`) |
+| `amount` | number | ✅ | 소득 금액 (원 단위, 양의 정수) |
+| `paymentDate` | string | ✅ | 소득 결제일(입금일). 형식 `YYYY-MM-DD` |
+| `content` | string | ❌ | 소득 내용·메모. 생략 시 `null` 저장 |
 
 ## 응답
 
 공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
 등록 성공 시 **생성 PK만** 반환한다. 상세는 `IncomeGet`으로 조회한다.
 
@@ -87,7 +87,7 @@ Content-Type: application/json
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "incomeId": 501
   }
