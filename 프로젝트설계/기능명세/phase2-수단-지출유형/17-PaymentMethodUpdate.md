@@ -1,0 +1,114 @@
+# 지출·소득 수단 수정
+
+> API: `PaymentMethodUpdate` · Phase 2 · 구현순서 17  
+> 인덱스: [README.md](../README.md)
+
+## 메타
+
+| 항목 | 내용 |
+|------|------|
+| Phase | 2 (수단·지출유형) |
+| 기능 이름 | 지출·소득 수단 수정 |
+| 구현순서 | 17 |
+| API 이름 | `PaymentMethodUpdate` |
+| Method | `PATCH` |
+| URL | `/api/v1/payment-methods/{paymentMethodId}` |
+| 권한 | 로그인 |
+| Content-Type | `application/json` |
+
+## 요청
+
+### Path Variables
+
+| 이름 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| `paymentMethodId` | number | ✅ | 수단 PK |
+
+### Query Parameters
+
+없음
+
+### Headers
+
+| 이름 | 필수 | 설명 |
+|------|:----:|------|
+| `Cookie` | ✅ | `JSESSIONID=...` |
+| `Content-Type` | ✅ | `application/json` |
+
+### Body
+
+PATCH omit 규칙: [_공통.md § PATCH Body 규칙](../_공통.md#patch-body-규칙)
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| `name` | string | ❌ | 수단 이름 |
+| `type` | string | ❌ | `CARD` \| `ACCOUNT` |
+| `inUse` | boolean | ❌ | 사용 여부 |
+| `cardExpiry` | string \| null | ❌ | `YYYY-MM` |
+
+## 응답
+
+공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)
+
+### 성공 (`resCode: 0`) — `data`
+
+PaymentMethod 전체 필드 (갱신 후)
+
+### 실패 — 대표 `resCode`
+
+| resCode | 조건 |
+|---------|------|
+| 1001 | 로그인 필요 |
+| 3003 | 수단 없음 |
+| 3001 | type 값 오류 |
+| 9001 | 잘못된 요청 |
+
+## 예시
+
+### 성공
+
+**Request**
+
+```http
+PATCH /api/v1/payment-methods/1 HTTP/1.1
+Host: localhost:8081
+Cookie: JSESSIONID=A1B2C3D4E5F6
+Content-Type: application/json
+
+{
+  "name": "국민카드(메인)",
+  "inUse": true
+}
+```
+
+**Response**
+
+```json
+{
+  "resCode": 0,
+  "data": {
+    "paymentMethodId": 1,
+    "name": "국민카드(메인)",
+    "type": "CARD",
+    "inUse": true,
+    "cardExpiry": "2028-12",
+    "deleted": false
+  }
+}
+```
+
+### 실패
+
+```json
+{
+  "resCode": 3003,
+  "data": {
+    "message": "결제 수단을 찾을 수 없습니다"
+  }
+}
+```
+
+## 비고
+
+- **과거 지출·소득 내역**의 `paymentMethodName` 스냅샷은 수정해도 변경되지 않음.
+- `deleted=true` 수단도 수정 가능 (이름 정리 등).

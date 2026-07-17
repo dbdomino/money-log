@@ -1,0 +1,98 @@
+# 소득 상세 조회
+
+> API: `IncomeGet` · Phase 3 · 구현순서 34  
+> 인덱스: [README.md](../README.md)
+
+## 메타
+
+| 항목 | 내용 |
+|------|------|
+| Phase | 3 (지출·소득) |
+| 기능 이름 | 소득 상세 조회 |
+| 구현순서 | 34 |
+| API 이름 | `IncomeGet` |
+| Method | `GET` |
+| URL | `/api/v1/incomes/{incomeId}` |
+| 권한 | 로그인 |
+| Content-Type | — (Body 없음) |
+
+## 요청
+
+### Path Variables
+
+| 이름 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| `incomeId` | number | ✅ | 소득 PK |
+
+### Query Parameters
+
+없음
+
+### Headers
+
+| 이름 | 필수 | 설명 |
+|------|:----:|------|
+| `Cookie` | ✅ | `JSESSIONID=...` |
+
+### Body
+
+없음
+
+## 응답
+
+공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)  
+공유 타입: [_공통.md § Income](../_공통.md#공유-타입--income)
+
+### 성공 (`resCode: 0`) — `data`
+
+Income 전체 필드
+
+### 실패 — 대표 `resCode`
+
+| resCode | 조건 |
+|---------|------|
+| 1001 | 로그인 필요 |
+| 3302 | 소득 없음 또는 타인 소유 |
+
+## 예시
+
+### 성공
+
+**Request**
+
+```http
+GET /api/v1/incomes/501 HTTP/1.1
+Host: localhost:8081
+Cookie: JSESSIONID=A1B2C3D4E5F6
+```
+
+**Response**
+
+```json
+{
+  "resCode": 0,
+  "data": {
+    "incomeId": 501,
+    "paymentMethodId": 3,
+    "paymentMethodName": "월급통장",
+    "amount": 3500000,
+    "paymentDate": "2026-07-25",
+    "content": "7월 급여"
+  }
+}
+```
+
+### 실패
+
+```json
+{
+  "resCode": 3302,
+  "data": {
+    "message": "소득 내역을 찾을 수 없습니다"
+  }
+}
+```
+
+## 비고
+
+- 본인 소득 1건 상세 조회.
