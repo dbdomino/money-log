@@ -94,4 +94,4 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ## 비고
 
 - **1건 물리 삭제**. 할부 건도 해당 월 1건만 삭제.
-- 할부 전체 삭제는 건별 삭제 또는 `ExpenseDeleteInstallmentRemainder` 사용.
+- 할부 전체·남은 스케줄 정리는 건별 삭제 또는 `ExpenseSettleInstallmentRemainder`(중도상환) 사용.
