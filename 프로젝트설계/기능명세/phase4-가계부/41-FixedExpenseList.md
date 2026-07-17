@@ -49,9 +49,9 @@
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | `list` | array (object[]) | FixedExpense 목록 |
-| `offset` | number | 요청 에코 |
-| `limit` | number | 요청 에코 |
-| `totalCount` | number | 전체 건수 |
+| `offset` | number | 이번 조회에서 건너뛴 건수. 요청 `offset`과 동일(보정 시 보정값). 현재 페이지 환산에 사용 |
+| `limit` | number | 이번 조회에서 가져온 최대 건수. 요청 `limit`과 동일(보정 시 보정값). 페이지 크기·전체 페이지 수 환산에 사용 |
+| `totalCount` | number | 조건에 맞는 **전체 건수** (`list` 길이·현재 페이지 건수가 아님) |
 
 ### 실패 — 대표 `resCode`
 
