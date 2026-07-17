@@ -103,3 +103,4 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - 목록 응답 표준: `data.list` = **object 배열** ([_공통 § 목록 응답 규칙](../_공통.md#목록-응답-규칙)).
 - 지출 등록·고정지출 등에서 고를 수 있는 **사용 중** 유형만.
 - `inUse=false` 유형은 제외.
+- `iconUrl` 수신 방법: [_공통 § 지출유형 아이콘 · 프론트 수신](../_공통.md#지출유형-아이콘--프론트-수신).

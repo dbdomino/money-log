@@ -94,3 +94,4 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ## 비고
 
 - 본인 소유(또는 본인에게 할당된 기본 유형)만 조회.
+- `iconUrl` 수신 방법: [_공통 § 지출유형 아이콘 · 프론트 수신](../_공통.md#지출유형-아이콘--프론트-수신).

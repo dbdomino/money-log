@@ -94,6 +94,9 @@ Content-Length: 4096
 
 ## 비고
 
-- `{ resCode, data }` **JSON 래퍼를 사용하지 않는** 예외 API.
+- `{ resCode, data }` **JSON 래퍼를 사용하지 않는** 예외 API. Body는 이미지 바이너리.
+- 목록·상세의 `iconUrl`이 가리키는 엔드포인트. **프론트 수신 절차**(money-app 프록시 권장 / fetch+blob): [_공통 § 지출유형 아이콘 · 프론트 수신](../_공통.md#지출유형-아이콘--프론트-수신).
+- 브라우저가 Bearer 없이 이 URL을 `<img src>`로 직접 호출하면 401이다. money-app이 토큰을 붙여 중계하거나, 클라이언트가 Authorization을 붙여 blob으로 넣는다.
 - 유형 삭제 후에도 **파일은 디스크에 유지** (과거 참조·복구용).
 - 본인 아이콘 또는 접근 권한 있는 파일만 제공.
+- 동일 `filename` 재요청은 `Cache-Control` 등으로 캐시 가능(구현 시).

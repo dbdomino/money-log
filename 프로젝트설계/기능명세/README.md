@@ -6,7 +6,7 @@
 ## 공통
 
 - Base URL: `http://localhost:8081/api/v1`
-- 응답 래퍼·에러 코드·**JWT·Refresh Token**·**권한=로그인 시 토큰 검증 포함**·**비밀번호 bcrypt**·**목록 `list`(object[])**: [_공통.md](./_공통.md)
+- 응답 래퍼·에러 코드·**JWT·Refresh Token**·**권한=로그인 시 토큰 검증 포함**·**비밀번호 bcrypt**·**목록 `list`(object[])**·**지출유형 아이콘·프론트 수신**: [_공통.md](./_공통.md)
 - 문서 템플릿: [_TEMPLATE.md](./_TEMPLATE.md)
 
 ## 색인 (구현순서)

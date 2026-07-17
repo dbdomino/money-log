@@ -49,7 +49,7 @@
 | `list[].expendGroupId` | number | PK |
 | `list[].name` | string | 이름 |
 | `list[].inUse` | boolean | |
-| `list[].iconUrl` | string \| null | |
+| `list[].iconUrl` | string \| null | 아이콘 조회 상대 경로. 수신 방법: [_공통 § 지출유형 아이콘 · 프론트 수신](../_공통.md#지출유형-아이콘--프론트-수신) |
 | `list[].defaultGroup` | boolean | 시스템 기본 유형 |
 
 ### 실패 — 대표 `resCode`
@@ -112,3 +112,4 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - 목록 응답 표준: `data.list` = **object 배열** ([_공통 § 목록 응답 규칙](../_공통.md#목록-응답-규칙)).
 - 전체 목록. **사용 중·미사용** 모두 포함.
 - `defaultGroup=true` 유형은 회원가입 시 자동 생성.
+- `iconUrl`로 유형마다 아이콘 API를 호출할 수 있다. 프론트는 **프록시 또는 fetch+blob**으로 수신 ([_공통](../_공통.md#지출유형-아이콘--프론트-수신)). `<img src="{iconUrl}">`만으로 백엔드에 직접 붙이지 않는다(Bearer 미첨부 → 401).
