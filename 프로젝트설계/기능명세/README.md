@@ -70,7 +70,7 @@
 | 32 | 지출 수정 | `ExpenseUpdate` | [32-ExpenseUpdate.md](./phase3-지출-소득/32-ExpenseUpdate.md) |
 | 33 | 지출 삭제 | `ExpenseDelete` | [33-ExpenseDelete.md](./phase3-지출-소득/33-ExpenseDelete.md) |
 | 34 | 지출 등록 (할부) | `ExpenseCreateInstallment` | [34-ExpenseCreateInstallment.md](./phase3-지출-소득/34-ExpenseCreateInstallment.md) |
-| 35 | 할부 중도상환 | `ExpenseDeleteInstallmentRemainder` | [35-ExpenseDeleteInstallmentRemainder.md](./phase3-지출-소득/35-ExpenseDeleteInstallmentRemainder.md) |
+| 35 | 할부 중도상환 | `ExpenseSettleInstallmentRemainder` | [35-ExpenseSettleInstallmentRemainder.md](./phase3-지출-소득/35-ExpenseSettleInstallmentRemainder.md) |
 | 36 | 소득 등록 | `IncomeCreate` | [36-IncomeCreate.md](./phase3-지출-소득/36-IncomeCreate.md) |
 | 37 | 소득 상세 조회 | `IncomeGet` | [37-IncomeGet.md](./phase3-지출-소득/37-IncomeGet.md) |
 | 38 | 소득 수정 | `IncomeUpdate` | [38-IncomeUpdate.md](./phase3-지출-소득/38-IncomeUpdate.md) |

@@ -18,10 +18,10 @@ class HealthControllerTest {
     private MockMvc mockMvc;
 
     @Test
-    void healthReturnsResCodeZero() throws Exception {
+    void healthReturnsResCode200() throws Exception {
         mockMvc.perform(get("/api/v1/ha"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resCode").value(0))
+                .andExpect(jsonPath("$.resCode").value(200))
                 .andExpect(jsonPath("$.data.status").value("UP"))
                 .andExpect(jsonPath("$.data.module").value("money-backend-app"));
     }

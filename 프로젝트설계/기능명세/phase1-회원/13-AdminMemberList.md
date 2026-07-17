@@ -47,7 +47,7 @@
 목록 표준: [_공통.md § 목록 응답 규칙](../_공통.md#목록-응답-규칙) (`data.list` = object 배열)  
 페이징: [_공통.md § 페이징](../_공통.md#공유-타입--페이징)
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
@@ -87,7 +87,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... (관리자)
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "list": [
       {

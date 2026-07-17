@@ -39,34 +39,22 @@
 |------|------|:----:|------|
 | `paymentMethodId` | number | ✅ | 지출 수단 PK |
 | `amount` | number | ✅ | 금액 (원, 양의 정수) |
-| `paymentDate` | string | ✅ | `YYYY-MM-DD` |
+| `paymentDate` | string | ✅ | 지출 결제일. 형식 `YYYY-MM-DD` |
 | `place` | string | ✅ | 장소 |
 | `content` | string | ✅ | 내용 |
 | `expendGroupId` | number | ✅ | 지출유형 PK |
 
 ## 응답
 
-공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)  
-공유 타입: [_공통.md § Expense](../_공통.md#공유-타입--expense)
+공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
-Expense 전체. 일시불이므로 `installmentGroupId`, `installmentIndex`, `installmentTotal`은 `null`.
+등록 성공 시 **생성 PK만** 반환한다. 상세는 `ExpenseGet`으로 조회한다.
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| `expenseId` | number | 생성 PK |
-| `paymentMethodId` | number | |
-| `paymentMethodName` | string | 등록 시점 수단 이름 스냅샷 |
-| `amount` | number | |
-| `paymentDate` | string | |
-| `place` | string | |
-| `content` | string | |
-| `expendGroupId` | number | |
-| `expendGroupName` | string | 스냅샷 |
-| `installmentGroupId` | null | |
-| `installmentIndex` | null | |
-| `installmentTotal` | null | |
+| `expenseId` | number | 생성된 지출 PK |
 
 ### 실패 — 대표 `resCode`
 
@@ -104,20 +92,9 @@ Content-Type: application/json
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
-    "expenseId": 101,
-    "paymentMethodId": 1,
-    "paymentMethodName": "국민카드",
-    "amount": 15000,
-    "paymentDate": "2026-07-17",
-    "place": "스타벅스",
-    "content": "아메리카노",
-    "expendGroupId": 1,
-    "expendGroupName": "식비",
-    "installmentGroupId": null,
-    "installmentIndex": null,
-    "installmentTotal": null
+    "expenseId": 101
   }
 }
 ```
@@ -136,5 +113,6 @@ Content-Type: application/json
 ## 비고
 
 - **일시불** 지출 등록. 할부는 `ExpenseCreateInstallment`.
-- 수단·유형 이름을 **스냅샷**으로 저장 (이후 수단명 변경과 무관).
+- 수단·유형 이름은 DB에 **스냅샷**으로 저장 (이후 수단명 변경과 무관). 응답에는 포함하지 않음.
 - 본인 데이터만 생성.
+- 성공 후 화면 표시가 필요하면 `expenseId`로 `ExpenseGet` 호출.

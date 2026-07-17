@@ -42,7 +42,7 @@
 
 공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
@@ -72,7 +72,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "expenseId": 101,
     "message": "지출이 삭제되었습니다"
@@ -94,4 +94,4 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ## 비고
 
 - **1건 물리 삭제**. 할부 건도 해당 월 1건만 삭제.
-- 할부 전체 삭제는 건별 삭제 또는 `ExpenseDeleteInstallmentRemainder` 사용.
+- 할부 전체·남은 스케줄 정리는 건별 삭제 또는 `ExpenseSettleInstallmentRemainder`(중도상환) 사용.

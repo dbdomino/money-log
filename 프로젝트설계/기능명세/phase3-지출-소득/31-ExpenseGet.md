@@ -43,7 +43,7 @@
 공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)  
 공유 타입: [_공통.md § Expense](../_공통.md#공유-타입--expense)
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
 
 Expense 전체. 할부 건이면 `installmentGroupId`, `installmentIndex`, `installmentTotal` 채움.
 
@@ -70,7 +70,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "expenseId": 205,
     "paymentMethodId": 1,

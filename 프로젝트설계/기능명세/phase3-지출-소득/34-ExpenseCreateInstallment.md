@@ -40,7 +40,7 @@
 | `paymentMethodId` | number | ✅ | 지출 수단 |
 | `monthlyAmount` | number | ✅ | 월 납부액 (원) |
 | `installmentMonths` | number | ✅ | 할부 개월 수 (2 이상) |
-| `startYearMonth` | string | ✅ | 시작 연월 `YYYY-MM` |
+| `startYearMonth` | string | ✅ | 할부 시작 연월. 형식 `YYYY-MM` |
 | `place` | string | ✅ | 장소 |
 | `content` | string | ✅ | 내용 (할부 표시용) |
 | `expendGroupId` | number | ✅ | 지출유형 |
@@ -49,16 +49,14 @@
 
 공통 래퍼: [_공통.md § 응답 래퍼](../_공통.md#응답-래퍼)
 
-### 성공 (`resCode: 0`) — `data`
+### 성공 (`resCode: 200`) — `data`
+
+등록 성공 시 **할부 그룹 식별에 필요한 최소 정보만** 반환한다. 개별 지출 상세는 월별 가계부·`ExpenseGet`으로 조회한다.
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| `installmentGroupId` | number | 할부 그룹 id |
-| `installmentMonths` | number | 총 개월 |
-| `monthlyAmount` | number | 월 납부액 |
-| `startYearMonth` | string | 시작 연월 |
-| `expenses` | array | 생성된 Expense N건 |
-| `expenses[]` | Expense | `installmentIndex` 1~N |
+| `installmentGroupId` | number | 생성된 할부 그룹 id |
+| `createdCount` | number | 생성된 지출 건수 (= 요청 `installmentMonths`) |
 
 ### 실패 — 대표 `resCode`
 
@@ -96,33 +94,13 @@ Content-Type: application/json
 
 ```json
 {
-  "resCode": 0,
+  "resCode": 200,
   "data": {
     "installmentGroupId": 50,
-    "installmentMonths": 12,
-    "monthlyAmount": 100000,
-    "startYearMonth": "2026-07",
-    "expenses": [
-      {
-        "expenseId": 201,
-        "paymentMethodId": 1,
-        "paymentMethodName": "국민카드",
-        "amount": 100000,
-        "paymentDate": "2026-07-01",
-        "place": "가전매장",
-        "content": "노트북 (1/12)",
-        "expendGroupId": 5,
-        "expendGroupName": "쇼핑",
-        "installmentGroupId": 50,
-        "installmentIndex": 1,
-        "installmentTotal": 12
-      }
-    ]
+    "createdCount": 12
   }
 }
 ```
-
-> 응답의 `expenses`는 예시로 1건만 표기. 실제로는 12건 전부 생성.
 
 ### 실패
 
@@ -138,5 +116,6 @@ Content-Type: application/json
 ## 비고
 
 - **N건 즉시 생성**. 트랜잭션: 1건이라도 실패 시 **전부 롤백**.
+- 응답에 Expense 목록을 실지 않는다. 생성 확인은 `createdCount`, 이후 조회는 가계부·상세 API.
 - 각 월 `paymentDate`는 `startYearMonth` 기준 매월 1일 (또는 정책일).
 - `content`에 `(n/N)` 접미사 자동 부여 가능.
