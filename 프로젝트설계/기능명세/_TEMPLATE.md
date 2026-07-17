@@ -32,7 +32,7 @@
 
 | 이름 | 필수 | 설명 |
 |------|:----:|------|
-| `Cookie` | 조건부 | `JSESSIONID=...` (로그인 필요 시) |
+| `Authorization` | 조건부 | `Bearer <accessToken>` (로그인 필요 시) |
 
 ### Body
 
