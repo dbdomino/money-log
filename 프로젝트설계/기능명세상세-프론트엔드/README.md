@@ -46,7 +46,8 @@
 | 1.9 | 회원 추가 | `AdminMemberCreate` | `/admin/members/new` | [1.9-AdminMemberCreate.md](./phase1-회원/1.9-AdminMemberCreate.md) |
 | 1.10 | 회원 수정 | `AdminMemberEdit` | `/admin/members/{id}/edit` | [1.10-AdminMemberEdit.md](./phase1-회원/1.10-AdminMemberEdit.md) |
 
-토큰 검증·갱신·로그아웃은 **전용 화면 없음** → [_공통 § 인증·토큰](./_공통.md#인증토큰-화면-공통)
+토큰 검증·갱신·로그아웃은 **전용 화면 없음** → [_공통 § 인증·토큰](./_공통.md#인증토큰-화면-공통)  
+**로그인 불필요:** 1.1~1.6 · **로그인 필수:** 1.7 및 Phase 2~6 · **관리자:** 1.8~1.10
 
 ### Phase 2 — 수단·지출유형
 
