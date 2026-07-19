@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>layout/main — money-log</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/ui.css">
+</head>
+<body>
+<!-- th:fragment layout/main + fragments/sidebar -->
+<div class="layout-main">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">money-log</div>
+    <div class="sidebar-section">가계부</div>
+    <ul class="sidebar-nav">
+      <li><a class="is-active" href="ledger-monthly.html">월별 목록</a></li>
+      <li><a href="ledger-monthly.html?m=expense-create">지출 등록</a></li>
+      <li><a href="ledger-monthly.html?m=income-create">소득 등록</a></li>
+      <li><a href="ledger-excel.html">엑셀 일괄 등록</a></li>
+      <li><a href="fixed-expense-list.html">고정지출 목록</a></li>
+    </ul>
+    <div class="sidebar-section">설정</div>
+    <ul class="sidebar-nav">
+      <li><a href="payment-list.html">지출·소득 수단</a></li>
+      <li><a href="expend-group-list.html">지출유형</a></li>
+      <li><a href="target-default.html">목표금액</a></li>
+      <li><a href="statistics-monthly.html">월별 통계</a></li>
+      <li><a href="member-profile.html">본인 정보</a></li>
+      <li><a href="member-admin-list.html">회원 관리</a></li>
+    </ul>
+  </aside>
+  <header class="header">
+    <span class="user-name">닉네임</span>
+    <a class="btn btn-ghost btn-sm" href="auth-login.html">로그아웃</a>
+  </header>
+  <main class="main">
+    <div class="page-header"><h1>본문 슬롯</h1></div>
+    <p class="form-hint">main 레이아웃 골격. 페이지 콘텐츠가 이 영역에 들어갑니다.</p>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>5.1 월별 가계부 — money-log</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/ui.css">
+  <script defer src="../js/modal.js"></script>
+</head>
+<body data-modal-map='{"expense-create":"modal-expense-create","expense-edit":"modal-expense-edit","income-create":"modal-income-create","income-edit":"modal-income-edit"}'>
+<div class="layout-main">
+  <aside class="sidebar">
+    <div class="sidebar-brand">money-log</div>
+    <div class="sidebar-section">가계부</div>
+    <ul class="sidebar-nav">
+      <li><a class="is-active" href="ledger-monthly.html">월별 목록</a></li>
+      <li><a href="ledger-monthly.html?m=expense-create">지출 등록</a></li>
+      <li><a href="ledger-monthly.html?m=income-create">소득 등록</a></li>
+      <li><a href="ledger-excel.html">엑셀 일괄 등록</a></li>
+      <li><a href="fixed-expense-list.html">고정지출 목록</a></li>
+    </ul>
+    <div class="sidebar-section">설정</div>
+    <ul class="sidebar-nav">
+      <li><a href="payment-list.html">지출·소득 수단</a></li>
+      <li><a href="expend-group-list.html">지출유형</a></li>
+      <li><a href="target-default.html">목표금액</a></li>
+      <li><a href="statistics-monthly.html">월별 통계</a></li>
+      <li><a href="member-profile.html">본인 정보</a></li>
+      <li><a href="member-admin-list.html">회원 관리</a></li>
+    </ul>
+  </aside>
+  <header class="header">
+    <span class="user-name">홍길동</span>
+    <a class="btn btn-ghost btn-sm" href="auth-login.html">로그아웃</a>
+  </header>
+  <main class="main">
+    <div class="page-header">
+      <h1>월별 가계부</h1>
+      <div class="page-header-actions">
+        <button type="button" class="btn btn-secondary" data-modal-open="modal-income-create">소득 등록</button>
+        <button type="button" class="btn btn-primary" data-modal-open="modal-expense-create">지출 등록</button>
+      </div>
+    </div>
+    <div class="page-toolbar">
+      <div class="field">
+        <label for="year">연</label>
+        <select class="select" id="year" name="year">
+          <option>2025</option>
+          <option selected>2026</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="month">월</label>
+        <select class="select" id="month" name="month">
+          <option>6</option>
+          <option selected>7</option>
+          <option>8</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="keyword">검색</label>
+        <input class="input" id="keyword" name="keyword" placeholder="내용·장소 검색" value="">
+      </div>
+      <button type="button" class="btn btn-secondary">필터 적용</button>
+    </div>
+    <div class="summary-row">
+      <div class="summary-item">
+        <div class="label">지출 합계</div>
+        <div class="value is-expense">1,482,000</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">소득 합계</div>
+        <div class="value is-income">3,450,000</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">잔액(소득−지출)</div>
+        <div class="value">1,968,000</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>일자</th>
+            <th>구분</th>
+            <th>수단</th>
+            <th>유형</th>
+            <th>내용</th>
+            <th class="num">금액</th>
+            <th>관리</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>07-01</td>
+            <td><span class="badge badge-fixed">고정</span></td>
+            <td>급여통장</td>
+            <td>주거</td>
+            <td>월세</td>
+            <td class="num">800,000</td>
+            <td class="actions">—</td>
+          </tr>
+          <tr>
+            <td>07-02</td>
+            <td><span class="badge badge-expense">지출</span></td>
+            <td>국민카드</td>
+            <td>식비</td>
+            <td>회사 근처 김치찌개</td>
+            <td class="num">9,500</td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-expense-edit">수정</button>
+            </td>
+          </tr>
+          <tr>
+            <td>07-03</td>
+            <td><span class="badge badge-expense">지출</span></td>
+            <td>신한체크</td>
+            <td>교통</td>
+            <td>지하철·버스</td>
+            <td class="num">58,000</td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-expense-edit">수정</button>
+            </td>
+          </tr>
+          <tr>
+            <td>07-05</td>
+            <td><span class="badge badge-income">소득</span></td>
+            <td>급여통장</td>
+            <td>—</td>
+            <td>7월 급여</td>
+            <td class="num">3,200,000</td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-income-edit">수정</button>
+            </td>
+          </tr>
+          <tr>
+            <td>07-07</td>
+            <td><span class="badge badge-expense">지출</span></td>
+            <td>카카오페이</td>
+            <td>식비</td>
+            <td>스타벅스 강남점</td>
+            <td class="num">6,500</td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-expense-edit">수정</button>
+            </td>
+          </tr>
+          <tr>
+            <td>07-10</td>
+            <td><span class="badge badge-fixed">고정</span></td>
+            <td>국민카드</td>
+            <td>통신</td>
+            <td>인터넷</td>
+            <td class="num">35,000</td>
+            <td class="actions">—</td>
+          </tr>
+          <tr>
+            <td>07-12</td>
+            <td><span class="badge badge-expense">지출</span></td>
+            <td>국민카드</td>
+            <td>쇼핑</td>
+            <td>쿠팡 생필품</td>
+            <td class="num">87,200</td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-expense-edit">수정</button>
+            </td>
+          </tr>
+          <tr>
+            <td>07-15</td>
+            <td><span class="badge badge-installment">할부</span></td>
+            <td>국민카드</td>
+            <td>쇼핑</td>
+            <td>노트북 2/12</td>
+            <td class="num">150,000</td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-expense-edit">수정</button>
+            </td>
+          </tr>
+          <tr>
+            <td>07-18</td>
+            <td><span class="badge badge-expense">지출</span></td>
+            <td>국민카드</td>
+            <td>취미</td>
+            <td>넷플릭스</td>
+            <td class="num">17,000</td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-expense-edit">수정</button>
+            </td>
+          </tr>
+          <tr>
+            <td>07-18</td>
+            <td><span class="badge badge-fixed">고정</span></td>
+            <td>급여통장</td>
+            <td>통신</td>
+            <td>휴대폰요금</td>
+            <td class="num">55,000</td>
+            <td class="actions">—</td>
+          </tr>
+          <tr>
+            <td>07-20</td>
+            <td><span class="badge badge-income">소득</span></td>
+            <td>급여통장</td>
+            <td>—</td>
+            <td>부업 원고료</td>
+            <td class="num">250,000</td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-income-edit">수정</button>
+            </td>
+          </tr>
+          <tr>
+            <td>07-22</td>
+            <td><span class="badge badge-expense">지출</span></td>
+            <td>신한체크</td>
+            <td>식비</td>
+            <td>주말 장보기 (이마트)</td>
+            <td class="num">128,800</td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-expense-edit">수정</button>
+            </td>
+          </tr>
+          <tr>
+            <td>07-25</td>
+            <td><span class="badge badge-expense">지출</span></td>
+            <td>국민카드</td>
+            <td>식비</td>
+            <td>팀 회식 1/N</td>
+            <td class="num">45,000</td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-expense-edit">수정</button>
+            </td>
+          </tr>
+          <tr>
+            <td>07-28</td>
+            <td><span class="badge badge-expense">지출</span></td>
+            <td>카카오페이</td>
+            <td>교통</td>
+            <td>택시 (야근)</td>
+            <td class="num">18,000</td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-expense-edit">수정</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination"><span class="info">검수용 예시 14건 · 2026-07</span></div>
+  </main>
+</div>
+
+<div class="modal-root" id="modal-expense-create" aria-hidden="true" role="dialog">
+  <div class="modal-backdrop" data-modal-close></div>
+  <div class="modal-panel is-lg">
+    <div class="modal-header">
+      <h2>지출 등록</h2>
+      <button type="button" class="modal-close" data-modal-close aria-label="닫기">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-expense-create" onsubmit="return false;">
+        <div class="form-row">
+          <div class="form-group">
+            <label>결제 방식</label>
+            <select class="select" name="payType">
+              <option value="LUMP" selected>일시불</option>
+              <option value="INSTALLMENT">할부</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>결제일</label>
+            <input class="input" type="date" name="paidAt" value="2026-07-19">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>수단</label>
+            <select class="select" name="paymentMethodId">
+              <option value="1" selected>국민카드</option>
+              <option value="2">신한체크</option>
+              <option value="3">카카오페이</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>지출유형</label>
+            <select class="select" name="expendGroupId" required>
+              <option value="1" selected>식비</option>
+              <option value="2">교통</option>
+              <option value="3">주거</option>
+              <option value="4">통신</option>
+              <option value="5">쇼핑</option>
+              <option value="6">취미</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>금액</label>
+          <input class="input" type="number" name="amount" value="15000" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>장소</label>
+            <input class="input" name="place" value="강남역 근처">
+          </div>
+          <div class="form-group">
+            <label>내용</label>
+            <input class="input" name="memo" value="저녁 식사">
+          </div>
+        </div>
+        <p class="form-hint">할부 선택 시 개월 수·월 납부액·시작 연월 필드가 표시됩니다 (프로토타입 생략).</p>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-modal-close>취소</button>
+      <button type="submit" form="form-expense-create" class="btn btn-primary">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-root" id="modal-expense-edit" aria-hidden="true" role="dialog">
+  <div class="modal-backdrop" data-modal-close></div>
+  <div class="modal-panel is-lg">
+    <div class="modal-header">
+      <h2>지출 수정</h2>
+      <button type="button" class="modal-close" data-modal-close aria-label="닫기">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-info">할부 건의 개월·시작월은 변경할 수 없습니다. 바꾸려면 삭제 후 다시 등록하세요.</div>
+      <form id="form-expense-edit" onsubmit="return false;">
+        <div class="form-row">
+          <div class="form-group">
+            <label>결제일</label>
+            <input class="input" type="date" name="paidAt" value="2026-07-02">
+          </div>
+          <div class="form-group">
+            <label>수단</label>
+            <select class="select" name="paymentMethodId">
+              <option selected>국민카드</option>
+              <option>신한체크</option>
+              <option>카카오페이</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>지출유형</label>
+          <select class="select" name="expendGroupId">
+            <option selected>식비</option>
+            <option>교통</option>
+            <option>쇼핑</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>금액</label>
+          <input class="input" type="number" name="amount" value="9500">
+        </div>
+        <div class="form-group">
+          <label>장소</label>
+          <input class="input" name="place" value="회사 근처">
+        </div>
+        <div class="form-group">
+          <label>내용</label>
+          <input class="input" name="memo" value="회사 근처 김치찌개">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-danger" style="margin-right:auto">삭제</button>
+      <button type="button" class="btn btn-secondary" data-modal-close>취소</button>
+      <button type="submit" form="form-expense-edit" class="btn btn-primary">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-root" id="modal-income-create" aria-hidden="true" role="dialog">
+  <div class="modal-backdrop" data-modal-close></div>
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h2>소득 등록</h2>
+      <button type="button" class="modal-close" data-modal-close aria-label="닫기">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-income-create" onsubmit="return false;">
+        <div class="form-group">
+          <label>소득수단</label>
+          <select class="select" name="paymentMethodId">
+            <option selected>급여통장</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>금액</label>
+          <input class="input" type="number" name="amount" value="100000" required>
+        </div>
+        <div class="form-group">
+          <label>결제일</label>
+          <input class="input" type="date" name="paidAt" value="2026-07-19">
+        </div>
+        <div class="form-group">
+          <label>내용</label>
+          <input class="input" name="memo" value="중고 판매">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-modal-close>취소</button>
+      <button type="submit" form="form-income-create" class="btn btn-primary">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-root" id="modal-income-edit" aria-hidden="true" role="dialog">
+  <div class="modal-backdrop" data-modal-close></div>
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h2>소득 수정</h2>
+      <button type="button" class="modal-close" data-modal-close aria-label="닫기">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-income-edit" onsubmit="return false;">
+        <div class="form-group">
+          <label>소득수단</label>
+          <select class="select" name="paymentMethodId">
+            <option selected>급여통장</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>금액</label>
+          <input class="input" type="number" name="amount" value="3200000">
+        </div>
+        <div class="form-group">
+          <label>결제일</label>
+          <input class="input" type="date" name="paidAt" value="2026-07-05">
+        </div>
+        <div class="form-group">
+          <label>내용</label>
+          <input class="input" name="memo" value="7월 급여">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-danger" style="margin-right:auto">삭제</button>
+      <button type="button" class="btn btn-secondary" data-modal-close>취소</button>
+      <button type="submit" form="form-income-edit" class="btn btn-primary">저장</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

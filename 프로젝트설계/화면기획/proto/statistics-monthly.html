@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>6.2 월별 통계 — money-log</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/ui.css">
+</head>
+<body>
+<div class="layout-main">
+  <aside class="sidebar">
+    <div class="sidebar-brand">money-log</div>
+    <div class="sidebar-section">가계부</div>
+    <ul class="sidebar-nav">
+      <li><a href="ledger-monthly.html">월별 목록</a></li>
+      <li><a href="ledger-monthly.html?m=expense-create">지출 등록</a></li>
+      <li><a href="ledger-monthly.html?m=income-create">소득 등록</a></li>
+      <li><a href="ledger-excel.html">엑셀 일괄 등록</a></li>
+      <li><a href="fixed-expense-list.html">고정지출 목록</a></li>
+    </ul>
+    <div class="sidebar-section">설정</div>
+    <ul class="sidebar-nav">
+      <li><a href="payment-list.html">지출·소득 수단</a></li>
+      <li><a href="expend-group-list.html">지출유형</a></li>
+      <li><a href="target-default.html">목표금액</a></li>
+      <li><a class="is-active" href="statistics-monthly.html">월별 통계</a></li>
+      <li><a href="member-profile.html">본인 정보</a></li>
+      <li><a href="member-admin-list.html">회원 관리</a></li>
+    </ul>
+  </aside>
+  <header class="header">
+    <span class="user-name">홍길동</span>
+    <a class="btn btn-ghost btn-sm" href="auth-login.html">로그아웃</a>
+  </header>
+  <main class="main">
+    <div class="page-header">
+      <h1>월별 통계</h1>
+      <div class="page-header-actions">
+        <span class="badge badge-success">저장본</span>
+        <button type="button" class="btn btn-secondary btn-sm">최신 계산 보기</button>
+        <button type="button" class="btn btn-primary btn-sm">통계 저장</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="field">
+        <label for="stat-month">연월</label>
+        <input class="input" id="stat-month" type="month" value="2026-07">
+      </div>
+      <button type="button" class="btn btn-secondary">조회</button>
+    </div>
+    <div class="summary-row">
+      <div class="summary-item"><div class="label">총 지출</div><div class="value is-expense">1,482,000</div></div>
+      <div class="summary-item"><div class="label">총 소득</div><div class="value is-income">3,450,000</div></div>
+      <div class="summary-item"><div class="label">목표</div><div class="value">1,500,000</div></div>
+      <div class="summary-item"><div class="label">달성률</div><div class="value">98.8%</div></div>
+      <div class="summary-item"><div class="label">판정</div><div class="value">적정</div></div>
+    </div>
+    <div class="chart-placeholder">주별 지출 차트 영역 (검수: W1 890k · W2 210k · W3 220k · W4 162k)</div>
+    <div class="panel" style="margin-bottom:var(--space-4)">
+      <h2 style="font-size:1rem;margin:0 0 12px">유형별 지출</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>유형</th><th class="num">금액</th><th>비중</th><th>목표</th><th>대비</th></tr></thead>
+          <tbody>
+            <tr><td>주거·고정</td><td class="num">890,000</td><td>60.1%</td><td class="num">850,000</td><td><span class="badge badge-warning">초과</span></td></tr>
+            <tr><td>식비</td><td class="num">189,800</td><td>12.8%</td><td class="num">250,000</td><td><span class="badge badge-success">절약</span></td></tr>
+            <tr><td>쇼핑</td><td class="num">237,200</td><td>16.0%</td><td class="num">200,000</td><td><span class="badge badge-warning">초과</span></td></tr>
+            <tr><td>교통</td><td class="num">76,000</td><td>5.1%</td><td class="num">80,000</td><td><span class="badge badge-success">적정</span></td></tr>
+            <tr><td>통신</td><td class="num">55,000</td><td>3.7%</td><td class="num">60,000</td><td><span class="badge badge-success">절약</span></td></tr>
+            <tr><td>취미</td><td class="num">17,000</td><td>1.1%</td><td class="num">50,000</td><td><span class="badge badge-success">절약</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel">
+      <h2 style="font-size:1rem;margin:0 0 12px">수단별 · 고정 vs 일반</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>수단</th><th class="num">금액</th><th>구분</th></tr></thead>
+          <tbody>
+            <tr><td>국민카드</td><td class="num">443,700</td><td>일반+할부</td></tr>
+            <tr><td>신한체크</td><td class="num">186,800</td><td>일반</td></tr>
+            <tr><td>카카오페이</td><td class="num">24,500</td><td>일반</td></tr>
+            <tr><td>급여통장(고정출금)</td><td class="num">855,000</td><td>고정</td></tr>
+            <tr><td>고정 합계</td><td class="num">890,000</td><td>60%</td></tr>
+            <tr><td>일반 합계</td><td class="num">592,000</td><td>40%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>
