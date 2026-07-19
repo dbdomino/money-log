@@ -1,0 +1,60 @@
+/* money-log design tokens — copy to money-app/src/main/resources/static/css/tokens.css */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+:root {
+  /* surfaces */
+  --color-bg: #f4f7f5;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eef3f0;
+
+  /* brand (calm green) */
+  --color-primary: #2f6f5e;
+  --color-primary-hover: #275a4c;
+  --color-primary-soft: #dcebe4;
+  --color-primary-muted: #5a8f7e;
+
+  /* text */
+  --color-text: #2a322f;
+  --color-text-secondary: #5c6b64;
+  --color-text-inverse: #f7faf8;
+
+  /* borders & states */
+  --color-border: #c5d4cc;
+  --color-border-strong: #9bb0a5;
+  --color-danger: #b54a3c;
+  --color-danger-soft: #f5e4e1;
+  --color-warning: #a67c2a;
+  --color-success: #2f6f5e;
+  --color-info: #3d6b8a;
+
+  /* badges (ledger) */
+  --badge-expense: #c45c4a;
+  --badge-income: #3d8b6e;
+  --badge-fixed: #6b5b95;
+  --badge-installment: #c47a2c;
+
+  /* layout */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 2px rgba(42, 50, 47, 0.06);
+  --shadow-md: 0 8px 24px rgba(42, 50, 47, 0.1);
+  --sidebar-width: 220px;
+  --header-height: 56px;
+  --modal-width: 480px;
+  --modal-width-lg: 640px;
+  --auth-width: 400px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --font-sans: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+  --font-size: 15px;
+  --font-size-sm: 13px;
+  --font-size-lg: 18px;
+  --font-size-xl: 22px;
+  --line-height: 1.5;
+  --focus-ring: 0 0 0 3px rgba(47, 111, 94, 0.25);
+}

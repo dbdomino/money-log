@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>2.1 수단 목록 — money-log</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/ui.css">
+  <script defer src="../js/modal.js"></script>
+</head>
+<body data-modal-map='{"create":"modal-payment-create","detail":"modal-payment-detail","edit":"modal-payment-edit"}'>
+<div class="layout-main">
+  <aside class="sidebar">
+    <div class="sidebar-brand">money-log</div>
+    <div class="sidebar-section">가계부</div>
+    <ul class="sidebar-nav">
+      <li><a href="ledger-monthly.html">월별 목록</a></li>
+      <li><a href="ledger-monthly.html?m=expense-create">지출 등록</a></li>
+      <li><a href="ledger-monthly.html?m=income-create">소득 등록</a></li>
+      <li><a href="ledger-excel.html">엑셀 일괄 등록</a></li>
+      <li><a href="fixed-expense-list.html">고정지출 목록</a></li>
+    </ul>
+    <div class="sidebar-section">설정</div>
+    <ul class="sidebar-nav">
+      <li><a class="is-active" href="payment-list.html">지출·소득 수단</a></li>
+      <li><a href="expend-group-list.html">지출유형</a></li>
+      <li><a href="target-default.html">목표금액</a></li>
+      <li><a href="statistics-monthly.html">월별 통계</a></li>
+      <li><a href="member-profile.html">본인 정보</a></li>
+      <li><a href="member-admin-list.html">회원 관리</a></li>
+    </ul>
+  </aside>
+  <header class="header">
+    <span class="user-name">홍길동</span>
+    <a class="btn btn-ghost btn-sm" href="auth-login.html">로그아웃</a>
+  </header>
+  <main class="main">
+    <div class="page-header">
+      <h1>지출·소득 수단</h1>
+      <button type="button" class="btn btn-primary" data-modal-open="modal-payment-create">수단 등록</button>
+    </div>
+    <p class="form-hint form-hint--block">예시 회원 홍길동 · 사용 안 하는 수단도 목록에 포함</p>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>이름</th>
+            <th>구분</th>
+            <th>용도</th>
+            <th>사용</th>
+            <th>관리</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>국민카드</td>
+            <td>카드</td>
+            <td>지출</td>
+            <td><span class="badge badge-success">사용</span></td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-payment-detail">상세</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-payment-edit">수정</button>
+            </td>
+          </tr>
+          <tr>
+            <td>신한체크</td>
+            <td>카드</td>
+            <td>지출</td>
+            <td><span class="badge badge-success">사용</span></td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-payment-detail">상세</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-payment-edit">수정</button>
+            </td>
+          </tr>
+          <tr>
+            <td>카카오페이</td>
+            <td>계좌</td>
+            <td>지출</td>
+            <td><span class="badge badge-success">사용</span></td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-payment-detail">상세</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-payment-edit">수정</button>
+            </td>
+          </tr>
+          <tr>
+            <td>급여통장</td>
+            <td>계좌</td>
+            <td>소득</td>
+            <td><span class="badge badge-success">사용</span></td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-payment-detail">상세</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-payment-edit">수정</button>
+            </td>
+          </tr>
+          <tr>
+            <td>(구)우리카드</td>
+            <td>카드</td>
+            <td>지출</td>
+            <td><span class="badge badge-muted">미사용</span></td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-payment-detail">상세</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-payment-edit">수정</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination"><span class="info">offset 0 · limit 20 · totalCount 5 · 1 / 1 페이지</span></div>
+  </main>
+</div>
+
+<div class="modal-root" id="modal-payment-create" aria-hidden="true" role="dialog" aria-labelledby="pay-create-title">
+  <div class="modal-backdrop" data-modal-close></div>
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h2 id="pay-create-title">수단 등록</h2>
+      <button type="button" class="modal-close" data-modal-close aria-label="닫기">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-payment-create" onsubmit="return false;">
+        <div class="form-group">
+          <label for="pmType">구분</label>
+          <select class="select" id="pmType" name="type">
+            <option value="CARD" selected>카드</option>
+            <option value="ACCOUNT">계좌</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="pmName">이름</label>
+          <input class="input" id="pmName" name="name" value="현대카드" placeholder="예: 현대카드">
+        </div>
+        <div class="form-group">
+          <label for="pmPurpose">용도</label>
+          <select class="select" id="pmPurpose" name="purpose">
+            <option value="EXPENSE" selected>지출</option>
+            <option value="INCOME">소득</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="pmActive">사용 여부</label>
+          <select class="select" id="pmActive" name="active">
+            <option value="true" selected>사용</option>
+            <option value="false">미사용</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="pmExpire">카드 유효기간 (카드만)</label>
+          <input class="input" id="pmExpire" name="cardExpireYm" value="2029-08" placeholder="YYYY-MM">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-modal-close>취소</button>
+      <button type="submit" form="form-payment-create" class="btn btn-primary">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-root" id="modal-payment-detail" aria-hidden="true" role="dialog">
+  <div class="modal-backdrop" data-modal-close></div>
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h2>수단 상세</h2>
+      <button type="button" class="modal-close" data-modal-close aria-label="닫기">&times;</button>
+    </div>
+    <div class="modal-body">
+      <dl class="detail-dl">
+        <dt>이름</dt><dd>국민카드</dd>
+        <dt>구분</dt><dd>카드</dd>
+        <dt>용도</dt><dd>지출</dd>
+        <dt>사용</dt><dd>사용</dd>
+        <dt>유효기간</dt><dd>2028-12</dd>
+        <dt>등록일</dt><dd>2025-03-12</dd>
+      </dl>
+      <p class="form-hint form-hint--block" style="margin-top:var(--space-4)">삭제 시 과거 내역의 수단 이름(국민카드)은 유지됩니다.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-modal-close>닫기</button>
+      <button type="button" class="btn btn-ghost" data-modal-close data-modal-open="modal-payment-edit">수정</button>
+      <button type="button" class="btn btn-danger">삭제</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-root" id="modal-payment-edit" aria-hidden="true" role="dialog">
+  <div class="modal-backdrop" data-modal-close></div>
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h2>수단 수정</h2>
+      <button type="button" class="modal-close" data-modal-close aria-label="닫기">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-payment-edit" onsubmit="return false;">
+        <div class="form-group">
+          <label for="pmNameEdit">이름</label>
+          <input class="input" id="pmNameEdit" name="name" value="국민카드">
+        </div>
+        <div class="form-group">
+          <label for="pmActiveEdit">사용 여부</label>
+          <select class="select" id="pmActiveEdit" name="active">
+            <option value="true" selected>사용</option>
+            <option value="false">미사용</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="pmExpireEdit">카드 유효기간</label>
+          <input class="input" id="pmExpireEdit" name="cardExpireYm" value="2028-12">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-modal-close>취소</button>
+      <button type="submit" form="form-payment-edit" class="btn btn-primary">저장</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

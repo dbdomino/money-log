@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>6.1 목표금액 — money-log</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/ui.css">
+</head>
+<body>
+<div class="layout-main">
+  <aside class="sidebar">
+    <div class="sidebar-brand">money-log</div>
+    <div class="sidebar-section">가계부</div>
+    <ul class="sidebar-nav">
+      <li><a href="ledger-monthly.html">월별 목록</a></li>
+      <li><a href="ledger-monthly.html?m=expense-create">지출 등록</a></li>
+      <li><a href="ledger-monthly.html?m=income-create">소득 등록</a></li>
+      <li><a href="ledger-excel.html">엑셀 일괄 등록</a></li>
+      <li><a href="fixed-expense-list.html">고정지출 목록</a></li>
+    </ul>
+    <div class="sidebar-section">설정</div>
+    <ul class="sidebar-nav">
+      <li><a href="payment-list.html">지출·소득 수단</a></li>
+      <li><a href="expend-group-list.html">지출유형</a></li>
+      <li><a class="is-active" href="target-default.html">목표금액</a></li>
+      <li><a href="statistics-monthly.html">월별 통계</a></li>
+      <li><a href="member-profile.html">본인 정보</a></li>
+      <li><a href="member-admin-list.html">회원 관리</a></li>
+    </ul>
+  </aside>
+  <header class="header">
+    <span class="user-name">홍길동</span>
+    <a class="btn btn-ghost btn-sm" href="auth-login.html">로그아웃</a>
+  </header>
+  <main class="main">
+    <div class="page-header"><h1>목표금액</h1></div>
+    <div class="panel panel--narrow">
+      <p class="form-hint form-hint--block">월별 기본 목표 지출액을 설정합니다. 가계부·통계에서 달성률 기준으로 사용됩니다.</p>
+      <form onsubmit="return false;">
+        <div class="form-group"><label>기본 목표 금액 (원)</label><input class="input" name="defaultTargetAmount" type="number" value="1500000"></div>
+        <button type="submit" class="btn btn-primary">저장</button>
+      </form>
+    </div>
+    <div class="panel" style="margin-top:var(--space-4);max-width:640px">
+      <h2 style="font-size:1rem;margin:0 0 12px">유형별 기본 목표 (예시 · 2026-07)</h2>
+      <div class="toolbar">
+        <div class="field"><label>검색</label><input class="input" placeholder="유형 이름" value=""></div>
+        <button type="button" class="btn btn-secondary btn-sm">조회</button>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>유형</th><th class="num">기본 목표</th><th class="num">이번 달 목표</th></tr></thead>
+          <tbody>
+            <tr><td>식비</td><td class="num">250,000</td><td class="num">250,000</td></tr>
+            <tr><td>교통</td><td class="num">80,000</td><td class="num">80,000</td></tr>
+            <tr><td>주거</td><td class="num">850,000</td><td class="num">850,000</td></tr>
+            <tr><td>통신</td><td class="num">60,000</td><td class="num">60,000</td></tr>
+            <tr><td>쇼핑</td><td class="num">200,000</td><td class="num">180,000</td></tr>
+            <tr><td>취미</td><td class="num">50,000</td><td class="num">50,000</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination"><span class="info">사용 중 유형만 · totalCount 6</span></div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

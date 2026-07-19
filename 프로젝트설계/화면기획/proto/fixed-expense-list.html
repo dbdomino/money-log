@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>4.2 고정지출 — money-log</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/ui.css">
+  <script defer src="../js/modal.js"></script>
+</head>
+<body data-modal-map='{"create":"modal-fx-create","detail":"modal-fx-detail","edit":"modal-fx-edit","confirm":"modal-confirm","monthly":"modal-fx-monthly"}'>
+<div class="layout-main">
+  <aside class="sidebar">
+    <div class="sidebar-brand">money-log</div>
+    <div class="sidebar-section">가계부</div>
+    <ul class="sidebar-nav">
+      <li><a href="ledger-monthly.html">월별 목록</a></li>
+      <li><a href="ledger-monthly.html?m=expense-create">지출 등록</a></li>
+      <li><a href="ledger-monthly.html?m=income-create">소득 등록</a></li>
+      <li><a href="ledger-excel.html">엑셀 일괄 등록</a></li>
+      <li><a class="is-active" href="fixed-expense-list.html">고정지출 목록</a></li>
+    </ul>
+    <div class="sidebar-section">설정</div>
+    <ul class="sidebar-nav">
+      <li><a href="payment-list.html">지출·소득 수단</a></li>
+      <li><a href="expend-group-list.html">지출유형</a></li>
+      <li><a href="target-default.html">목표금액</a></li>
+      <li><a href="statistics-monthly.html">월별 통계</a></li>
+      <li><a href="member-profile.html">본인 정보</a></li>
+      <li><a href="member-admin-list.html">회원 관리</a></li>
+    </ul>
+  </aside>
+  <header class="header">
+    <span class="user-name">홍길동</span>
+    <a class="btn btn-ghost btn-sm" href="auth-login.html">로그아웃</a>
+  </header>
+  <main class="main">
+    <div class="page-header">
+      <h1>고정지출</h1>
+      <button type="button" class="btn btn-primary" data-modal-open="modal-fx-create">고정지출 등록</button>
+    </div>
+    <div class="toolbar">
+      <div class="field">
+        <label for="fx-status">상태</label>
+        <select class="select" id="fx-status">
+          <option selected>전체</option>
+          <option>진행</option>
+          <option>완료</option>
+          <option>중도상환</option>
+        </select>
+      </div>
+      <button type="button" class="btn btn-secondary">조회</button>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>이름</th><th class="num">금액</th><th>주기</th><th>다음 결제일</th><th>상태</th><th>관리</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>월세</td><td class="num">800,000</td><td>매월 1일</td><td>2026-08-01</td><td><span class="badge badge-success">진행</span></td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-fx-detail">상세</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-fx-edit">수정</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-fx-monthly">월별</button>
+            </td>
+          </tr>
+          <tr>
+            <td>인터넷</td><td class="num">35,000</td><td>매월 15일</td><td>2026-07-15</td><td><span class="badge badge-success">진행</span></td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-fx-detail">상세</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-fx-edit">수정</button>
+            </td>
+          </tr>
+          <tr>
+            <td>휴대폰요금</td><td class="num">55,000</td><td>매월 20일</td><td>2026-07-20</td><td><span class="badge badge-success">진행</span></td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-fx-detail">상세</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-fx-edit">수정</button>
+            </td>
+          </tr>
+          <tr>
+            <td>학자금</td><td class="num">150,000</td><td>매월</td><td>—</td><td><span class="badge badge-muted">중도상환</span></td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-fx-detail">상세</button>
+            </td>
+          </tr>
+          <tr>
+            <td>적금이체</td><td class="num">300,000</td><td>매월 25일</td><td>—</td><td><span class="badge badge-muted">완료</span></td>
+            <td class="actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-modal-open="modal-fx-detail">상세</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination"><span class="info">offset 0 · limit 20 · totalCount 5</span></div>
+  </main>
+</div>
+
+<div class="modal-root" id="modal-fx-create" aria-hidden="true" role="dialog">
+  <div class="modal-backdrop" data-modal-close></div>
+  <div class="modal-panel modal-panel--wide">
+    <div class="modal-header"><h2>고정지출 등록</h2><button type="button" class="modal-close" data-modal-close aria-label="닫기">&times;</button></div>
+    <div class="modal-body">
+      <form id="f-fx-c" onsubmit="return false;">
+        <div class="form-row">
+          <div class="form-group"><label>이름</label><input class="input" name="name" value="헬스장" required></div>
+          <div class="form-group"><label>금액</label><input class="input" name="amount" type="number" value="69000" required></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>주기</label><select class="select" name="cycle"><option selected>매월</option><option>매주</option></select></div>
+          <div class="form-group"><label>결제일</label><input class="input" name="payDay" type="number" min="1" max="31" value="10"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>시작 연월</label><input class="input" name="startYm" type="month" value="2026-08"></div>
+          <div class="form-group"><label>종료 연월 (선택)</label><input class="input" name="endYm" type="month" value="2027-07"></div>
+        </div>
+        <div class="form-group"><label>메모</label><textarea class="textarea" name="memo">연간 회원권 월 분할</textarea></div>
+      </form>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>취소</button><button type="submit" form="f-fx-c" class="btn btn-primary">저장</button></div>
+  </div>
+</div>
+<div class="modal-root" id="modal-fx-detail" aria-hidden="true" role="dialog">
+  <div class="modal-backdrop" data-modal-close></div>
+  <div class="modal-panel">
+    <div class="modal-header"><h2>고정지출 상세</h2><button type="button" class="modal-close" data-modal-close aria-label="닫기">&times;</button></div>
+    <div class="modal-body">
+      <dl class="detail-dl">
+        <dt>이름</dt><dd>월세</dd>
+        <dt>금액</dt><dd>800,000원</dd>
+        <dt>주기</dt><dd>매월 1일</dd>
+        <dt>기간</dt><dd>2024-01 ~ (종료 없음)</dd>
+        <dt>다음 결제일</dt><dd>2026-08-01</dd>
+        <dt>상태</dt><dd>진행</dd>
+        <dt>메모</dt><dd>전세→월세 전환분</dd>
+      </dl>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-modal-close>닫기</button>
+      <button type="button" class="btn btn-ghost" data-modal-open="modal-fx-edit">수정</button>
+      <button type="button" class="btn btn-ghost" data-modal-open="modal-fx-monthly">월별 수정</button>
+      <button type="button" class="btn btn-danger" data-modal-open="modal-confirm">중도상환</button>
+    </div>
+  </div>
+</div>
+<div class="modal-root" id="modal-fx-edit" aria-hidden="true" role="dialog">
+  <div class="modal-backdrop" data-modal-close></div>
+  <div class="modal-panel modal-panel--wide">
+    <div class="modal-header"><h2>고정지출 수정</h2><button type="button" class="modal-close" data-modal-close aria-label="닫기">&times;</button></div>
+    <div class="modal-body">
+      <div class="alert alert-info">기본값 수정 시 「월별 미수정 달」에 반영됩니다. 이미 월별 덮어쓴 달은 유지됩니다.</div>
+      <form id="f-fx-e" onsubmit="return false;">
+        <div class="form-group"><label>이름</label><input class="input" name="name" value="월세"></div>
+        <div class="form-group"><label>금액</label><input class="input" name="amount" type="number" value="800000"></div>
+        <div class="form-group"><label>메모</label><textarea class="textarea" name="memo">전세→월세 전환분</textarea></div>
+      </form>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>취소</button><button type="submit" form="f-fx-e" class="btn btn-primary">저장</button></div>
+  </div>
+</div>
+<div class="modal-root" id="modal-fx-monthly" aria-hidden="true" role="dialog">
+  <div class="modal-backdrop" data-modal-close></div>
+  <div class="modal-panel">
+    <div class="modal-header"><h2>월별 금액 수정</h2><button type="button" class="modal-close" data-modal-close aria-label="닫기">&times;</button></div>
+    <div class="modal-body">
+      <form id="f-fx-m" onsubmit="return false;">
+        <div class="form-group"><label>대상 연월</label><input class="input" type="month" name="ym" value="2026-08"></div>
+        <div class="form-group"><label>그달 금액</label><input class="input" type="number" name="amount" value="850000"></div>
+        <p class="form-hint">예: 8월만 관리비 포함으로 850,000원</p>
+      </form>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>취소</button><button type="submit" form="f-fx-m" class="btn btn-primary">저장</button></div>
+  </div>
+</div>
+<div class="modal-root" id="modal-confirm" aria-hidden="true" role="dialog">
+  <div class="modal-backdrop" data-modal-close></div>
+  <div class="modal-panel modal-panel--sm">
+    <div class="modal-header"><h2>중도상환 확인</h2><button type="button" class="modal-close" data-modal-close aria-label="닫기">&times;</button></div>
+    <div class="modal-body"><p><strong>월세</strong> 고정지출을 중도상환 처리할까요?<br>이후 가계부에 자동 포함되지 않습니다.</p></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>취소</button><button type="button" class="btn btn-danger">확인</button></div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3.5 엑셀 일괄 등록 — money-log</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/ui.css">
+</head>
+<body>
+<div class="layout-main">
+  <aside class="sidebar">
+    <div class="sidebar-brand">money-log</div>
+    <div class="sidebar-section">가계부</div>
+    <ul class="sidebar-nav">
+      <li><a href="ledger-monthly.html">월별 목록</a></li>
+      <li><a href="ledger-monthly.html?m=expense-create">지출 등록</a></li>
+      <li><a href="ledger-monthly.html?m=income-create">소득 등록</a></li>
+      <li><a class="is-active" href="ledger-excel.html">엑셀 일괄 등록</a></li>
+      <li><a href="fixed-expense-list.html">고정지출 목록</a></li>
+    </ul>
+    <div class="sidebar-section">설정</div>
+    <ul class="sidebar-nav">
+      <li><a href="payment-list.html">지출·소득 수단</a></li>
+      <li><a href="expend-group-list.html">지출유형</a></li>
+      <li><a href="target-default.html">목표금액</a></li>
+      <li><a href="statistics-monthly.html">월별 통계</a></li>
+      <li><a href="member-profile.html">본인 정보</a></li>
+      <li><a href="member-admin-list.html">회원 관리</a></li>
+    </ul>
+  </aside>
+  <header class="header">
+    <span class="user-name">홍길동</span>
+    <a class="btn btn-ghost btn-sm" href="auth-login.html">로그아웃</a>
+  </header>
+  <main class="main">
+    <div class="page-header"><h1>엑셀 일괄 등록</h1></div>
+    <div class="panel panel--md">
+      <p class="form-hint form-hint--block">양식 다운로드 후 지출·소득 행을 채워 업로드합니다. .xlsx만 · 300행 초과 시 업로드 전 경고.</p>
+      <div style="margin-bottom:16px">
+        <a class="btn btn-secondary" href="#">양식 다운로드 (expense-income-template.xlsx)</a>
+      </div>
+      <form onsubmit="return false;">
+        <div class="form-group"><label>엑셀 파일</label><input class="input" type="file" name="file" accept=".xlsx,.xls"></div>
+        <p class="form-hint">검수용 파일명 예: <code>2026-07-ledger-upload.xlsx</code> (20행)</p>
+        <button type="submit" class="btn btn-primary">업로드·검증</button>
+      </form>
+    </div>
+    <div class="panel" style="margin-top:var(--space-4);max-width:720px">
+      <h2 style="font-size:1rem;margin:0 0 12px">검증 결과 (예시)</h2>
+      <div class="summary-row">
+        <div class="summary-item"><div class="label">성공</div><div class="value is-income">18</div></div>
+        <div class="summary-item"><div class="label">실패</div><div class="value is-expense">2</div></div>
+      </div>
+      <div class="alert alert-error">11행 · 수단 「우리카드」 미매칭 — 사용 중 수단명과 일치해야 합니다.</div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>행</th><th>구분</th><th>결과</th><th>메시지</th></tr></thead>
+          <tbody>
+            <tr><td>2</td><td>지출</td><td><span class="badge badge-success">OK</span></td><td>식비 12,000 등록 예정</td></tr>
+            <tr><td>3</td><td>지출</td><td><span class="badge badge-danger">FAIL</span></td><td>금액 형식 오류 (「12,000원」)</td></tr>
+            <tr><td>4~10</td><td>—</td><td><span class="badge badge-success">OK</span></td><td>7건</td></tr>
+            <tr><td>11</td><td>지출</td><td><span class="badge badge-danger">FAIL</span></td><td>수단 미매칭</td></tr>
+            <tr><td>12~20</td><td>—</td><td><span class="badge badge-success">OK</span></td><td>9건 (소득 2 포함)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>
