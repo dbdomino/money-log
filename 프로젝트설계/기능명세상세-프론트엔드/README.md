@@ -1,8 +1,8 @@
-# 기능명세 (화면 상세)
+# [프론트] 기능명세 (화면 상세)
 
 > 기준: [2.2. 기능명세 - 프론트엔드.md](../2.2.%20기능명세%20-%20프론트엔드.md) · [2.기능명세.md](../2.기능명세.md)  
-> 화면 맵: [money-log-화면구성.drawio](money-log-화면구조.drawio) · [화면구조.mermaid.md](./화면구조.mermaid.md)  
-> **화면 1개 = 문서 1개**. 문서 제목은 **화면 이름**, 식별자는 **화면 ID**를 사용한다.  
+> 화면 맵: [money-log-화면구성.drawio](./money-log-화면구성.drawio) · [화면구조.mermaid.md](./화면구조.mermaid.md)  
+> **화면 1개 = 문서 1개**. 문서 제목은 **`[프론트] {화면 이름}`**, 식별자는 **화면 ID**를 사용한다.  
 > **화면번호** = `{Phase}.{순번}` (예: `1.1`, `5.1`). Phase 안에서만 센다.  
 > API 요청·응답 필드는 [기능명세상세-백엔드](../기능명세상세-백엔드/README.md)를 따른다.
 
@@ -46,7 +46,8 @@
 | 1.9 | 회원 추가 | `AdminMemberCreate` | `/admin/members/new` | [1.9-AdminMemberCreate.md](./phase1-회원/1.9-AdminMemberCreate.md) |
 | 1.10 | 회원 수정 | `AdminMemberEdit` | `/admin/members/{id}/edit` | [1.10-AdminMemberEdit.md](./phase1-회원/1.10-AdminMemberEdit.md) |
 
-토큰 검증·갱신·로그아웃은 **전용 화면 없음** → [_공통 § 인증·토큰](./_공통.md#인증토큰-화면-공통)
+토큰 검증·갱신·로그아웃은 **전용 화면 없음** → [_공통 § 인증·토큰](./_공통.md#인증토큰-화면-공통)  
+**로그인 불필요:** 1.1~1.6 · **로그인 필수:** 1.7 및 Phase 2~6 · **관리자:** 1.8~1.10
 
 ### Phase 2 — 수단·지출유형
 
