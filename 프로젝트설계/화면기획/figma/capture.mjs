@@ -10,6 +10,9 @@ const outDir = path.resolve(__dirname, 'png');
 const shots = [
   { file: 'auth-login.html', name: '01-auth-login' },
   { file: 'auth-signup.html', name: '02-auth-signup' },
+  { file: 'auth-find-id.html', name: '02b-auth-find-id' },
+  { file: 'auth-find-password.html', name: '02c-auth-find-password' },
+  { file: 'auth-reset-password.html', name: '02d-auth-reset-password' },
   { file: 'error-forbidden.html', name: '03-error-forbidden' },
   { file: 'payment-list.html', name: '04-payment-list' },
   { file: 'payment-list.html', name: '04b-payment-create-modal', open: '[data-modal-open="modal-payment-create"]' },
