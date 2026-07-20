@@ -13,6 +13,7 @@ const shots = [
   { file: 'auth-find-id.html', name: '02b-auth-find-id' },
   { file: 'auth-find-password.html', name: '02c-auth-find-password' },
   { file: 'auth-reset-password.html', name: '02d-auth-reset-password' },
+  { file: 'auth-reset-password.html', name: '02e-auth-reset-success', query: '?view=success' },
   { file: 'error-forbidden.html', name: '03-error-forbidden' },
   { file: 'payment-list.html', name: '04-payment-list' },
   { file: 'payment-list.html', name: '04b-payment-create-modal', open: '[data-modal-open="modal-payment-create"]' },
