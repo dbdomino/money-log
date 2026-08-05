@@ -103,16 +103,20 @@ Spring Boot 기반 **멀티 모듈** 가계부 웹 애플리케이션이다.
 |------|-----|
 | Host | `localhost:5432` |
 | Database | `moneylogdb` |
+| Schema | `moneylog` (테이블 전용. `public` 미사용) |
 | User | `moneyloguser` |
 | Password | `1q2w3e4r` |
 
 설정: `data-mod/src/main/resources/application-postgresql.yml`  
 활성 프로필: `money-app`의 `application.yml` → `spring.profiles.active=postgresql`
 
-```sql
-CREATE USER moneyloguser WITH PASSWORD '1q2w3e4r';
-CREATE DATABASE moneylogdb OWNER moneyloguser;
-```
+초기 생성 스크립트: [sql/](./sql) — `postgres` 계정으로 순서대로 실행
+
+| 순서 | 파일 | 내용 |
+|---|---|---|
+| 1 | `sql/01_create_user.sql` | `moneyloguser` 생성 |
+| 2 | `sql/02_create_database.sql` | `moneylogdb` 생성 (OWNER `moneyloguser`) |
+| 3 | `sql/03_create_schema.sql` | `moneylog` 스키마 생성 + `search_path` 설정 (`moneylogdb` 접속 후 실행) |
 
 ## 빌드 / 실행
 
