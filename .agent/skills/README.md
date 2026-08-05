@@ -26,6 +26,24 @@ description: 무엇을 하는지. Use when 사용자가 ~를 요청할 때.
 
 ## 스킬 목록
 
+### Spec Kit (GitHub spec-kit v0.12.2)
+
+`specify init` 으로 설치된 스펙 주도 개발(SDD) 워크플로 스킬. 실행에 `.specify/` 디렉터리가 필요하다.
+
 | 스킬 | 설명 |
 |------|------|
-| _(아직 없음)_ | 스킬을 추가하면 이 표에 기록한다 |
+| `speckit-constitution` | 프로젝트 원칙(`.specify/memory/constitution.md`) 작성·개정 |
+| `speckit-specify` | 자연어 기능 설명으로 기능 명세(spec) 작성 |
+| `speckit-clarify` | 명세의 모호한 부분을 구조화된 질문으로 확정 (plan 전, 선택) |
+| `speckit-plan` | 구현 계획(plan) 수립 |
+| `speckit-tasks` | 계획을 실행 가능한 작업 목록으로 분해 |
+| `speckit-analyze` | 산출물 간 일관성·정합성 리포트 (tasks 후, 선택) |
+| `speckit-checklist` | 요구사항 완전성·명확성 검증 체크리스트 생성 (plan 후, 선택) |
+| `speckit-implement` | 작업 목록에 따라 구현 실행 |
+| `speckit-converge` | 코드베이스 현황을 평가해 남은 작업을 tasks에 추가 |
+| `speckit-taskstoissues` | 작업 목록을 이슈로 등록 |
+
+권장 순서: `constitution` → `specify` → (`clarify`) → `plan` → `tasks` → (`analyze`) → `implement`
+
+> Cursor가 슬래시 명령으로 인식하는 경로는 `.cursor/skills/` 이며, `.gitignore` 에서 제외되어 커밋되지 않는다.
+> 여기(`.agent/skills/`)가 커밋 대상 사본이자 기준이다. 한쪽만 수정하면 두 경로가 어긋나므로 함께 갱신한다.
