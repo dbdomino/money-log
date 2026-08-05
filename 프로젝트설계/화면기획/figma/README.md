@@ -27,7 +27,8 @@
 | `02-auth-signup.png` | 회원가입 |
 | `02b-auth-find-id.png` | 아이디 찾기 |
 | `02c-auth-find-password.png` | 비밀번호 찾기 |
-| `02d-auth-reset-password.png` | 비밀번호 변경 |
+| `02d-auth-reset-password.png` | 비밀번호 변경 (입력) |
+| `02e-auth-reset-success.png` | 비밀번호 변경 (성공 안내) |
 | `03-error-forbidden.png` | 권한 없음 |
 | `04-payment-list.png` | 수단 목록 |
 | `04b-payment-create-modal.png` | 수단 등록 모달 |

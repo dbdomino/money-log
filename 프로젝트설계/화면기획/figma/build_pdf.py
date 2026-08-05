@@ -8,6 +8,10 @@ out = root / "money-log-ui-for-figma.pdf"
 order = [
     "01-auth-login.png",
     "02-auth-signup.png",
+    "02b-auth-find-id.png",
+    "02c-auth-find-password.png",
+    "02d-auth-reset-password.png",
+    "02e-auth-reset-success.png",
     "03-error-forbidden.png",
     "04-payment-list.png",
     "04b-payment-create-modal.png",
