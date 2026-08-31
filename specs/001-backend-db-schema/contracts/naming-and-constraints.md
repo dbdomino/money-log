@@ -39,9 +39,9 @@
 | `created_at` | TIMESTAMPTZ | ✗ | 생성 시각 |
 | `updated_at` | TIMESTAMPTZ | ✗ | 최종 수정 시각 |
 | `created_by` | BIGINT | ✗¹ | 만든 회원의 `id_key` |
-| `updated_by` | BIGINT | ✗ | 마지막으로 고친 회원의 `id_key` |
+| `updated_by` | BIGINT | ✗¹ | 마지막으로 고친 회원의 `id_key` |
 
-¹ `tbl_user.created_by`만 NULL 허용 — NULL은 본인 가입, 값이 있으면 그 관리자가 추가한 것.
+¹ `tbl_user`에서만 두 컬럼이 NULL 허용 — 회원가입은 자기 자신을 만드는 행위라 INSERT 시점에 자기 `id_key`가 없다. NULL은 본인 가입/수정, 값이 있으면 그 관리자가 손댄 것.
 
 `created_by`/`updated_by`에는 FK를 걸지 않는다. 감사 기록은 대상 회원의 존재와 무관하게 남아야 하고, `tbl_user`가 자기 자신을 참조하는 순환을 피한다.
 
