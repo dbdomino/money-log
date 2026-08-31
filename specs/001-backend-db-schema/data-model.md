@@ -18,7 +18,9 @@
 
 `created_by`/`updated_by`는 그 행을 만들거나 고친 회원의 `id_key`이며, 소유자 `id_key`와 다를 수 있다.
 
-**예외 1개** — `tbl_user.created_by`는 NULL 허용(회원가입은 자기 자신을 만드는 행위라 INSERT 시점에 `id_key`가 없다). NULL = 본인 가입, 값 있음 = 그 관리자가 추가.
+**예외** — `tbl_user`의 `created_by`와 `updated_by`는 **둘 다** NULL 허용이다. 회원가입은 자기 자신을 만드는 행위라 INSERT 시점에 자기 `id_key`가 없고, 이는 두 컬럼에 똑같이 해당한다. NULL = 본인 가입/본인 수정, 값 있음 = 그 `id_key`를 가진 관리자가 추가·수정(`AdminMemberCreate`/`AdminMemberUpdate`).
+
+**감사 시각 공급자** — 두 시각 컬럼이 `TIMESTAMPTZ`라 필드 타입은 `OffsetDateTime`이다. Spring Data JPA Auditing의 기본 제공자는 `LocalDateTime`을 내놓아 변환에 실패하므로, `OffsetDateTime.now()`를 돌려주는 `DateTimeProvider` 빈을 두고 `@EnableJpaAuditing(dateTimeProviderRef = ...)`으로 연결한다.
 
 ---
 
