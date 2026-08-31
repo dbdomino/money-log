@@ -87,7 +87,7 @@
 | 4.3 | 고정지출 등록 | `FixedExpenseCreate` | `/fixed-expenses?m=create` | 모달 | [4.3-FixedExpenseCreate.md](./phase4-고정지출/4.3-FixedExpenseCreate.md) |
 | 4.4 | 고정지출 상세 | `FixedExpenseDetail` | `/fixed-expenses?m=detail&id={id}` | 모달 | [4.4-FixedExpenseDetail.md](./phase4-고정지출/4.4-FixedExpenseDetail.md) |
 | 4.5 | 고정지출 수정 | `FixedExpenseEdit` | `/fixed-expenses?m=edit&id={id}` | 모달 | [4.5-FixedExpenseEdit.md](./phase4-고정지출/4.5-FixedExpenseEdit.md) |
-| 4.6 | 고정지출 월별 수정 | `FixedExpenseMonthly` | `/fixed-expenses?m=monthly&id={id}` | 모달 | [4.6-FixedExpenseMonthly.md](./phase4-고정지출/4.6-FixedExpenseMonthly.md) |
+| 4.6 | 월별 고정지출 내역 | `FixedExpenseMonthly` | `/fixed-expenses?m=monthly` | 모달 | [4.6-FixedExpenseMonthly.md](./phase4-고정지출/4.6-FixedExpenseMonthly.md) |
 
 ### Phase 5 — 가계부
 
@@ -136,7 +136,7 @@
 | `/fixed-expenses?m=create` | 4.3 | 고정지출 등록 | 모달 |
 | `/fixed-expenses?m=detail&id={id}` | 4.4 | 고정지출 상세 | 모달 |
 | `/fixed-expenses?m=edit&id={id}` | 4.5 | 고정지출 수정 | 모달 |
-| `/fixed-expenses?m=monthly&id={id}` | 4.6 | 고정지출 월별 수정 | 모달 |
+| `/fixed-expenses?m=monthly` | 4.6 | 월별 고정지출 내역 | 모달 |
 | `/ledger` | 5.1 | 월별 가계부 | 페이지 |
 | `/targets/default` | 6.1 | 기본 목표금액 | 페이지 |
 | `/statistics` | 6.2 | 월별 통계 | 페이지 |
