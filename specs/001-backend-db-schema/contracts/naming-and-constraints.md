@@ -1,143 +1,143 @@
-# Contract: Naming and Constraints
+# Contract: 명명 규칙과 제약
 
-## Naming
+**재작성**: 2026-08-31
 
-| Rule | Value |
-|------|-------|
-| Schema | `moneylog` |
-| Table prefix | `tbl_be_` |
-| Column style | snake_case |
-| Member natural key | `member_id` VARCHAR(20) |
-| Money | `BIGINT` (원, 정수) |
-| Timestamps | `TIMESTAMPTZ` |
-| Enums-as-string | `VARCHAR` + 앱 검증 (`CARD`/`ACCOUNT`, `EXPENSE`/`INCOME`, `UNDER`/`OK`/`OVER`) |
+이 기능이 만드는 모든 DB 객체가 지켜야 하는 규칙이다. 위반은 리뷰에서 되돌린다.
 
-## Required FK (DB-enforced)
+## 1. 명명 규칙
 
-| Child | Parent | On delete |
-|-------|--------|-----------|
-| `tbl_be_member_session.member_id` | `tbl_be_member` | RESTRICT |
-| `tbl_be_login_history.member_id` | `tbl_be_member` | RESTRICT |
-| `tbl_be_payment_method.member_id` | `tbl_be_member` | RESTRICT |
-| `tbl_be_expend_group.member_id` | `tbl_be_member` | RESTRICT |
-| `tbl_be_expense.member_id` | `tbl_be_member` | RESTRICT |
-| `tbl_be_expense.payment_method_id` | `tbl_be_payment_method` | RESTRICT |
-| `tbl_be_expense.expend_group_id` | `tbl_be_expend_group` | RESTRICT |
-| `tbl_be_income.member_id` | `tbl_be_member` | RESTRICT |
-| `tbl_be_income.payment_method_id` | `tbl_be_payment_method` | RESTRICT |
-| `tbl_be_fixed_expense.member_id` | `tbl_be_member` | RESTRICT |
-| `tbl_be_fixed_expense_monthly.fixed_expense_id` | `tbl_be_fixed_expense` | **CASCADE** |
-| `tbl_be_fixed_expense_monthly.member_id` | `tbl_be_member` | RESTRICT |
-| target/stat `member_id` | `tbl_be_member` | RESTRICT |
+| 대상 | 규칙 | 예 |
+|------|------|-----|
+| 테이블 | `tbl_user` + 회원 소유 저장 단위는 `tbl_user_<자원명>` | `tbl_user_expend_group` |
+| 자원명 | 명세의 API 자원 이름을 snake_case로 | `/expend-groups` → `expend_group` |
+| 기본키 | `idx`. **`tbl_user`만 `id_key`** | `idx`, `id_key` |
+| 소유자 | `id_key` | `id_key` |
+| 다른 테이블 참조 | `<대상 자원명>_idx` | `expend_group_idx`, `statistics_idx` |
+| 이름 스냅샷 | `<대상 자원명>_name` | `payment_method_name` |
+| 불리언 | 형용사·과거분사 단독 | `active`, `deleted`, `in_use`, `revoked`, `modified` |
+| 시각 | `_at` 접미사 | `created_at`, `saved_at`, `login_at` |
+| 날짜 | `_date` 접미사 또는 의미 그대로 | `payment_date`, `week_start` |
+| 금액 | `amount` 또는 `<수식어>_amount` | `amount`, `target_amount`, `fixed_amount` |
+| 시퀀스 | `seq_<용도>` | `seq_installment_group` |
+| 인덱스 | `ix_<테이블>_<컬럼들>` | `ix_user_expense_id_key_payment_date` |
+| 유니크 인덱스 | `ux_<테이블>_<컬럼들>` | `ux_user_session_active` |
+| CHECK | `ck_<테이블>_<컬럼>` | `ck_user_role` |
 
-## Logical references (no FK)
+**금지**
 
-- `tbl_be_fixed_expense.expend_group_id`
-- `tbl_be_fixed_expense_monthly.expend_group_id`
-- `tbl_be_fixed_expense_monthly.payment_method_id` (설정과 동일 규칙 — 수단 soft-delete와 양립)
-- `tbl_be_expend_target_default.expend_group_id`
-- `tbl_be_expend_target_monthly.expend_group_id`
-- `tbl_be_stat_group.expend_group_id`
-- `tbl_be_stat_method.payment_method_id` (선택: method FK RESTRICT 가능하나 soft-delete·스냅샷과 충돌 시 논리 참조)
+- 레거시 테이블 이름 재사용 — [table-inventory.md](./table-inventory.md) 비겹침 표 참조
+- 자식 테이블에 `user_id`(로그인 아이디) 복사 — 소유자는 `id_key`만
+- 컬럼 이름에 테이블 이름 반복 (`tbl_user_expense.expense_amount` ✗ → `amount` ✓)
+- 따옴표가 필요한 식별자(대문자·공백) — PostgreSQL 소문자 접힘 사고의 원인
 
-근거: Clarification — 지출유형 삭제는 **지출**만 차단.
+## 2. 모든 테이블 공통 컬럼
 
-## Partial unique (PostgreSQL)
+| 컬럼 | 타입 | NULL | 설명 |
+|------|------|:----:|------|
+| `idx` / `id_key` | BIGINT IDENTITY | ✗ | 기본키 |
+| `id_key` | BIGINT | ✗ | 소유 회원 (`tbl_user` 제외) |
+| `created_at` | TIMESTAMPTZ | ✗ | 생성 시각 |
+| `updated_at` | TIMESTAMPTZ | ✗ | 최종 수정 시각 |
+| `created_by` | BIGINT | ✗¹ | 만든 회원의 `id_key` |
+| `updated_by` | BIGINT | ✗ | 마지막으로 고친 회원의 `id_key` |
 
-```sql
--- email
-CREATE UNIQUE INDEX uq_be_member_email
-  ON moneylog.tbl_be_member (email)
-  WHERE email IS NOT NULL;
+¹ `tbl_user.created_by`만 NULL 허용 — NULL은 본인 가입, 값이 있으면 그 관리자가 추가한 것.
 
--- one active session
-CREATE UNIQUE INDEX uq_be_member_active_session
-  ON moneylog.tbl_be_member_session (member_id)
-  WHERE revoked = false;
-```
+`created_by`/`updated_by`에는 FK를 걸지 않는다. 감사 기록은 대상 회원의 존재와 무관하게 남아야 하고, `tbl_user`가 자기 자신을 참조하는 순환을 피한다.
 
-Hibernate `ddl-auto: update`가 부분 유니크를 못 만들면 `sql/04_be_partial_indexes.sql`로 보완하고 덤프에 포함.
+## 3. FK 정책
 
-## Lazy materialize — 월별 고정지출 내역
+| 관계 | 동작 |
+|------|------|
+| 모든 자식 → `tbl_user(id_key)` | `RESTRICT` |
+| 지출·소득·고정지출(관리·월별) → 수단 | `RESTRICT` |
+| 지출·고정지출(관리·월별) → 지출유형 | `RESTRICT` |
+| 목표금액(기본·월별) → 지출유형 | `RESTRICT` |
+| 월별 고정지출 내역 → 고정지출 관리 | **`CASCADE`** |
+| 통계 상세 3종 → 통계 스냅샷 | **`CASCADE`** |
+| 통계 상세 → 지출유형·수단 | **FK 없음** |
+| `created_by` / `updated_by` | FK 없음 |
 
-그 달을 처음 조회할 때 `tbl_be_fixed_expense_monthly` 행을 만든다. 동시 요청에서 중복 INSERT가 나지 않도록 PK에 대한 `ON CONFLICT DO NOTHING`을 쓴다.
+`RESTRICT`가 안전한 이유: 회원·수단·지출유형은 전부 물리 삭제 경로가 없다(정지 플래그 또는 삭제 표시). 삭제 차단 규칙 중 DB가 막을 수 없는 것 — 지출유형의 `3106`·`3107` — 은 애플리케이션이 판정한다.
 
-```sql
-INSERT INTO moneylog.tbl_be_fixed_expense_monthly
-       (fixed_expense_id, year, month, member_id, payment_method_id,
-        amount, payment_date, content, expend_group_id, modified,
-        created_at, updated_at)
-SELECT f.fixed_expense_id, :year, :month, f.member_id, f.payment_method_id,
-       f.amount,
-       -- 말일 보정: 결제일 31 + 2월 → 그 달 마지막 날
-       make_date(:year, :month, 1)
-         + (LEAST(f.payment_day_of_month,
-                  EXTRACT(DAY FROM (make_date(:year, :month, 1)
-                                    + INTERVAL '1 month - 1 day'))::int) - 1),
-       f.content, f.expend_group_id, false, now(), now()
-  FROM moneylog.tbl_be_fixed_expense f
- WHERE f.member_id = :memberId
-   AND (f.start_year * 12 + f.start_month) <= (:year * 12 + :month)
-   AND (:year * 12 + :month) <= (f.end_year * 12 + f.end_month)
-ON CONFLICT (fixed_expense_id, year, month) DO NOTHING;
-```
+## 4. UNIQUE 제약
 
-연·월 비교는 `year * 12 + month` 합성값을 쓴다(research §5와 동일 규칙).
+| 이름 | 테이블 | 대상 | 근거 |
+|------|--------|------|------|
+| `ux_user_user_id` | `tbl_user` | `(user_id)` | FR-010 |
+| `ux_user_email` | `tbl_user` | `(email) WHERE email IS NOT NULL` | FR-012 |
+| `ux_user_session_id` | `tbl_user_session` | `(session_id)` | FR-015 |
+| `ux_user_session_active` | `tbl_user_session` | `(id_key) WHERE revoked = false` | FR-017 |
+| `ux_user_expend_group_name` | `tbl_user_expend_group` | `(id_key, name)` | FR-035 |
+| `ux_user_fixed_expense_monthly` | `tbl_user_fixed_expense_monthly` | `(fixed_expense_idx, year, month)` | FR-053 |
+| `ux_user_target_default` | `tbl_user_expend_target_default` | `(id_key, expend_group_idx)` | FR-070 |
+| `ux_user_target_monthly` | `tbl_user_expend_target_monthly` | `(id_key, year, month, expend_group_idx)` | FR-071 |
+| `ux_user_statistics` | `tbl_user_statistics` | `(id_key, year, month)` | FR-074 |
+| `ux_user_stat_weekly` | `tbl_user_statistics_weekly` | `(statistics_idx, week_index)` | FR-077 |
+| `ux_user_stat_group` | `tbl_user_statistics_expend_group` | `(statistics_idx, expend_group_idx)` | FR-077 |
+| `ux_user_stat_method` | `tbl_user_statistics_payment_method` | `(statistics_idx, payment_method_idx)` | FR-077 |
 
-### 수동 재작성 (FR-049)
+**부분 유니크 2건**(`ux_user_email`, `ux_user_session_active`)은 Hibernate가 만들지 못한다 → §7 보조 DDL.
 
-같은 `(member_id, year, month)`에 대해 위 INSERT에 더해 UPDATE·DELETE를 한 트랜잭션으로 수행한다.
+지출유형 이름 유일성은 삭제 표시된 행을 **포함**한다. 부분 유니크로 삭제분을 빼면 아이콘 파일명 `{user_id}_{유형이름}.png`가 충돌한다.
 
-```sql
--- 1) 관리 테이블 값으로 되맞추기 (modified 행은 :overwriteModified 일 때만)
-UPDATE moneylog.tbl_be_fixed_expense_monthly m
-   SET amount            = f.amount,
-       content           = f.content,
-       payment_method_id = f.payment_method_id,
-       expend_group_id   = f.expend_group_id,
-       payment_date      = make_date(m.year, m.month, 1)
-                             + (LEAST(f.payment_day_of_month,
-                                      EXTRACT(DAY FROM (make_date(m.year, m.month, 1)
-                                                        + INTERVAL '1 month - 1 day'))::int) - 1),
-       modified          = false,
-       updated_at        = now()
-  FROM moneylog.tbl_be_fixed_expense f
- WHERE f.fixed_expense_id = m.fixed_expense_id
-   AND m.member_id = :memberId AND m.year = :year AND m.month = :month
-   AND (m.modified = false OR :overwriteModified);
+## 5. CHECK 제약
 
--- 2) 적용 기간에서 빠진 달의 내역 제거 (관리 행 삭제분은 FK CASCADE가 처리)
-DELETE FROM moneylog.tbl_be_fixed_expense_monthly m
- USING moneylog.tbl_be_fixed_expense f
- WHERE f.fixed_expense_id = m.fixed_expense_id
-   AND m.member_id = :memberId AND m.year = :year AND m.month = :month
-   AND (   (:year * 12 + :month) < (f.start_year * 12 + f.start_month)
-        OR (:year * 12 + :month) > (f.end_year   * 12 + f.end_month));
+| 이름 | 대상 | 조건 |
+|------|------|------|
+| `ck_user_role` | `tbl_user.role` | `IN (1, 3)` |
+| `ck_payment_method_type` | `tbl_user_payment_method.type` | `IN ('CARD','ACCOUNT')` |
+| `ck_payment_method_purpose` | `tbl_user_payment_method.purpose` | `IN ('EXPENSE','INCOME')` |
+| `ck_expense_amount` | `tbl_user_expense.amount` | `> 0` |
+| `ck_expense_installment_index` | `tbl_user_expense.installment_index` | `IS NULL OR >= 1` |
+| `ck_expense_installment_total` | `tbl_user_expense.installment_total` | `IS NULL OR >= 2` |
+| `ck_income_amount` | `tbl_user_income.amount` | `> 0` |
+| `ck_fixed_expense_amount` | `tbl_user_fixed_expense.amount` | `> 0` |
+| `ck_fixed_expense_day` | `tbl_user_fixed_expense.payment_day_of_month` | `BETWEEN 1 AND 31` |
+| `ck_fixed_expense_start_month` | `tbl_user_fixed_expense.start_month` | `BETWEEN 1 AND 12` |
+| `ck_fixed_expense_end_month` | `tbl_user_fixed_expense.end_month` | `BETWEEN 1 AND 12` |
+| `ck_fixed_expense_period` | `tbl_user_fixed_expense` | `end_year * 12 + end_month >= start_year * 12 + start_month` |
+| `ck_fixed_monthly_amount` | `tbl_user_fixed_expense_monthly.amount` | `> 0` |
+| `ck_fixed_monthly_month` | `tbl_user_fixed_expense_monthly.month` | `BETWEEN 1 AND 12` |
+| `ck_target_default_amount` | `tbl_user_expend_target_default.target_amount` | `BETWEEN 0 AND 100000000` |
+| `ck_target_monthly_amount` | `tbl_user_expend_target_monthly.target_amount` | `BETWEEN 0 AND 100000000` |
+| `ck_target_monthly_month` | `tbl_user_expend_target_monthly.month` | `BETWEEN 1 AND 12` |
+| `ck_statistics_month` | `tbl_user_statistics.month` | `BETWEEN 1 AND 12` |
+| `ck_stat_weekly_index` | `tbl_user_statistics_weekly.week_index` | `>= 1` |
+| `ck_stat_group_status` | `tbl_user_statistics_expend_group.status` | `IN ('UNDER','OK','OVER')` |
 
--- 3) 신규/누락분 채우기 → 위 "Lazy materialize" INSERT 재사용
-```
+**금액 상한**: 목표금액에만 명세상 상한(1억)이 있다. 지출·소득·고정지출 금액에는 상한을 두지 않는다(FR·spec Assumptions).
 
-세 단계의 대상 집합은 서로 겹치지 않는다(UPDATE·DELETE는 기존 행, INSERT는 없는 행 / DELETE는 기간 밖, INSERT는 기간 안). 다만 **한 트랜잭션**으로 묶어 중간 상태가 조회되지 않게 한다.
+## 6. 인덱스
 
-## Soft delete
+| 이름 | 테이블 | 컬럼 | 쓰이는 API |
+|------|--------|------|-----------|
+| `ix_user_expense_date` | `tbl_user_expense` | `(id_key, payment_date)` | 4.8, 5.5 |
+| `ix_user_expense_installment` | `tbl_user_expense` | `(installment_group_id, payment_date)` | 3.6 |
+| `ix_user_income_date` | `tbl_user_income` | `(id_key, payment_date)` | 4.8, 5.5 |
+| `ix_user_fixed_expense_period` | `tbl_user_fixed_expense` | `(id_key, start_year, start_month, end_year, end_month)` | 4.5, 4.9 |
+| `ix_user_fixed_monthly_ym` | `tbl_user_fixed_expense_monthly` | `(id_key, year, month)` | 4.5, 4.8, 4.9 |
+| `ix_user_payment_method_active` | `tbl_user_payment_method` | `(id_key, purpose, in_use, deleted)` | 2.6 |
+| `ix_user_expend_group_active` | `tbl_user_expend_group` | `(id_key, in_use, deleted)` | 2.13 |
+| `ix_user_login_history_at` | `tbl_user_login_history` | `(id_key, login_at)` | 이력 조회 |
 
-| Table | Mechanism |
-|-------|-----------|
-| `tbl_be_payment_method` | `deleted BOOLEAN` — 물리 DELETE 금지 |
-| Others (expense, income, group, fixed…) | 물리 DELETE |
+`keyword`(장소·내용 부분 일치)용 인덱스는 두지 않는다 — 월 범위로 먼저 좁히므로 대상 행이 적다.
 
-## Snapshot columns (required where listed)
+## 7. 스키마 반영 경계
 
-| Table | Snapshot columns |
-|-------|------------------|
-| `tbl_be_expense` | `payment_method_name`, `expend_group_name` |
-| `tbl_be_income` | `payment_method_name` |
-| `tbl_be_stat_group` | `expend_group_name` |
-| `tbl_be_stat_method` | `payment_method_name` |
-| `tbl_be_fixed_expense` | **없음** |
-| `tbl_be_fixed_expense_monthly` | **없음** — 조회 시 원본 수단·유형 이름 join |
+| 만드는 주체 | 대상 |
+|-------------|------|
+| **Hibernate `ddl-auto: update`** | 테이블, 컬럼, 타입, NOT NULL, PK, FK, 일반 인덱스, 조건 없는 UNIQUE |
+| **보조 DDL `sql/04_constraints.sql`** | 부분 유니크 2건, CHECK 20건, 시퀀스 `seq_installment_group` |
 
-## Parallel spec revision (not schema DDL)
+보조 DDL은 **멱등**해야 한다 — `CREATE UNIQUE INDEX IF NOT EXISTS`, `CREATE SEQUENCE IF NOT EXISTS`, CHECK는 존재 확인 후 `ALTER TABLE ... ADD CONSTRAINT`. `ddl-auto: update` 환경에서 반복 실행되기 때문이다.
 
-- `PaymentMethodCreate` / `Update`: Body `purpose` (`EXPENSE`|`INCOME`)
-- purpose 변경: 참조 expense/income 0건일 때만
+반영 순서: 앱 기동(Hibernate) → `04_constraints.sql` 실행 → `pg_dump` 재생성.
+
+## 8. 덤프 규칙 (헌장 VI)
+
+- 스키마가 바뀌면 `sql/schema-moneylogdb.sql`을 재생성해 **같은 커밋에 포함**한다
+- 재생성 명령과 옵션은 헌장 원칙 VI를 그대로 따른다(`--no-owner --no-privileges --restrict-key=moneylogdumpkey`)
+- 이 파일을 손으로 편집하지 않는다
+- **시드 데이터 없음** — 기본 지출유형 10종은 회원마다 생기는 데이터라 `--data-only` 덧붙이기를 하지 않는다
+- 회원·거래 실데이터는 한 건도 포함하지 않는다

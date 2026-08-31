@@ -1,20 +1,139 @@
-# Quickstart: 001-backend-db-schema
+# Quickstart: 저장 구조 검증
 
-영속 계층(Entity·제약·덤프)이 스펙대로인지 검증하는 실행 가이드. API 구현·전체 테스트 스위트는 포함하지 않는다.
+**재작성**: 2026-08-31
 
-## Prerequisites
+이 기능이 "끝났다"를 확인하는 절차다. API는 아직 없으므로 **스키마 반영 + SQL 검증 + Entity 매핑 테스트**로 확인한다. 구현 순서는 `tasks.md`(`/speckit-tasks`)가 정한다.
 
-- PostgreSQL 18 로컬: DB `moneylogdb`, user `moneyloguser`, schema `moneylog`
-- 초기 스크립트 적용됨: `sql/01_create_user.sql` → `02_create_database.sql` → `03_create_schema.sql`
-- JDK 17, Gradle Wrapper
-- 상세 모델: [data-model.md](./data-model.md) · 계약: [contracts/](./contracts/)
+## 사전 조건
 
-## Setup
+| 항목 | 확인 |
+|------|------|
+| PostgreSQL 18 기동 | `moneylogdb` / 스키마 `moneylog` / 사용자 `moneyloguser` |
+| 초기 스크립트 | `sql/01_create_user.sql` → `02_create_database.sql` → `03_create_schema.sql` 실행 완료 |
+| JDK 17 | `java -version` |
+| 아이콘 템플릿 | `app-mod/money-backend-app/src/main/resources/seed/expend-group-icons/` 에 10개 PNG (커밋되어 있음) |
 
-1. `data-mod`에 `tbl_be_*` Entity·Repository 추가 (plan 구조).
-2. `money-backend-app`을 `spring.profiles.active=postgresql`로 기동해 `ddl-auto: update` 반영.
-3. 부분 유니크 인덱스가 자동 생성되지 않으면 [contracts/naming-and-constraints.md](./contracts/naming-and-constraints.md) SQL을 실행.
-4. 스키마 덤프 재생성 (헌장 VI):
+## 1. 스키마 반영
+
+Entity가 `data-mod`에 들어간 뒤 백엔드 앱을 한 번 기동하면 Hibernate가 테이블을 만든다.
+
+```bash
+./gradlew :app-mod:money-backend-app:bootRun
+# 기동 로그에 create table 확인 후 종료
+```
+
+이어서 Hibernate가 만들지 못하는 제약을 적용한다.
+
+```powershell
+$env:PGPASSWORD='1q2w3e4r'
+& "C:\Program Files\PostgreSQL\18\bin\psql.exe" -h localhost -U moneyloguser -d moneylogdb -f sql\04_constraints.sql
+```
+
+`04_constraints.sql`은 멱등하므로 두 번 실행해도 오류가 나지 않아야 한다 — **이것도 검증 항목이다.**
+
+## 2. 스키마 검증 (SQL)
+
+### 2-1. 테이블 15개
+
+```sql
+SELECT tablename FROM pg_tables
+WHERE schemaname = 'moneylog' AND tablename LIKE 'tbl_user%'
+ORDER BY tablename;
+```
+
+기대: 15행. 목록은 [contracts/table-inventory.md](./contracts/table-inventory.md)와 일치.
+
+### 2-2. 레거시 이름 비겹침
+
+```sql
+SELECT tablename FROM pg_tables
+WHERE schemaname = 'moneylog'
+  AND tablename IN ('tbl_member','tbl_login_history','tbl_payment_method',
+                    'tbl_card','tbl_expend','tbl_expend_group','tbl_expend_fix',
+                    'tbl_ammount','tbl_system_stat');
+```
+
+기대: **0행** (이 기능은 레거시 이름을 만들지 않는다).
+
+### 2-3. 기본키 규칙
+
+```sql
+SELECT c.relname AS table_name, a.attname AS pk_column
+FROM pg_index i
+JOIN pg_class c ON c.oid = i.indrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = ANY(i.indkey)
+WHERE i.indisprimary AND n.nspname = 'moneylog' AND c.relname LIKE 'tbl_user%'
+ORDER BY 1;
+```
+
+기대: `tbl_user` → `id_key`, 나머지 14개 → `idx`.
+
+### 2-4. 감사 컬럼 4종
+
+```sql
+SELECT table_name, count(*) FILTER (
+  WHERE column_name IN ('created_at','updated_at','created_by','updated_by')
+) AS audit_cols
+FROM information_schema.columns
+WHERE table_schema = 'moneylog' AND table_name LIKE 'tbl_user%'
+GROUP BY table_name HAVING count(*) FILTER (
+  WHERE column_name IN ('created_at','updated_at','created_by','updated_by')
+) <> 4;
+```
+
+기대: **0행** (모든 테이블이 4개를 다 갖는다).
+
+### 2-5. 부분 유니크 인덱스 2건
+
+```sql
+SELECT indexname, indexdef FROM pg_indexes
+WHERE schemaname = 'moneylog' AND indexdef LIKE '%WHERE%';
+```
+
+기대: `ux_user_email`(`WHERE email IS NOT NULL`), `ux_user_session_active`(`WHERE revoked = false`).
+
+### 2-6. 통계 상세의 FK 부재
+
+```sql
+SELECT conname, conrelid::regclass FROM pg_constraint
+WHERE contype = 'f'
+  AND conrelid::regclass::text LIKE '%statistics_expend_group%'
+   OR conrelid::regclass::text LIKE '%statistics_payment_method%';
+```
+
+기대: `statistics_idx` FK 각 1건씩만. `expend_group_idx`·`payment_method_idx` FK는 **없어야** 한다(FR-078a).
+
+## 3. 동작 검증 시나리오 (SQL 또는 통합 테스트)
+
+Spec의 Acceptance Scenarios를 저장 구조 수준에서 확인한다. 각 항목은 통합 테스트 1건으로 옮길 수 있다.
+
+| # | 시나리오 | 기대 | Spec |
+|---|----------|------|------|
+| 1 | 같은 `user_id`로 회원 2건 INSERT | 두 번째 실패 | US1-2 |
+| 2 | `email = NULL` 회원 2건 INSERT | 둘 다 성공 | US1-3, Edge |
+| 3 | 같은 이메일 값으로 회원 2건 | 두 번째 실패 | US1-3 |
+| 4 | 한 회원에 `revoked=false` 세션 2건 | 두 번째 실패 | US1-5, FR-017 |
+| 5 | 세션 폐기 후 새 세션 INSERT | 성공, 활성 1건 | US1-5 |
+| 6 | 수단 `deleted=true`로 UPDATE 후 그 수단을 쓴 지출 조회 | `payment_method_name` 그대로 읽힘 | US2-3 |
+| 7 | 같은 회원·같은 이름 지출유형 2건 | 두 번째 실패. 다른 회원은 성공 | US2-5 |
+| 8 | 지출유형 `deleted=true` 후 목표금액 조회 | 목표금액 행·참조 유지 | US2-8, FR-038 |
+| 9 | 12개월 할부 12행 INSERT (같은 group id, index 1~12) | 성공 | US3-4 |
+| 10 | `payment_date > CURRENT_DATE` 조건 삭제 | 오늘·과거 회차는 남음 | US3-5, FR-045 |
+| 11 | 같은 `(fixed_expense_idx, year, month)` 2건 | 두 번째 실패 | US4-3, FR-053 |
+| 12 | 같은 조합 동시 INSERT (`ON CONFLICT DO NOTHING`) | 1건만 남음 | Edge, FR-054 |
+| 13 | 고정지출 관리 행 DELETE | 그 월별 내역 전부 함께 삭제 | US4-6, FR-059 |
+| 14 | 같은 `(id_key, year, month)` 통계 2건 | 두 번째 실패 | US5-6, FR-074 |
+| 15 | 통계 저장 후 지출유형 행 DELETE 시도 | 지출 FK RESTRICT로 막히거나, 통계 요약은 무관하게 남음 | FR-078a |
+| 16 | 통계 스냅샷 DELETE | 상세 3종 함께 삭제 | CASCADE |
+| 17 | `role = 2`로 회원 INSERT | CHECK 위반 | FR-013 |
+| 18 | `target_amount = 100000001` INSERT | CHECK 위반 | FR-070 |
+| 19 | `month = 13` INSERT | CHECK 위반 | research §6 |
+| 20 | 어떤 테이블이든 `created_by` 없이 INSERT | NOT NULL 위반 (`tbl_user` 제외) | FR-004 |
+
+**권장 형태**: `@SpringBootTest` + `@Transactional` 통합 테스트. 제약 위반은 `DataIntegrityViolationException`으로 잡는다. 동시 INSERT(#12)는 별도 트랜잭션 2개가 필요하므로 `@Transactional` 밖에서 돌린다.
+
+## 4. 덤프 재생성 (헌장 VI)
 
 ```powershell
 $env:PGPASSWORD='1q2w3e4r'
@@ -23,90 +142,25 @@ $env:PGPASSWORD='1q2w3e4r'
   --restrict-key=moneylogdumpkey -f sql\schema-moneylogdb.sql
 ```
 
-## Validation scenarios
+**시드 데이터 덧붙이기는 하지 않는다** — 기본 지출유형 10종은 회원마다 생기는 데이터라 마스터가 아니다.
 
-### V1 — 테이블 인벤토리
+재생성 후 확인:
 
-**Steps**: 덤프 또는 `\dt moneylog.tbl_be_*`로 15개 테이블 존재 확인.
+```powershell
+Select-String -Path sql\schema-moneylogdb.sql -Pattern 'CREATE TABLE' | Measure-Object
+# 15
+Select-String -Path sql\schema-moneylogdb.sql -Pattern 'INSERT INTO' | Measure-Object
+# 0  ← 실데이터·시드 없음
+```
 
-**Expect**: [contracts/table-inventory.md](./contracts/table-inventory.md) 목록과 일치. 레거시 이름과 충돌 없음.
+## 5. 완료 판정
 
-### V2 — 회원·이메일·세션 제약
-
-**Steps** (psql 또는 통합 테스트):
-
-1. `member_id=alice` 회원 insert 성공.
-2. 동일 `member_id` 재 insert → 실패.
-3. `email=NULL`인 회원 2명 insert → 성공.
-4. 동일 non-null email 2번째 → 실패.
-5. 활성 세션 2건 동일 member → 두 번째 실패(또는 첫 revoke 후 성공).
-
-**Expect**: FR-010·012·017.
-
-### V3 — 지출유형 유일·삭제
-
-**Steps**:
-
-1. 같은 member에 name=`식비` 두 번 → 두 번째 실패.
-2. 지출 없이 비기본 유형 delete → 성공.
-3. 지출이 참조하는 유형 delete → FK/앱 거부.
-4. 고정지출(관리·월별 내역)만 참조하는 유형 delete → **허용**(Clarification Q1; 논리 참조).
-
-### V4 — 스냅샷 vs 고정지출
-
-**Steps**:
-
-1. 지출 저장 후 수단 이름 변경 → 지출 행의 `payment_method_name` 불변.
-2. 고정지출 설정 후 수단 이름 변경 → 조회 시 **새 이름**(관리·월별 내역 모두 스냅샷 컬럼 없음).
-
-### V4-1 — 고정지출 3분할·월별 내역
-
-**Steps**:
-
-1. 적용 기간 2026-01~2026-12인 고정지출 1건 저장 → `tbl_be_fixed_expense_monthly` **0행**.
-2. 2026-03 조회(=materialize) → 내역 1행. `payment_date`가 2026-03 안의 날짜, `modified=false`.
-3. 같은 2026-03을 다시 조회 → 여전히 1행(`ON CONFLICT DO NOTHING`).
-4. 매달 결제일 31인 고정지출로 2026-02 materialize → `payment_date = 2026-02-28`.
-5. 2025-12(기간 밖) materialize → 그 고정지출 행 없음.
-6. 2026-03 내역의 금액 수정 → `modified=true`. 관리 테이블 금액 변경 → 2026-03은 **불변**, 아직 안 만든 2026-04는 새 금액으로 생성.
-7. 2026-03에 수동 재작성(기본) → `modified=true` 행 보존. `overwriteModified=true` → 관리 값으로 되돌아가고 `modified=false`.
-8. 고정지출을 새로 1건 등록한 뒤 이미 연 2026-03에 수동 재작성 → 그 달 내역 1행 추가.
-9. 관리 행 삭제 → 그 고정지출의 월별 내역 전부 삭제(CASCADE).
-
-**Expect**: FR-042~FR-049.
-
-### V4-2 — 고정지출·일반지출 분리 조회
-
-**Steps**: 같은 회원·같은 달에 일반 지출 2건(`tbl_be_expense`), 소득 1건(`tbl_be_income`), 고정지출 내역 2건(`tbl_be_fixed_expense_monthly`) 저장.
-
-**Expect**: 세 테이블을 각각 `member_id + 연월`로 조회해 2 / 1 / 2건이 나온다. `tbl_be_expense`에 고정지출 행이 **섞여 있지 않다**(FR-042).
-
-### V5 — 할부·중도상환
-
-**Steps**:
-
-1. 12개월 할부 → 12행, 동일 `installment_group_id`.
-2. `payment_date > today` 행만 삭제하는 중도상환 → 오늘·과거 행 잔존.
-
-### V6 — 아이콘 시드 파일
-
-**Steps**: `app-mod/money-backend-app/src/main/resources/seed/expend-group-icons/`에 10개 PNG, 각 30×30.
-
-**Expect**: 식비·교통·주거·통신·쇼핑·장보기·의료·교육·문화·기타.
-
-### V7 — 덤프 청결
-
-**Steps**: `schema-moneylogdb.sql`에서 `INSERT INTO moneylog.tbl_be_member` 등 실데이터 검색.
-
-**Expect**: 매칭 없음(또는 마스터 시드만; 회원·거래 없음).
-
-## Out of scope here
-
-- REST API 호출·JWT 발급 E2E (월별 고정지출 내역 **수동 재작성**·**단건 수정** API 구현 포함 — 본 기능은 그 저장 구조만 확정)
-- `PaymentMethodCreate` 명세 개정 문서 작업(병행 과제)
-- 고정지출 4.x API 명세 개정(병행 과제, research §13·§14)
-- Flyway 마이그레이션 도입
-
-## Next
-
-`/speckit-tasks`로 Entity·인덱스·덤프 작업을 태스크로 분해한다.
+- [ ] `tbl_user*` 테이블 15개 + 시퀀스 `seq_installment_group` 생성됨
+- [ ] 레거시 이름 테이블 0건 (§2-2)
+- [ ] PK 규칙 통과 — `tbl_user`만 `id_key` (§2-3)
+- [ ] 15개 전부 감사 컬럼 4종 보유 (§2-4)
+- [ ] 부분 유니크 2건 존재 (§2-5)
+- [ ] 통계 상세의 유형·수단 FK 없음 (§2-6)
+- [ ] `04_constraints.sql` 두 번 실행해도 오류 없음
+- [ ] §3 시나리오 20건 통과
+- [ ] `sql/schema-moneylogdb.sql` 재생성 + 같은 커밋 포함, `INSERT INTO` 0건
