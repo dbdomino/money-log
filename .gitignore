@@ -275,7 +275,4 @@ gradle-app.setting
 # Java heap dump
 *.hprof
 
-.claude
-.cursor
-
 # End of https://www.toptal.com/developers/gitignore/api/intellij,eclipse,java,maven,gradle
