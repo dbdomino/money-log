@@ -1,7 +1,7 @@
 # Specification Quality Checklist: 백엔드 API를 지탱하는 DB 테이블 구성
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-08-05
+**Created**: 2026-08-31 (기능명세 개정 반영 재작성)
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -31,12 +31,7 @@
 
 ## Notes
 
-- 2차 검증(2026-08-07): 사용자 설문 답변을 반영해 [NEEDS CLARIFICATION] 3건을 해소했다.
-  - **FR-008**: 신규 테이블은 `tbl_` 접두사, 레거시와 이름 비겹침(공존).
-  - **FR-019**: 기본 지출유형 10종(식비·교통·주거·통신·쇼핑·장보기·의료·교육·문화·기타).
-  - **FR-023**: 수단 용도 1개(`EXPENSE` 또는 `INCOME`). `PaymentMethodCreate` 명세 개정은 병행·후속.
-- 3차 검증(`/speckit-clarify`, 2026-08-07): Clarifications 세션 5문 반영. 체크리스트 16/16 유지.
-  - 지출유형 삭제 차단 = 지출만; 중도상환 = `paymentDate` > 오늘; purpose 변경 = 참조 없을 때만; 고정지출 이름 = 조회 시 원본; 기본 아이콘 10종 30×30 시드.
-  - (2026-08-29) 고정지출 3분할 = 관리 / 월별 고정지출 내역 / 월별 수입·지출 내역; 월별 내역은 그 달 최초 조회 시 생성(lazy); 예외 테이블 폐기; 수동 재작성·단건 수정 지원.
-- 물리 명칭·자료형·인덱스는 `/speckit-plan` 단계에서 확정한다.
-- Checklist 전 항목 통과. `/speckit-plan` 진행 가능.
+- 이 기능은 **DB 저장 구조 확정**이 대상이므로, 저장 단위·항목·제약을 다루는 서술은 구현 세부가 아니라 이 기능의 산출물 자체로 본다. 물리 테이블·컬럼 이름, 타입, 인덱스는 spec에 넣지 않고 `/speckit-plan`에서 확정한다.
+- 식별자·명명 규칙(FR-008·FR-009)은 2026-08-31 clarification 결과다 — 기본키는 `idx`, 회원만 `id_key` + `user_id`, 자식은 `id_key` 참조, 테이블 이름은 레거시와 겹치지 않게 신규 명명(회원 `tbl_user`, 세션 `tbl_user_session`). 재작성 직후 잠정 채택했던 "레거시 이름 계승" 방침은 폐기되었다.
+- 병행 문서 개정 과제 3건이 Assumptions에 기록되어 있다 — ① `PaymentMethodCreate`/`Update` Body에 `purpose` 추가, ② `MemberSignup` 문서의 기본 지출유형 10종 목록 명시, ③ `_공통.md`의 `tbl_member`·`tbl_member_session` 표기를 `tbl_user`·`tbl_user_session`으로 갱신. 세 건 모두 저장 구조는 이 spec으로 확정되어 있어 planning을 막지 않는다.
+- **주의**: 같은 디렉터리의 `plan.md`·`data-model.md`·`research.md`·`quickstart.md`·`contracts/`는 이전 판 spec을 기준으로 만들어진 산출물이라 FR 번호·FR-008 방침이 어긋난다. `/speckit-plan`을 다시 실행해 갱신해야 한다.
