@@ -39,11 +39,11 @@ Controller·Service·DTO는 이 기능에서 만들지 않는다.
 
 **Purpose**: 패키지 구조·빌드 의존성 준비와, 실환경 점검에서 드러난 테스트 빌드 복구
 
-- [ ] T001 `data-mod/src/main/java/com/dbdomino/moneylog/data/` 아래에 `entity/`, `repository/`, `config/` 디렉터리를 만들고 각각 `package-info.java`를 둔다
-- [ ] T002 루트 `build.gradle`의 `project(':data-mod')` 블록에 `spring-boot-starter-data-jpa`·`org.postgresql:postgresql`·`spring-boot-starter-test`가 있는지 확인한다(현재 셋 다 존재). 없으면 추가한다
+- [x] T001 **(완료 — 2026-09-01)** `data-mod/src/main/java/com/dbdomino/moneylog/data/` 아래에 `entity/`, `repository/`, `config/` 디렉터리를 만들고 각각 `package-info.java`를 둔다. 각 `package-info.java`에 그 패키지의 규칙을 적었다 — entity는 명명·PK·소유자 규칙, repository는 스캔 경로와 호출 경계, config는 datasource 설정이 여기 있지 않다는 점
+- [x] T002 **(완료 — 2026-09-01)** 루트 `build.gradle`의 `project(':data-mod')` 블록에 `spring-boot-starter-data-jpa`·`org.postgresql:postgresql`·`spring-boot-starter-test`가 있는지 확인한다. **셋 다 이미 존재해 변경하지 않았다.** `postgresql`이 `runtimeOnly`지만 Gradle이 `testRuntimeOnly`를 `runtimeOnly`로부터 상속시키므로 테스트 런타임에서도 드라이버가 잡힌다
 - [x] T003 **(완료 — 2026-08-31)** 루트 `build.gradle`의 `project(':app-mod:money-backend-app')` 블록에 `testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'`를 추가해 **테스트 소스셋 컴파일을 복구**한다. Spring Boot 4.0에서 테스트 자동설정이 기술별 모듈로 쪼개지면서 `spring-boot-starter-test`가 더는 MockMvc 자동설정을 끌어오지 않는다 — `spring-boot-test-autoconfigure-4.1.0.jar`에 MockMvc 클래스가 한 건도 없고(3.2.2 jar에는 `.../test/autoconfigure/web/servlet/AutoConfigureMockMvc.class`가 있다), BOM 4.1.0은 `spring-boot-webmvc-test`와 그 스타터 `spring-boot-starter-webmvc-test`를 별도 아티팩트로 둔다. 그래서 현재 `app-mod/money-backend-app/src/test/java/com/dbdomino/moneylog/backend/controller/HealthControllerTest.java`가 `package org.springframework.boot.webmvc.test.autoconfigure does not exist`로 실패하고, 이 오류 하나가 테스트 소스셋 전체 컴파일을 막아 **검증 테스트를 한 건도 실행할 수 없다.** **검증 완료**: 스타터를 붙인 뒤 `compileTestJava` BUILD SUCCESSFUL, `:app-mod:money-backend-app:test`도 2건(`MoneyBackendApplicationTests.contextLoads`, `HealthControllerTest.healthReturnsResCode200`) 전부 통과했다. `contextLoads`가 `@ActiveProfiles("postgresql")`로 도는 만큼 **테스트 하네스 안에서도 실제 PostgreSQL 연결이 성립**한다는 뜻이다. T002와 같은 파일을 고치므로 순차 실행한다
-- [ ] T004 [P] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/` 디렉터리를 만든다
-- [ ] T005 [P] `sql/04_constraints.sql`을 멱등 골격으로 새로 만든다 — 파일 머리에 "이 스크립트는 반복 실행된다. 모든 문장은 `IF NOT EXISTS` 또는 존재 확인 후 `ALTER`여야 한다"는 규칙 주석과 CHECK 추가용 `DO $$ ... EXCEPTION WHEN duplicate_object THEN NULL; END $$;` 패턴 예시를 넣는다
+- [x] T004 **(완료 — 2026-09-01)** [P] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/` 디렉터리를 만든다. 빈 디렉터리는 git이 추적하지 않으므로 `.gitkeep`을 함께 뒀다 — T011이 첫 테스트 파일을 놓으면 지운다
+- [x] T005 **(완료 — 2026-09-01)** [P] `sql/04_constraints.sql`을 멱등 골격으로 새로 만든다 — 반복 실행 규칙, 여기에 넣을 것/넣지 않을 것, 복사해 쓸 멱등 패턴 3종(부분 유니크·CHECK `duplicate_object`·시퀀스), 그리고 US1~US5가 채울 5개 절을 제약 이름·조건·FR 번호와 함께 미리 뼈대로 넣었다. `SET client_encoding = 'UTF8'`과 `SET search_path TO moneylog`로 시작한다. **2회 연속 실행해 둘 다 exit=0 확인** (T058의 최종 검증은 제약이 다 채워진 뒤 다시 한다)
 
 ---
 
