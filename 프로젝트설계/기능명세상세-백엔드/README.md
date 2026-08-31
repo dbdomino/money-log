@@ -88,10 +88,11 @@
 | 4.2 | 고정지출 설정 목록 | `FixedExpenseList` | [4.2-FixedExpenseList.md](./phase4-가계부/4.2-FixedExpenseList.md) |
 | 4.3 | 고정지출 상세 조회 | `FixedExpenseGet` | [4.3-FixedExpenseGet.md](./phase4-가계부/4.3-FixedExpenseGet.md) |
 | 4.4 | 고정지출 기본값 수정 | `FixedExpenseUpdate` | [4.4-FixedExpenseUpdate.md](./phase4-가계부/4.4-FixedExpenseUpdate.md) |
-| 4.5 | 고정지출 월별 수정 조회 | `FixedExpenseMonthlyOverrideGet` | [4.5-FixedExpenseMonthlyOverrideGet.md](./phase4-가계부/4.5-FixedExpenseMonthlyOverrideGet.md) |
-| 4.6 | 고정지출 월별 수정 저장 | `FixedExpenseMonthlyOverrideUpsert` | [4.6-FixedExpenseMonthlyOverrideUpsert.md](./phase4-가계부/4.6-FixedExpenseMonthlyOverrideUpsert.md) |
+| 4.5 | 월별 고정지출 내역 목록 조회 | `FixedExpenseMonthlyList` | [4.5-FixedExpenseMonthlyList.md](./phase4-가계부/4.5-FixedExpenseMonthlyList.md) |
+| 4.6 | 월별 고정지출 내역 단건 수정 | `FixedExpenseMonthlyUpdate` | [4.6-FixedExpenseMonthlyUpdate.md](./phase4-가계부/4.6-FixedExpenseMonthlyUpdate.md) |
 | 4.7 | 고정지출 삭제 | `FixedExpenseDelete` | [4.7-FixedExpenseDelete.md](./phase4-가계부/4.7-FixedExpenseDelete.md) |
 | 4.8 | 월별 가계부 목록 조회 | `LedgerMonthlyList` | [4.8-LedgerMonthlyList.md](./phase4-가계부/4.8-LedgerMonthlyList.md) |
+| 4.9 | 월별 고정지출 내역 수동 재작성 | `FixedExpenseMonthlySync` | [4.9-FixedExpenseMonthlySync.md](./phase4-가계부/4.9-FixedExpenseMonthlySync.md) |
 
 
 ### Phase 5 — 목표금액·통계
