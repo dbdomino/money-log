@@ -45,5 +45,5 @@ description: 무엇을 하는지. Use when 사용자가 ~를 요청할 때.
 
 권장 순서: `constitution` → `specify` → (`clarify`) → `plan` → `tasks` → (`analyze`) → `implement`
 
-> Cursor가 슬래시 명령으로 인식하는 경로는 `.cursor/skills/` 이며, `.gitignore` 에서 제외되어 커밋되지 않는다.
-> 여기(`.agent/skills/`)가 커밋 대상 사본이자 기준이다. 한쪽만 수정하면 두 경로가 어긋나므로 함께 갱신한다.
+> 슬래시 명령으로 인식되는 경로는 Cursor가 `.cursor/skills/`, Claude Code가 `.claude/skills/` 이며 둘 다 `.gitignore` 대상이라 커밋되지 않는다.
+> 여기(`.agent/skills/`)가 커밋 대상이자 기준이다. `pwsh .agent/scripts/link-skills.ps1` 로 두 경로에 정션을 걸어 두면 여기만 고쳐도 양쪽에 반영된다. 자세한 내용은 [../README.md](../README.md#ai-도구와의-연결).
