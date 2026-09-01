@@ -205,7 +205,7 @@ Spec: FR-050, FR-051, FR-058, FR-059 · Entity #8
 
 **규칙**
 - **수단 이름·유형 이름 스냅샷 컬럼이 없다.** 조회 시 원본의 현재 이름을 읽는다(FR-050)
-- 종료 연월 > 시작 연월. `year * 12 + month` 합성값으로 비교한다(FR-051)
+- 종료 연월 >= 시작 연월. `year * 12 + month` 합성값으로 비교한다 — 연과 월을 따로 비교하면 해를 넘기는 구간에서 조건이 어긋난다(FR-051). 시작과 종료가 같은 **한 달짜리 고정지출은 허용된다**. 제약 이름과 식은 [contracts/naming-and-constraints.md](./contracts/naming-and-constraints.md) §5의 `ck_fixed_expense_period`가 기준이다
 - 이 행이 삭제되면 그 고정지출의 월별 내역이 지난 달 포함 전부 함께 사라진다 — FK CASCADE(FR-059)
 - 값을 바꿔도 이미 만들어진 월별 내역은 **미래 달 + `modified = false`** 인 것만 따라간다(FR-058). 애플리케이션 로직
 

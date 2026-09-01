@@ -116,25 +116,125 @@ END $$;
 -- ============================================================================
 -- US3 — 지출 · 소득 · 할부 (tasks.md T035)
 -- ============================================================================
--- seq_installment_group         : 할부 그룹 식별자 발급          — FR-044
--- ck_expense_amount             : amount > 0                    — FR-040
--- ck_expense_installment_index  : IS NULL OR >= 1               — FR-043
--- ck_expense_installment_total  : IS NULL OR >= 2               — FR-043
--- ck_income_amount              : amount > 0                    — FR-046
--- (T035 에서 채운다)
+-- 할부 그룹 식별자는 한 행이 아니라 그 할부의 N개 행이 함께 쓰는 값이다. 행마다
+-- 발급되면 안 되므로 Entity 의 @GeneratedValue 가 아니라 시퀀스에서 미리 받아
+-- 12개 행에 같이 넣는다. (FR-044)
+CREATE SEQUENCE IF NOT EXISTS seq_installment_group;
+
+-- 금액은 원 단위 양의 정수다. 0 이나 음수는 환불·정정이지 지출이 아니다. (FR-040)
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_expense
+        ADD CONSTRAINT ck_expense_amount CHECK (amount > 0);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 할부 3개 컬럼은 모두 비면 일시불, 모두 차면 할부다. 아래 둘은 "값이 있다면
+-- 어떤 값이어야 하는가"만 본다 — 셋의 동시 유무는 컬럼 단위 CHECK 으로 표현할 수
+-- 없어 애플리케이션이 맡는다. (FR-043)
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_expense
+        ADD CONSTRAINT ck_expense_installment_index
+        CHECK (installment_index IS NULL OR installment_index >= 1);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 1개월 할부는 일시불과 같다. 할부로 적히면 중도상환·통계가 헛돈다.
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_expense
+        ADD CONSTRAINT ck_expense_installment_total
+        CHECK (installment_total IS NULL OR installment_total >= 2);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 수입 금액도 양의 정수다. (FR-046)
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_income
+        ADD CONSTRAINT ck_income_amount CHECK (amount > 0);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
 
 -- ============================================================================
 -- US4 — 고정지출 (tasks.md T043)
 -- ============================================================================
--- ck_fixed_expense_amount       : amount > 0                    — FR-050
--- ck_fixed_expense_day          : payment_day_of_month 1~31     — FR-050
--- ck_fixed_expense_start_month  : start_month 1~12              — FR-051
--- ck_fixed_expense_end_month    : end_month 1~12                — FR-051
--- ck_fixed_expense_period       : 종료 연월 >= 시작 연월        — FR-051
--- ck_fixed_monthly_amount       : amount > 0                    — FR-053
--- ck_fixed_monthly_month        : month 1~12                    — FR-053
--- (T043 에서 채운다)
+-- 기본 금액은 원 단위 양의 정수다. (FR-050)
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_fixed_expense
+        ADD CONSTRAINT ck_fixed_expense_amount CHECK (amount > 0);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 결제일은 1~31 이다. 31 을 넣어도 2월에는 그런 날이 없지만, 말일 보정은 월별 내역을
+-- 만들 때 하고(FR-055) 여기 값은 보정 전 설정값이라 31 까지 허용한다. (FR-050)
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_fixed_expense
+        ADD CONSTRAINT ck_fixed_expense_day
+        CHECK (payment_day_of_month BETWEEN 1 AND 31);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 적용 시작·종료 월은 1~12 다. (FR-051)
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_fixed_expense
+        ADD CONSTRAINT ck_fixed_expense_start_month
+        CHECK (start_month BETWEEN 1 AND 12);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_fixed_expense
+        ADD CONSTRAINT ck_fixed_expense_end_month
+        CHECK (end_month BETWEEN 1 AND 12);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 종료 연월이 시작 연월보다 앞설 수 없다. 연과 월을 따로 비교하면 해를 넘기는
+-- 구간에서 조건이 어긋나므로 year * 12 + month 합성값 하나로 본다 — 예를 들어
+-- 2027-02 시작 / 2026-11 종료는 월만 보면 11 > 2 라 통과해 버린다. 같은 회원의
+-- 기간 조회 JPQL 도 같은 식을 쓴다. 시작과 종료가 같은 한 달짜리는 허용된다. (FR-051)
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_fixed_expense
+        ADD CONSTRAINT ck_fixed_expense_period
+        CHECK (end_year * 12 + end_month >= start_year * 12 + start_month);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 그 달 금액도 양의 정수다. (FR-053)
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_fixed_expense_monthly
+        ADD CONSTRAINT ck_fixed_monthly_amount CHECK (amount > 0);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 월은 1~12 다. 유일 제약이 (fixed_expense_idx, year, month) 라 월 값이 범위를
+-- 벗어나면 같은 달을 두 칸에 적을 수 있게 된다. (FR-053, research §6)
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_fixed_expense_monthly
+        ADD CONSTRAINT ck_fixed_monthly_month CHECK (month BETWEEN 1 AND 12);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
 
 -- ============================================================================
