@@ -1,0 +1,765 @@
+[
+  {
+    "D": "SNS 연동 해제",
+    "E": "네이버 연동 해제 알림 수신",
+    "F": "유효한 HMAC·복호화 후 sns_type=3 행이 삭제되고 HTTP 204로 응답하는지 확인한다.",
+    "G": "1. tbl_sns_info에 sns_type=3 매칭 행을 준비한다.\n2. POST /v1/account/sns/naver/disconnect-receive 를 form으로 호출한다.\n3. HTTP 204와 DB 삭제를 확인한다.\n4. GET /v1/api/account/snsinfo 로 beforeConn=0을 확인한다.",
+    "H": "[요청 예시]\nPOST /v1/account/sns/naver/disconnect-receive\nContent-Type: application/x-www-form-urlencoded\nclientId={naver_client_id}&encryptUniqueId={encrypted_sns_id}&timestamp={epoch_ms}&signature={hmac_signature}\n\n[기대 응답 예시]\nHTTP 204\n\n[DB 확인 예시]\ntbl_sns_info: sns_type=3, sns_id={복호화값} — (시험 후) 행 삭제"
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "네이버 연동 해제 알림 수신",
+    "F": "signature 불일치 시 tbl_sns_info 변경 없이 HTTP 401로 실패를 확인한다.",
+    "G": "1. 위조 signature로 네이버 콜백을 호출한다.\n2. HTTP 401과 DB 무변경을 확인한다.",
+    "H": "[요청 예시]\nPOST /v1/account/sns/naver/disconnect-receive\nsignature={invalid_hmac}\n\n[기대 응답 예시]\nHTTP 401\n\n[DB 확인 예시]\ntbl_sns_info: 변경 없음"
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "네이버 연동 해제 알림 수신",
+    "F": "clientId·encryptUniqueId·timestamp·signature 누락·빈 값 시 HTTP 400으로 실패를 확인한다.",
+    "G": "1. 필수 필드 하나를 누락한 form 요청을 보낸다.\n2. HTTP 400을 확인한다.",
+    "H": "[요청 예시]\nPOST /v1/account/sns/naver/disconnect-receive\nclientId={naver_client_id}\n(encryptUniqueId 누락)\n\n[기대 응답 예시]\nHTTP 400"
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "네이버 연동 해제 알림 수신",
+    "F": "설정과 다른 clientId 시 HTTP 401·DB 미변경으로 실패를 확인한다.",
+    "G": "1. 잘못된 clientId로 요청한다.\n2. HTTP 401을 확인한다.",
+    "H": "[요청 예시]\nclientId={wrong_client_id}&...\n\n[기대 응답 예시]\nHTTP 401"
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "네이버 연동 해제 알림 수신",
+    "F": "DB 연결·조회 실패 등 인프라 장애 시 HTTP 500을 확인한다.",
+    "G": "1. DB 장애(연결 실패·쿼리 오류) 환경에서 네이버 disconnect-receive 콜백을 호출한다.\n2. HTTP 500을 확인한다.",
+    "H": "[기대 응답 예시]\nHTTP 500"
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "네이버 연동 해제 알림 수신",
+    "F": "검증 성공·매칭 행 없을 때 삭제 없이 HTTP 204로 응답하는지 확인한다.",
+    "G": "1. DB에 매칭 없는 encryptUniqueId로 요청한다.\n2. HTTP 204·DB 무변경을 확인한다.",
+    "H": "[기대 응답 예시]\nHTTP 204 (no-op)"
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "카카오 연동 해제 알림 수신",
+    "F": "app_id 일치·user_id 매칭 시 sns_type=4 행 삭제 후 HTTP 200으로 응답하는지 확인한다.",
+    "G": "1. tbl_sns_info sns_type=4 행을 준비한다.\n2. GET /v1/account/sns/kakao/disconnect-receive 를 호출한다.\n3. HTTP 200·행 삭제를 확인한다.",
+    "H": "[요청 예시]\nGET /v1/account/sns/kakao/disconnect-receive?user_id={kakao_user_id}&app_id={kakao_app_id}&referrer_type={referrer}\n\n[기대 응답 예시]\nHTTP 200\n\n[DB 확인 예시]\ntbl_sns_info: sns_type=4 — 행 삭제"
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "카카오 연동 해제 알림 수신",
+    "F": "app_id 불일치 시에도 HTTP 200·tbl_sns_info 미변경을 확인한다.",
+    "G": "1. 잘못된 app_id로 GET 웹훅을 호출한다.\n2. HTTP 200·DB 무변경을 확인한다.",
+    "H": "[요청 예시]\nGET ...?user_id={id}&app_id={wrong_app_id}\n\n[기대 응답 예시]\nHTTP 200\n\n[DB 확인 예시]\ntbl_sns_info: 변경 없음"
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "카카오 연동 해제 알림 수신",
+    "F": "이용자 없음·내부 오류 포함 처리 후 3초 이내 HTTP 200을 확인한다.",
+    "G": "1. 오류 유발 웹훅을 호출한다.\n2. HTTP 200·응답 시간을 확인한다.",
+    "H": "[기대 응답 예시]\nHTTP 200 (3초 이내)"
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "애플 연동 해제 알림 수신",
+    "F": "payload 검증 성공·events.type=consent-revoked 시 sns_type=5 행 삭제·HTTP 200을 확인한다.",
+    "G": "1. 유효 Apple JWT payload를 준비한다.\n2. POST /v1/account/sns/apple/disconnect-receive 를 호출한다.\n3. HTTP 200·행 삭제를 확인한다.",
+    "H": "[요청 예시]\nPOST /v1/account/sns/apple/disconnect-receive\nContent-Type: application/json\n{\"payload\": \"{signed_jwt}\"}\n\n[기대 응답 예시]\nHTTP 200\n\n[DB 확인 예시]\ntbl_sns_info: sns_type=5, sns_id=events.sub — 행 삭제"
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "애플 연동 해제 알림 수신",
+    "F": "events.type=account-delete 시 sns_type=5 행 삭제·HTTP 200을 확인한다.",
+    "G": "1. account-delete 이벤트 JWT로 POST한다.\n2. HTTP 200·행 삭제를 확인한다.",
+    "H": "[기대 응답 예시]\nHTTP 200"
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "애플 연동 해제 알림 수신",
+    "F": "body에 payload 없음 시 HTTP 400으로 실패를 확인한다.",
+    "G": "1. payload 없는 JSON body로 POST한다.\n2. HTTP 400을 확인한다.",
+    "H": "[기대 응답 예시]\nHTTP 400"
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "애플 연동 해제 알림 수신",
+    "F": "iss·aud 불일치 시 HTTP 401·DB 미변경으로 실패를 확인한다.",
+    "G": "1. aud 불일치 JWT로 POST한다.\n2. HTTP 401을 확인한다.",
+    "H": "[기대 응답 예시]\nHTTP 401\n\n[DB 확인 예시]\ntbl_sns_info: 변경 없음"
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "애플 연동 해제 알림 수신",
+    "F": "DB 연결·조회 실패 등 인프라 장애 시 HTTP 500을 확인한다.",
+    "G": "1. DB 장애(연결 실패·쿼리 오류) 환경에서 Apple Notifications를 호출한다.\n2. HTTP 500을 확인한다.",
+    "H": "[기대 응답 예시]\nHTTP 500"
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "SNS 연동 목록 조회",
+    "F": "인바운드 삭제 후 12.2에서 해당 sns_type이 beforeConn=0·빈 snsId로 표시되는지 확인한다.",
+    "G": "1. 인바운드 삭제 후 GET /v1/api/account/snsinfo 를 호출한다.",
+    "H": "[요청 예시]\nGET /v1/api/account/snsinfo\nAuthorization: Bearer {ACCESS_TOKEN}\n\n[기대 응답 예시]\n해당 sns_type: beforeConn=0, snsId=\"\""
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "SNS 재연동",
+    "F": "행 삭제 후 12.3 active_yn=Y로 재연동이 가능한지 확인한다.",
+    "G": "1. 삭제 완료 이용자로 POST /v1/api/account/snsinfo (active_yn=Y)를 호출한다.\n2. tbl_sns_info 신규 행·12.2 연결 표시를 확인한다.",
+    "H": "[DB 확인 예시]\ntbl_sns_info: 동일 sns_id로 insert/update 가능"
+  },
+  {
+    "D": "회원 탈퇴",
+    "E": "회원 탈퇴",
+    "F": "tbl_user 삭제 전 id_key의 모든 tbl_sns_info 행이 삭제되는지 확인한다.",
+    "G": "1. 여러 sns_type 행이 있는 이용자로 POST /v1/api/account/withdraw 를 호출한다.\n2. 탈퇴 전후 tbl_sns_info 건수를 확인한다.",
+    "H": "[DB 확인 예시]\ntbl_sns_info: id_key={id_key} — (탈퇴 후) 0건\ntbl_user: 해당 id_key 삭제"
+  },
+  {
+    "D": "회원 탈퇴",
+    "E": "관리자 회원 탈퇴",
+    "F": "관리자 탈퇴 시에도 deleteAllSnsInfoByIdKey 후 사용자 삭제 순서를 확인한다.",
+    "G": "1. POST /v1/api/account/admin/withdraw 를 호출한다.\n2. tbl_sns_info 0건을 확인한다.",
+    "H": "[DB 확인 예시]\ntbl_sns_info: id_key 기준 0건 (sns_type 6 포함)"
+  },
+  {
+    "D": "SNS 연동 설정",
+    "E": "SNS 연동 해제",
+    "F": "SNS 제공자 연동 해제 API 성공 시 행 삭제·active_yn=N 갱신 없음을 확인한다.",
+    "G": "1. 연동된 네이버 행을 준비한다.\n2. POST /v1/api/account/snsinfo (active_yn=N)를 호출한다.\n3. revoke 성공·행 삭제·12.2 beforeConn=0을 확인한다.",
+    "H": "[요청 예시]\nPOST /v1/api/account/snsinfo\nAuthorization: Bearer {ACCESS_TOKEN}\n{\"sns_type\":3,\"active_yn\":\"N\",\"sns_token\":\"{access_token}\",\"client_id\":\"{client_id}\"}\n\n[기대 응답 예시]\nresultcode: 200\n\n[DB 확인 예시]\ntbl_sns_info: 해당 행 삭제"
+  },
+  {
+    "D": "SNS 연동 설정",
+    "E": "SNS 연동 해제",
+    "F": "SNS 제공자 연동 해제 실패 시 tbl_sns_info 미변경·resultcode 720/721/722로 실패를 확인한다.",
+    "G": "1. revoke 실패 mock으로 12.3 N 요청을 보낸다.\n2. resultcode와 DB를 확인한다.",
+    "H": "[기대 응답 예시]\nHTTP 200\nresultcode: 720(네이버)/721(카카오)/722(애플)\n\n[DB 확인 예시]\ntbl_sns_info: 변경 없음"
+  },
+  {
+    "D": "SNS 연동 설정",
+    "E": "SNS 연동 해제",
+    "F": "revoke 성공·DB DELETE 실패 시 HTTP 500·행 유지를 확인한다.",
+    "G": "1. revoke 성공·DELETE 실패 환경에서 12.3 N을 호출한다.",
+    "H": "[기대 응답 예시]\nHTTP 500\n\n[DB 확인 예시]\ntbl_sns_info: 행 유지"
+  },
+  {
+    "D": "SNS 연동 설정",
+    "E": "회원가입 SNS 연동",
+    "F": "6.20은 연동(Y) 전용이며 active_yn=N 요청 시 HTTP 400으로 실패를 확인한다.",
+    "G": "1. POST /v1/api/account/id/snsinfo 에 active_yn=N을 보낸다.\n2. validation/400을 확인한다.",
+    "H": "[요청 예시]\nPOST /v1/api/account/id/snsinfo\n{\"active_yn\":\"N\",...}\n\n[기대 응답 예시]\nHTTP 400"
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "연동 해제 알림 공통",
+    "F": "검증 실패 알림 수신 시 tbl_sns_info가 변경되지 않음을 확인한다.",
+    "G": "1. 제공자별 위조 알림을 전송한다.\n2. tbl_sns_info 변경 없음을 확인한다.",
+    "H": "[DB 확인 예시]\ntbl_sns_info: 변경 없음"
+  },
+  {
+    "D": "SNS 연동 해제",
+    "E": "연동 해제 알림 공통",
+    "F": "이미 삭제된 행에 재알림 시 no-op·제공자별 응답 정책 유지를 확인한다.",
+    "G": "1. 삭제 후 동일 알림을 재전송한다.\n2. 네이버 204·카카오 200·애플 200을 확인한다.",
+    "H": "[기대 응답 예시]\n네이버 HTTP 204 / 카카오·애플 HTTP 200 (no-op)"
+  },
+  {
+    "D": "SNS 연동 설정",
+    "E": "애플 연동 해제",
+    "F": "sns_type=5·active_yn=N 시 refresh_token으로 revoke하는지 확인한다.",
+    "G": "1. 애플 연동 행으로 12.3 N 요청(refresh_token 포함)을 보낸다.\n2. revoke·DELETE를 확인한다.",
+    "H": "[요청 예시]\nPOST /v1/api/account/snsinfo\n{\"sns_type\":5,\"active_yn\":\"N\",\"refresh_token\":\"{apple_refresh_token}\",...}"
+  },
+  {
+    "D": "해외 로그인 차단",
+    "E": "해외 로그인 차단 상태 조회",
+    "F": "DB overseas_login_block=1일 때 12.1 login_block_status=1을 확인한다.",
+    "G": "1. tbl_user.overseas_login_block=1 이용자의 AccessToken을 준비한다.\n2. GET /v1/api/account/userloginmanage/info 를 호출한다.",
+    "H": "[요청 예시]\nGET /v1/api/account/userloginmanage/info\nAuthorization: Bearer {ACCESS_TOKEN}\n\n[기대 응답 예시]\nresultcode: 200\nlogin_block_status: 1\n\n[DB 확인 예시]\ntbl_user.overseas_login_block: 1"
+  },
+  {
+    "D": "해외 로그인 차단",
+    "E": "해외 로그인 차단 상태 조회",
+    "F": "DB overseas_login_block=0 또는 NULL일 때 login_block_status=0을 확인한다.",
+    "G": "1. overseas_login_block=0 또는 NULL 이용자로 12.1을 호출한다.",
+    "H": "[기대 응답 예시]\nlogin_block_status: 0"
+  },
+  {
+    "D": "해외 로그인 차단",
+    "E": "해외 로그인 차단 상태 조회",
+    "F": "AccessToken 없음·무효 시 12.1 인증 실패를 확인한다.",
+    "G": "1. Authorization 헤더 없이 12.1을 호출한다.",
+    "H": "[기대 응답 예시]\nHTTP 401 등 (기존 @AuthChk 정책)"
+  },
+  {
+    "D": "해외 로그인 차단",
+    "E": "해외 로그인 차단 설정",
+    "F": "12.4로 login_block_status=1 설정 시 DB·12.1이 1로 일치하는지 확인한다.",
+    "G": "1. POST /v1/api/account/overseas-login-block 에 login_block_status=1을 보낸다.\n2. 12.1·DB를 확인한다.",
+    "H": "[요청 예시]\nPOST /v1/api/account/overseas-login-block\nAuthorization: Bearer {ACCESS_TOKEN}\n{\"login_block_status\": 1}\n\n[기대 응답 예시]\nresultcode: 200\n\n[DB 확인 예시]\ntbl_user.overseas_login_block: 1"
+  },
+  {
+    "D": "해외 로그인 차단",
+    "E": "해외 로그인 차단 설정",
+    "F": "12.4로 login_block_status=0 설정 시 DB·12.1이 0으로 일치하는지 확인한다.",
+    "G": "1. login_block_status=0으로 12.4를 호출한다.",
+    "H": "[요청 예시]\n{\"login_block_status\": 0}\n\n[기대 응답 예시]\nresultcode: 200\nlogin_block_status(12.1): 0"
+  },
+  {
+    "D": "해외 로그인 차단",
+    "E": "해외 로그인 차단 설정",
+    "F": "이미 차단(1) 상태에서 다시 1 설정 시 성공(멱등)을 확인한다.",
+    "G": "1. login_block_status=1을 연속 2회 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 200 (양쪽)"
+  },
+  {
+    "D": "해외 로그인 차단",
+    "E": "해외 로그인 차단 설정",
+    "F": "AccessToken 없이 12.4 호출 시 인증 실패를 확인한다.",
+    "G": "1. Authorization 없이 12.4를 호출한다.",
+    "H": "[기대 응답 예시]\n인증 실패"
+  },
+  {
+    "D": "해외 로그인 차단",
+    "E": "해외 로그인 차단 설정",
+    "F": "login_block_status가 0·1이 아니면 resultcode 400으로 실패를 확인한다.",
+    "G": "1. login_block_status=2로 12.4를 호출한다.",
+    "H": "[기대 응답 예시]\nHTTP 400 또는 validation 실패"
+  },
+  {
+    "D": "해외 로그인 차단",
+    "E": "해외 로그인 차단 설정",
+    "F": "토큰은 유효하나 회원 없음 시 resultcode 703으로 실패를 확인한다.",
+    "G": "1. 존재하지 않는 회원 토큰으로 12.4를 호출한다.",
+    "H": "[기대 응답 예시]\nHTTP 200\nresultcode: 703"
+  },
+  {
+    "D": "해외 로그인 차단",
+    "E": "관리자 해외 로그인 차단",
+    "F": "11.5로 특정 user_id 차단(login_block_status=1) 시 DB=1을 확인한다.",
+    "G": "1. POST /v1/api/account/admin/overseas-login-block 를 호출한다.",
+    "H": "[요청 예시]\nPOST /v1/api/account/admin/overseas-login-block\n{\"id\": \"{user_id}\", \"login_block_status\": 1}\n\n[기대 응답 예시]\nresultcode: 200\n\n[DB 확인 예시]\ntbl_user.overseas_login_block: 1"
+  },
+  {
+    "D": "해외 로그인 차단",
+    "E": "관리자 해외 로그인 차단",
+    "F": "11.5로 OTP 없이 login_block_status=0 해제를 확인한다.",
+    "G": "1. login_block_status=0으로 11.5를 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 200\nDB: 0"
+  },
+  {
+    "D": "해외 로그인 차단",
+    "E": "관리자 해외 로그인 차단",
+    "F": "없는 user_id 시 resultcode 700으로 실패를 확인한다.",
+    "G": "1. 존재하지 않는 id로 11.5를 호출한다.",
+    "H": "[기대 응답 예시]\nHTTP 200\nresultcode: 700\nmessage: ID가 존재하지 않습니다."
+  },
+  {
+    "D": "해외 로그인 차단 OTP",
+    "E": "OTP 알림톡 발송",
+    "F": "차단 중 이용자 6.25 성공 시 Redis·Argos·tbl_argos_alarm_history 저장을 확인한다.",
+    "G": "1. block=1 이용자로 POST …/otp/alarm 을 호출한다.\n2. Redis OTP·이력을 확인한다.",
+    "H": "[요청 예시]\nPOST /v1/api/account/overseas-login-block/otp/alarm\n{\"id\": \"{user_id}\"}\n\n[기대 응답 예시]\nresultcode: 200\n\n[DB 확인 예시]\ntbl_argos_alarm_history: send_status=1, template_code=DCB03, send_from=2\nRedis: 6자리 OTP, fail_count=0, TTL 5분"
+  },
+  {
+    "D": "해외 로그인 차단 OTP",
+    "E": "OTP 알림톡 발송",
+    "F": "동일 id 재요청 시 OTP·fail_count=0·TTL 갱신·Argos 재호출을 확인한다.",
+    "G": "1. 6.25 직후 동일 id로 6.25를 재호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 200\nRedis: 새 OTP, fail_count=0"
+  },
+  {
+    "D": "해외 로그인 차단 OTP",
+    "E": "OTP 알림톡 발송",
+    "F": "overseas_login_block=0/NULL 시 resultcode 742·Argos·Redis 미호출로 실패를 확인한다.",
+    "G": "1. block=0 이용자로 6.25를 호출한다.",
+    "H": "[기대 응답 예시]\nHTTP 200\nresultcode: 742"
+  },
+  {
+    "D": "해외 로그인 차단 OTP",
+    "E": "OTP 알림톡 발송",
+    "F": "mobile_no 없음·빈 값 시 resultcode 743·Argos 미호출로 실패를 확인한다.",
+    "G": "1. mobile_no 없는 block=1 이용자로 6.25를 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 743"
+  },
+  {
+    "D": "해외 로그인 차단 OTP",
+    "E": "OTP 알림톡 발송",
+    "F": "Argos 발송 실패 시 resultcode 829·성공 이력 없음을 확인한다.",
+    "G": "1. Argos 실패 mock으로 6.25를 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 829\n\n[DB 확인 예시]\ntbl_argos_alarm_history: 성공 이력 없음"
+  },
+  {
+    "D": "해외 로그인 차단 OTP",
+    "E": "OTP 알림톡 발송",
+    "F": "없는 id 시 resultcode 700으로 실패를 확인한다.",
+    "G": "1. 없는 id로 6.25를 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 700"
+  },
+  {
+    "D": "해외 로그인 차단 OTP",
+    "E": "OTP 알림톡 발송",
+    "F": "Argos 성공·이력 INSERT 실패 시 resultcode 829로 실패를 확인한다.",
+    "G": "1. Argos 성공·INSERT 실패 환경에서 6.25를 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 829"
+  },
+  {
+    "D": "해외 로그인 차단 OTP",
+    "E": "OTP 인증",
+    "F": "올바른 otp 입력 시 resultcode 200·OTP 인증 완료·overseas_login_block=0을 확인한다.",
+    "G": "1. 6.25 후 POST …/otp/check 를 호출한다.",
+    "H": "[요청 예시]\nPOST /v1/api/account/overseas-login-block/otp/check\n{\"id\": \"{user_id}\", \"otp\": \"123456\"}\n\n[기대 응답 예시]\nresultcode: 200\nmessage: OTP 인증 완료\n\n[DB 확인 예시]\ntbl_user.overseas_login_block: 0\nRedis: 키 삭제"
+  },
+  {
+    "D": "해외 로그인 차단 OTP",
+    "E": "OTP 인증",
+    "F": "잘못된 otp 1~4회 누적 시 resultcode 737·fail_count를 확인한다.",
+    "G": "1. 잘못된 otp로 6.26을 호출한다.",
+    "H": "[기대 응답 예시]\nHTTP 200\nresultcode: 737\nfail_count: {누적횟수}"
+  },
+  {
+    "D": "해외 로그인 차단 OTP",
+    "E": "OTP 인증",
+    "F": "잘못된 otp 5회 이상 시 resultcode 738·fail_count를 확인한다.",
+    "G": "1. 5회 연속 오입력 후 6.26을 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 738\nfail_count: ≥5"
+  },
+  {
+    "D": "해외 로그인 차단 OTP",
+    "E": "OTP 인증",
+    "F": "Redis OTP 만료 후 resultcode 739로 실패를 확인한다.",
+    "G": "1. TTL 만료 후 6.26을 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 739\nmessage: 인증번호 입력시간 만료"
+  },
+  {
+    "D": "해외 로그인 차단 OTP",
+    "E": "OTP 인증",
+    "F": "없는 id 시 resultcode 700으로 실패를 확인한다.",
+    "G": "1. 없는 id로 6.26을 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 700"
+  },
+  {
+    "D": "해외 로그인 차단",
+    "E": "해외 로그인 차단 통합 시나리오",
+    "F": "12.1·12.4·6.25·6.26·11.5를 순서대로 호출하여 DB·Redis·응답 코드가 일치하는지 통합 확인한다.",
+    "G": "1. 차단 중 이용자로 12.1을 호출해 login_block_status=1을 확인한다.\n2. 12.4로 차단·해제(0/1) 후 DB·12.1 값이 일치하는지 확인한다(없는 회원 resultcode 703).\n3. 6.25: 미차단 742·휴대폰 번호 없음 743·정상 발송(Redis·Argos·이력)·동일 id 재발송(OTP·fail_count 리셋)을 확인한다.\n4. 6.26: 정상 otp 시 resultcode 200·DB overseas_login_block=0, 오입력 737/738, 만료 739를 확인한다.\n5. 11.5로 id별 차단·해제 및 없는 id resultcode 700을 확인한다.",
+    "H": "[기대 응답 예시]\n상태 조회·설정·OTP 발송·OTP 인증·관리자 설정 API resultcode/HTTP가 계약과 일치\n\n[DB·Redis 확인 예시]\ntbl_user.overseas_login_block, tbl_argos_alarm_history, Redis OTP·fail_count"
+  },
+  {
+    "D": "구글 SNS 연동",
+    "E": "구글 프로필 조회",
+    "F": "유효 id_token·clientId로 프로필(sub, email 등)이 반환되는지 확인한다.",
+    "G": "1. AccessToken으로 POST /v1/api/account/sns/google/profile 를 호출한다.\n2. resultcode 200·data 필드를 확인한다.",
+    "H": "[요청 예시]\nPOST /v1/api/account/sns/google/profile\nAuthorization: Bearer {ACCESS_TOKEN}\n{\"clientId\": \"{google_client_id}\", \"idToken\": \"{valid_id_token}\"}\n\n[기대 응답 예시]\nresultcode: 200\ndata: sub, email, emailVerified, name, picture, iss, aud, exp"
+  },
+  {
+    "D": "구글 SNS 연동",
+    "E": "구글 프로필 조회",
+    "F": "id_token 검증 실패 시 resultcode 744로 실패를 확인한다.",
+    "G": "1. 무효 id_token으로 프로필 API를 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 744"
+  },
+  {
+    "D": "구글 SNS 연동",
+    "E": "구글 프로필 조회",
+    "F": "clientId validation·설정 오류 시 resultcode 750 또는 803으로 실패를 확인한다.",
+    "G": "1. 잘못된 clientId로 프로필 API를 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 750 또는 803"
+  },
+  {
+    "D": "SNS 연동 설정",
+    "E": "구글 연동 설정",
+    "F": "sns_type=6·active_yn=Y·id_token·refreshToken으로 연결 저장·revoke_refresh_token 저장을 확인한다.",
+    "G": "1. POST /v1/api/account/snsinfo (sns_type=6, active_yn=Y, refreshToken 포함)를 호출한다.\n2. tbl_sns_info·12.2를 확인한다.",
+    "H": "[요청 예시]\nPOST /v1/api/account/snsinfo\n{\"sns_type\":6,\"active_yn\":\"Y\",\"sns_token\":\"{id_token}\",\"refresh_token\":\"{google_refresh_token}\",\"client_id\":\"{client_id}\"}\n\n[DB 확인 예시]\ntbl_sns_info: sns_type=6, active_yn=Y, sns_account_id·sns_connect_time 저장\nrevoke_refresh_token: {google_refresh_token}"
+  },
+  {
+    "D": "SNS 연동 설정",
+    "E": "구글 연동 해제",
+    "F": "sns_token=id_token·DB revoke_refresh_token으로 revoke 성공 시 sns_type=6 행 삭제를 확인한다.",
+    "G": "1. revoke_refresh_token 저장된 구글 행으로 12.3 N(sns_token=id_token)을 호출한다.\n2. 요청 refreshToken·sns_token은 revoke 미사용·DB revoke_refresh_token만 사용함을 확인한다.",
+    "H": "[요청 예시]\nPOST /v1/api/account/snsinfo\n{\"sns_type\":6,\"active_yn\":\"N\",\"sns_token\":\"{id_token}\",\"client_id\":\"{client_id}\"}\n(revoke는 DB revoke_refresh_token만 사용; 요청 refreshToken 미사용)\n\n[기대 응답 예시]\nresultcode: 200\n\n[DB 확인 예시]\ntbl_sns_info: sns_type=6 행 삭제"
+  },
+  {
+    "D": "SNS 연동 설정",
+    "E": "구글 연동 해제",
+    "F": "revoke 실패 시 resultcode 745·행 유지로 실패를 확인한다.",
+    "G": "1. revoke 실패 mock으로 12.3 N을 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 745\n\n[DB 확인 예시]\ntbl_sns_info: 행 유지"
+  },
+  {
+    "D": "SNS 연동 설정",
+    "E": "회원가입 SNS 연동",
+    "F": "6.20에서 sns_type=6·active_yn=Y·id_token·ci로 연결 저장을 확인한다.",
+    "G": "1. POST /v1/api/account/id/snsinfo 를 호출한다.",
+    "H": "[요청 예시]\nPOST /v1/api/account/id/snsinfo\n{\"ci\":\"{ci}\",\"sns_type\":6,\"active_yn\":\"Y\",\"sns_token\":\"{id_token}\",\"client_id\":\"{client_id}\"}"
+  },
+  {
+    "D": "SNS 연동 설정",
+    "E": "회원가입 SNS 연동",
+    "F": "6.20은 연동(Y) 전용이며 active_yn=N 요청 시 HTTP 400으로 실패를 확인한다.",
+    "G": "1. 6.20에 active_yn=N을 보낸다.",
+    "H": "[기대 응답 예시]\nHTTP 400 (validation)"
+  },
+  {
+    "D": "SNS 연동 목록",
+    "E": "SNS 연동 목록 조회",
+    "F": "구글 연결 이용자 12.2에서 sns_type=6 연결 상태를 확인한다.",
+    "G": "1. GET /v1/api/account/snsinfo 를 호출한다.",
+    "H": "[기대 응답 예시]\nsns_type=6: beforeConn=1, activeYn=Y"
+  },
+  {
+    "D": "SNS 연동 목록",
+    "E": "SNS 연동 목록 조회",
+    "F": "해제 후 sns_type=6 미연결·이전 식별 정보 미노출을 확인한다.",
+    "G": "1. 해제 이용자로 12.2를 호출한다.",
+    "H": "[기대 응답 예시]\nsns_type=6: beforeConn=0, snsId=\"\"\n(sns_account_id·연동 일시 미노출)"
+  },
+  {
+    "D": "SNS 연동 목록",
+    "E": "SNS 연동 목록 조회",
+    "F": "12.2·프로필 API 응답에 sns_account_id·연동 일시가 없음을 확인한다.",
+    "G": "1. 12.2·프로필 API 응답 필드를 확인한다.",
+    "H": "[기대 응답 예시]\n12.2: beforeConn, activeYn, snsId만 (email/sns_account_id 없음)"
+  },
+  {
+    "D": "ActionLog",
+    "E": "SNS 연동 ActionLog",
+    "F": "12.3 구글 처리 시 tbl_user_action_log에 sns_type=6·log_type=407 기록을 확인한다.",
+    "G": "1. 12.3 구글 Y/N 처리 후 tbl_user_action_log를 조회한다.",
+    "H": "[DB 확인 예시]\ntbl_user_action_log: sns_type=6, log_type=407, proc_result"
+  },
+  {
+    "D": "ActionLog",
+    "E": "회원가입 SNS ActionLog",
+    "F": "6.20 구글 Y 처리 시 ActionLog sns_type=6 기록을 확인한다.",
+    "G": "1. 6.20 구글 Y 후 ActionLog를 조회한다.",
+    "H": "[DB 확인 예시]\ntbl_user_action_log: sns_type=6"
+  },
+  {
+    "D": "ActionLog",
+    "E": "SNS ActionLog 회귀",
+    "F": "sns_type 3·4·5 연결 설정 시 ActionLog 미생성 회귀 없음을 확인한다.",
+    "G": "1. sns_type=3 연결 후 ActionLog 건수를 확인한다.",
+    "H": "[DB 확인 예시]\ntbl_user_action_log: 구글 외 sns_type 미추가(회귀 없음)"
+  },
+  {
+    "D": "ActionLog",
+    "E": "ActionLog 회귀",
+    "F": "회원가입·탈퇴 등 기존 ActionLog가 변경·누락되지 않음을 확인한다.",
+    "G": "1. 기존 @StatLog API 호출 후 로그를 확인한다.",
+    "H": "[DB 확인 예시]\ntbl_user_action_log: 기존 필드·의미 유지"
+  },
+  {
+    "D": "SNS 연동 설정",
+    "E": "SNS 연동 설정",
+    "F": "sns_type 3~6 외 요청 시 resultcode 717로 실패를 확인한다.",
+    "G": "1. 지원 외 sns_type으로 12.3을 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 717"
+  },
+  {
+    "D": "SNS 연동 설정",
+    "E": "구글 연동 설정",
+    "F": "연결(Y) 시 id_token 검증 실패 resultcode 744·저장 없음을 확인한다.",
+    "G": "1. 무효 id_token으로 12.3 Y를 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 744\n\n[DB 확인 예시]\ntbl_sns_info: 저장 없음"
+  },
+  {
+    "D": "SNS 연동 설정",
+    "E": "구글 연동 설정",
+    "F": "중복·insert 실패 시 resultcode 724 또는 729로 실패를 확인한다.",
+    "G": "1. 중복 sns_id로 12.3 Y를 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 724 또는 729"
+  },
+  {
+    "D": "SNS 연동 설정",
+    "E": "구글 연동 해제",
+    "F": "해제(N) 시 GoogleOAuthClient POST oauth2.googleapis.com/revoke 호출을 확인한다.",
+    "G": "1. 12.3 N 호출 시 Feign revoke 요청을 확인한다.",
+    "H": "[요청 예시]\nPOST https://oauth2.googleapis.com/revoke\ntoken={tbl_sns_info.revoke_refresh_token}\n(요청 sns_token·refreshToken 아님; )"
+  },
+  {
+    "D": "구글 SNS 연동",
+    "E": "구글 연동 검증",
+    "F": "토큰 검증 실패 시 DB 저장·삭제 없음을 확인한다.",
+    "G": "1. 오류 토큰으로 연결/해제를 시도한다.",
+    "H": "[DB 확인 예시]\ntbl_sns_info: 무단 변경 없음"
+  },
+  {
+    "D": "구글 SNS 연동",
+    "E": "구글 연동 해제",
+    "F": "해제 성공 후 sns_account_id 등 식별 정보가 남지 않음을 확인한다.",
+    "G": "1. 해제 후 tbl_sns_info sns_type=6 행 부재를 확인한다.",
+    "H": "[DB 확인 예시]\ntbl_sns_info: sns_type=6 행 0건"
+  },
+  {
+    "D": "구글 SNS 연동",
+    "E": "구글 ActionLog",
+    "F": "ActionLog 기록 실패가 연동 저장/삭제를 롤백하지 않음을 확인한다.",
+    "G": "1. ActionLog 실패 mock 후 연결 성공·DB 저장을 확인한다.",
+    "H": "[DB 확인 예시]\ntbl_sns_info: 저장 유지 ()"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "구글 aud 검증",
+    "F": "tbl_sns_config client_id와 id_token aud 일치 시 프로필 조회 성공을 확인한다.",
+    "G": "1. tbl_sns_config에 G_CLIENT 행을 확인한다.\n2. aud=G_CLIENT id_token으로 프로필 API를 호출한다.",
+    "H": "[요청 예시]\nPOST /v1/api/account/sns/google/profile\n{\"clientId\": \"G_CLIENT\", \"idToken\": \"{valid_id_token}\"}\n\n[기대 응답 예시]\nresultcode: 200"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "구글 aud 검증",
+    "F": "id_token aud≠tbl_sns_config.client_id 시 resultcode 744로 실패를 확인한다.",
+    "G": "1. aud 불일치 토큰으로 프로필·연결 Y를 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 744\n\n[DB 확인 예시]\ntbl_sns_info: 저장 없음"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "구글 aud 검증",
+    "F": "sns_type=6 설정 행 없음 시 resultcode 803으로 실패를 확인한다.",
+    "G": "1. 미등록 clientId로 구글 프로필을 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 803"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "구글 aud 검증",
+    "F": "DB 조회(803) 선행 → GoogleIdTokenVerifier(744) 순서를 확인한다.",
+    "G": "1. DB 행 없음·무효 토큰 각각 호출하여 선행 실패 코드를 확인한다.",
+    "H": "[기대 응답 예시]\n행 없음: 803 (Verifier 전)\n토큰 실패: 744"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "애플 aud 검증",
+    "F": "OAuth app_type·tbl_sns_config ios 행과 aud 일치 시 성공을 확인한다.",
+    "G": "1. 12.3 sns_type=5·active_yn=Y로 연결한다.",
+    "H": "[DB 확인 예시]\ntbl_sns_config: sns_type=5, app_type=ios, client_id=IOS_CLIENT"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "애플 aud 검증",
+    "F": "애플 id_token JSON 파싱 실패 시 resultcode 719로 실패를 확인한다.",
+    "G": "1. aud 추출 불가(손상·비JSON) 애플 id_token으로 12.3 Y 또는 프로필 경로를 호출한다.\n2. resultcode 719를 확인한다.",
+    "H": "[요청 예시]\nPOST /v1/api/account/snsinfo\n{\"sns_type\":5,\"active_yn\":\"Y\",\"sns_token\":\"{malformed_apple_id_token}\",\"client_id\":\"{client_id}\"}\n\n[기대 응답 예시]\nresultcode: 719\n\n[DB 확인 예시]\ntbl_sns_info: 저장 없음"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "애플 aud 검증",
+    "F": "aud≠확정 client_id 시 resultcode 718로 실패를 확인한다.",
+    "G": "1. aud 불일치 애플 id_token으로 연결 Y를 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 718"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "애플 aud 검증",
+    "F": "플랫폼 행 없음·all 행 존재 시 all 폴백으로 성공을 확인한다.",
+    "G": "1. app_type=ios 행 없음·all 행만 있는 환경에서 연결한다.",
+    "H": "[기대 응답 예시]\n프로필 파싱 성공 (all 폴백)"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "애플 aud 검증",
+    "F": "플랫폼·all 행 모두 없음 시 resultcode 803으로 실패를 확인한다.",
+    "G": "1. tbl_sns_config 0건 환경에서 애플 연결 Y를 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 803"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "애플 aud 검증",
+    "F": "동일 app_type에 client_id 2건 이상 시 resultcode 746으로 실패를 확인한다.",
+    "G": "1. 중복 client_id 행 환경에서 애플 aud 검증을 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 746"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "공통 요청 검증",
+    "F": "요청 clientId 형식·필수값 실패 시 resultcode 750으로 실패를 확인한다.",
+    "G": "1. clientId 누락·무효로 프로필 API를 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 750"
+  },
+  {
+    "D": "구글 refresh_token",
+    "E": "구글 refresh_token 저장",
+    "F": "active_yn=Y·sns_type=6 시 refreshToken 필수·revoke_refresh_token 저장을 확인한다.",
+    "G": "1. refreshToken 포함 12.3 Y를 호출한다.",
+    "H": "[요청 예시]\nPOST /v1/api/account/snsinfo\n{\"sns_type\":6,\"active_yn\":\"Y\",\"sns_token\":\"{id_token}\",\"refresh_token\":\"{google_refresh_token}\",\"client_id\":\"{client_id}\"}\n\n[DB 확인 예시]\ntbl_sns_info.revoke_refresh_token: {google_refresh_token}"
+  },
+  {
+    "D": "구글 refresh_token",
+    "E": "구글 refresh_token 저장",
+    "F": "refreshToken 누락·blank 시 HTTP 400 validation 실패를 확인한다.",
+    "G": "1. refreshToken 없이 12.3 구글 Y를 호출한다.",
+    "H": "[기대 응답 예시]\nHTTP 400\nmessage: 유효성 검사 실패 : refresh_token\n\n[DB 확인 예시]\nrevoke_refresh_token 저장 없음"
+  },
+  {
+    "D": "구글 연동 해제",
+    "E": "구글 연동 해제",
+    "F": "구글 N은 aud·프로필 없이 조기 disconnect하는지 확인한다.",
+    "G": "1. 연동 행으로 12.3 N(sns_token=id_token 가능)을 호출한다.\n2. 프로필 API 미호출·DB revoke_refresh_token만 사용을 확인한다.",
+    "H": "[요청 예시]\nPOST /v1/api/account/snsinfo\n{\"sns_type\":6,\"active_yn\":\"N\",\"sns_token\":\"{id_token}\",...}\n(refreshToken·sns_token은 revoke 미사용)"
+  },
+  {
+    "D": "구글 연동 해제",
+    "E": "구글 연동 해제",
+    "F": "해제 N 시 DB revoke_refresh_token만으로 Google revoke 후 DELETE를 확인한다.",
+    "G": "1. revoke_refresh_token 저장된 행으로 12.3 N을 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 200\n\n[DB 확인 예시]\ntbl_sns_info: 행 삭제"
+  },
+  {
+    "D": "구글 연동 해제",
+    "E": "구글 연동 해제",
+    "F": "DB revoke_refresh_token null/blank 시 resultcode 745·행 유지로 실패를 확인한다.",
+    "G": "1. 레거시 행(revoke_refresh_token 없음)으로 12.3 N을 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 745\n\n[DB 확인 예시]\ntbl_sns_info: 행 유지"
+  },
+  {
+    "D": "구글 연동 해제",
+    "E": "구글 연동 해제",
+    "F": "Google revoke API 실패 시 resultcode 745·행 유지로 실패를 확인한다.",
+    "G": "1. revoke 실패 mock으로 12.3 N을 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 745"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "네이버·카카오 aud 미적용",
+    "F": "sns_type 3·4 프로필 경로에 aud 로직이 없음을 확인한다.",
+    "G": "1. 네이버·카카오 연결 Y를 호출한다.\n2. tbl_sns_config aud 조회 없이 기존 동작임을 확인한다.",
+    "H": "[기대 응답 예시]\n기존 동작 (aud 없음)"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "애플 aud 검증",
+    "F": "6.20 active_yn=Y 시 구글·애플 aud 검증 경로를 확인한다.",
+    "G": "1. 6.20 구글·애플 Y 연결을 각각 호출한다.",
+    "H": "[기대 응답 예시]\naud 실패: 803/744/718"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "애플 aud 검증",
+    "F": "애플 revoke·client_secret JWT sub에 확정 client_id 사용을 확인한다.",
+    "G": "1. 12.3 애플 N revoke 호출 시 client_id 출처를 확인한다.",
+    "H": "[기대 응답 예시]\nrevoke 실패: 722"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "구글 aud 검증",
+    "F": "aud 검증 실패 시 저장·revoke·ActionLog 후속 없음을 확인한다.",
+    "G": "1. aud 불일치로 연결 Y를 호출한다.",
+    "H": "[DB 확인 예시]\ntbl_sns_info: 변경 없음"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "구글 aud 검증",
+    "F": "GOOGLE_CLIENT_ID allowlist 미사용·tbl_sns_config SSOT를 확인한다.",
+    "G": "1. ConfigMap allowlist 없이 tbl_sns_config만으로 aud 검증 성공을 확인한다.",
+    "H": "[기대 응답 예시]\ntbl_sns_config.client_id 기준 검증"
+  },
+  {
+    "D": "구글 refresh_token",
+    "E": "구글 refresh_token 저장",
+    "F": "6.20 구글 Y에 refreshToken 필수·DB 저장 규칙이 적용되지 않음을 확인한다.",
+    "G": "1. 6.20 구글 Y( refreshToken 없음) 호출 시 009 미적용을 확인한다.",
+    "H": "[기대 응답 예시]\n6.20: refreshToken 필수 아님 (12.3만 )"
+  },
+  {
+    "D": "SNS aud 검증",
+    "E": "구글 aud 검증",
+    "F": "id_token aud 배열에 tbl_sns_config.client_id 포함 시 통과를 확인한다.",
+    "G": "1. 다중 aud 배열 토큰으로 프로필 API를 호출한다.",
+    "H": "[기대 응답 예시]\nresultcode: 200 (배열에 client_id 포함 시)"
+  },
+  {
+    "D": "Google RISC 수신",
+    "E": "Google RISC 알림 수신",
+    "F": "tokens-revoked·subject.sub 매칭 시 sns_type=6 행 삭제·HTTP 202를 확인한다.",
+    "G": "1. tbl_sns_info sns_type=6 행을 준비한다.\n2. POST /v1/account/sns/google/disconnect-receive 에 SET JWT body를 보낸다.\n3. HTTP 202·행 삭제를 확인한다.",
+    "H": "[요청 예시]\nPOST /v1/account/sns/google/disconnect-receive\nContent-Type: application/secevent+jwt\n{signed_jwt_compact}\n\n[기대 응답 예시]\nHTTP 202\n\n[DB 확인 예시]\ntbl_sns_info: sns_type=6, sns_id=subject.sub — 행 삭제"
+  },
+  {
+    "D": "Google RISC 수신",
+    "E": "Google RISC 알림 수신",
+    "F": "token-revoked 이벤트도 동일 삭제·HTTP 202를 확인한다.",
+    "G": "1. token-revoked JWT로 POST한다.",
+    "H": "[기대 응답 예시]\nHTTP 202"
+  },
+  {
+    "D": "Google RISC 수신",
+    "E": "Google RISC 알림 수신",
+    "F": "매칭 행 없을 때 DB 미변경·HTTP 202를 확인한다.",
+    "G": "1. DB에 없는 sub로 유효 JWT를 POST한다.",
+    "H": "[기대 응답 예시]\nHTTP 202 (no-op)"
+  },
+  {
+    "D": "Google RISC 수신",
+    "E": "Google RISC 알림 수신",
+    "F": "처리 대상 이벤트에 sub 없음 시 HTTP 400·DB 미변경으로 실패를 확인한다.",
+    "G": "1. sub 누락 JWT로 POST한다.",
+    "H": "[기대 응답 예시]\nHTTP 400\n\n[DB 확인 예시]\ntbl_sns_info: 변경 없음"
+  },
+  {
+    "D": "Google RISC 수신",
+    "E": "Google RISC 알림 수신",
+    "F": "aud≠tbl_sns_config client_id 시 HTTP 401으로 실패를 확인한다.",
+    "G": "1. aud 불일치 JWT로 POST한다.",
+    "H": "[기대 응답 예시]\nHTTP 401"
+  },
+  {
+    "D": "Google RISC 수신",
+    "E": "Google RISC 알림 수신",
+    "F": "JWT exp 만료 또는 서명 검증 실패 시 HTTP 401·DB 미변경으로 실패를 확인한다.",
+    "G": "1. exp 만료 JWT 또는 서명 불일치 JWT로 POST한다.\n2. HTTP 401·tbl_sns_info 무변경을 확인한다.",
+    "H": "[요청 예시]\nPOST /v1/account/sns/google/disconnect-receive\nContent-Type: application/secevent+jwt\n{expired_or_bad_signature_jwt}\n\n[기대 응답 예시]\nHTTP 401 (body empty)\n\n[DB 확인 예시]\ntbl_sns_info: 변경 없음"
+  },
+  {
+    "D": "Google RISC 수신",
+    "E": "Google RISC 알림 수신",
+    "F": "iss가 https://accounts.google.com(/) 외 시 HTTP 401으로 실패를 확인한다.",
+    "G": "1. iss 불일치 JWT로 POST한다.",
+    "H": "[기대 응답 예시]\nHTTP 401"
+  },
+  {
+    "D": "Google RISC 수신",
+    "E": "Google RISC 알림 수신",
+    "F": "body 없음·blank·비 JWT 형식 시 HTTP 400으로 실패를 확인한다.",
+    "G": "1. 빈 body 또는 잘못된 형식으로 POST한다.",
+    "H": "[기대 응답 예시]\nHTTP 400"
+  },
+  {
+    "D": "Google RISC 수신",
+    "E": "Google RISC 알림 수신",
+    "F": "DB 연결·조회 실패 등 인프라 장애 시 HTTP 500을 확인한다.",
+    "G": "1. DB 장애(연결 실패·쿼리 오류) 환경에서 유효 JWT를 POST한다.\n2. HTTP 500을 확인한다.",
+    "H": "[기대 응답 예시]\nHTTP 500"
+  },
+  {
+    "D": "Google RISC 수신",
+    "E": "Google RISC 알림 수신",
+    "F": "RISC 삭제 후 12.2에서 sns_type=6 beforeConn=0·빈 snsId를 확인한다.",
+    "G": "1. RISC 삭제 후 GET /v1/api/account/snsinfo 를 호출한다.",
+    "H": "[기대 응답 예시]\nsns_type=6: beforeConn=0, snsId=\"\""
+  },
+  {
+    "D": "Google RISC 수신",
+    "E": "Google RISC 알림 수신",
+    "F": "이미 삭제된 후 재수신 시 no-op·HTTP 202를 확인한다.",
+    "G": "1. 삭제 후 동일 JWT를 재POST한다.",
+    "H": "[기대 응답 예시]\nHTTP 202 (멱등)"
+  },
+  {
+    "D": "Google RISC 수신",
+    "E": "Google RISC 알림 수신",
+    "F": "verification 등 비대상 이벤트만 있으면 DELETE 없이 HTTP 202를 확인한다.",
+    "G": "1. verification만 포함 JWT를 POST한다.",
+    "H": "[기대 응답 예시]\nHTTP 202\nDELETE 없음"
+  },
+  {
+    "D": "Google RISC 수신",
+    "E": "Google RISC 알림 수신",
+    "F": "처리 대상·비대상 이벤트 혼합 시 대상 sub만 DELETE·HTTP 202를 확인한다.",
+    "G": "1. tokens-revoked+verification 혼합 JWT를 POST한다.",
+    "H": "[기대 응답 예시]\nHTTP 202\n처리 대상 sub만 DELETE"
+  }
+]

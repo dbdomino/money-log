@@ -3,6 +3,8 @@ package com.dbdomino.moneylog.data.repository;
 import com.dbdomino.moneylog.data.entity.User;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * 회원 조회 — {@code tbl_user}.
@@ -21,8 +23,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUserId(String userId);
 
     /**
-     * 이메일 중복 검사. 이메일은 선택 항목이라 {@code null}은 여러 건 허용되며,
-     * 값이 있을 때만 이 검사가 의미를 갖는다. 중복이면 {@code 2003}.
+     * 이메일 중복 검사. 중복이면 {@code 2003}.
+     *
+     * <p>파생 쿼리({@code existsByEmail})를 쓰지 않는다. Spring Data는 파라미터가
+     * {@code null}이면 {@code email = ?}를 <b>{@code email IS NULL}로 바꿔</b> 생성하는데,
+     * 이메일은 선택 항목이라 비어 있는 회원이 이미 여럿 존재한다. 그러면 이메일을
+     * 입력하지 않은 가입이 "중복"으로 판정돼 막힌다.
+     *
+     * <p>술어를 직접 고정해 {@code null}이 들어와도 항상 {@code false}가 되게 한다.
+     * 부분 유니크 인덱스 {@code ux_user_email}(값이 있을 때만 유일)과 조건이 같다.
      */
-    boolean existsByEmail(String email);
+    @Query("select count(u) > 0 from User u where u.email is not null and u.email = :email")
+    boolean existsByEmail(@Param("email") String email);
 }

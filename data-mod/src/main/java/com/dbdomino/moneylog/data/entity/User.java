@@ -48,7 +48,15 @@ import org.hibernate.annotations.ColumnDefault;
 @NoArgsConstructor
 public class User extends BaseAuditEntity {
 
-    /** 회원 대리키. 모든 자식 테이블이 참조하는 값. */
+    /**
+     * 회원 대리키. 모든 자식 테이블이 참조하는 값.
+     *
+     * <p>IDENTITY라 Hibernate가 insert 배치를 쓰지 못한다 — 생성된 키를 즉시 받아야
+     * 하기 때문이다. 가입 시 기본 지출유형 10종을 만드는 경로(FR-020)가 10번의 개별
+     * 왕복이 된다. 현재 규모에서 문제되지 않는다고 보고 유지한다. 바꾸려면 채번 전략
+     * 변경이 DDL과 {@code sql/schema-moneylogdb.sql} 덤프까지 함께 가는 변경이므로,
+     * 명세 개정 → 스키마 변경 → 덤프 재생성 순서를 밟는다.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_key")
@@ -78,10 +86,23 @@ public class User extends BaseAuditEntity {
     @Column(name = "intro", length = 500)
     private String intro;
 
-    /** 권한. {@code 1} 관리자 / {@code 3} 일반. 가입 기본값 {@code 3}. */
+    /** 권한 값 — 관리자. */
+    public static final short ROLE_ADMIN = 1;
+    /** 권한 값 — 일반. 가입 기본값이다. */
+    public static final short ROLE_MEMBER = 3;
+    /** {@link #ROLE_MEMBER}의 DDL 표기. 두 값을 항상 함께 고친다. */
+    private static final String ROLE_MEMBER_DDL = "3";
+
+    /**
+     * 권한. {@link #ROLE_ADMIN} 또는 {@link #ROLE_MEMBER}만 허용한다.
+     *
+     * <p>{@code @ColumnDefault}는 DDL용이고 실제 INSERT에 실리는 값은 아래 초기값이다
+     * (Hibernate는 {@code @DynamicInsert}가 없으면 컬럼을 항상 INSERT 문에 넣는다).
+     * 둘이 어긋나도 경고가 없으므로 한 상수에서 파생시킨다.
+     */
     @Column(name = "role", nullable = false)
-    @ColumnDefault("3")
-    private Short role = 3;
+    @ColumnDefault(ROLE_MEMBER_DDL)
+    private Short role = ROLE_MEMBER;
 
     /** 활성 여부. 관리자 정지 시 {@code false}. 정지해도 회원 행과 가계부 데이터는 남는다. */
     @Column(name = "active", nullable = false)

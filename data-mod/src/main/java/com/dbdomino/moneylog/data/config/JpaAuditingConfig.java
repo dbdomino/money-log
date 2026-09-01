@@ -40,6 +40,8 @@ public class JpaAuditingConfig {
      * <p>TODO 백엔드 Phase 1(회원·인증) 구현 시: 인증 필터가
      * {@code SecurityContext}에 실어 둔 {@code id_key}를 꺼내 돌려주도록 교체한다.
      * 로그인 없이 도는 경로(회원가입 등)는 여전히 빈 값이 될 수 있다.
+     * {@link com.dbdomino.moneylog.data.entity.BaseAuditEntity}의 {@code @Setter}와
+     * {@code AbstractSchemaIT.stampAudit()}이 같은 임시 조치이므로 함께 걷어낸다.
      */
     @Bean
     public AuditorAware<Long> auditorAware() {
