@@ -140,6 +140,9 @@ public abstract class AbstractSchemaIT {
     protected void deleteChildRows() {
         deleteByOwner("tbl_user_session");
         deleteByOwner("tbl_user_login_history");
+        // 기준 데이터는 거래·고정지출·목표·통계가 참조하므로 그것들보다 나중에 지운다.
+        deleteByOwner("tbl_user_payment_method");
+        deleteByOwner("tbl_user_expend_group");
     }
 
     /** 테스트 회원이 소유한 행을 그 테이블에서 지운다. */

@@ -99,17 +99,17 @@ Controller·Service·DTO는 이 기능에서 만들지 않는다.
 
 ### Tests for User Story 2
 
-- [ ] T021 [P] [US2] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/ExpendGroupConstraintIT.java` — 같은 회원·같은 이름 지출유형 2건은 실패, 다른 회원은 같은 이름 성공(quickstart #7). 삭제 표시된 유형과 같은 이름도 실패하는지 확인(research §5 — 부분 유니크를 쓰지 않는다)
-- [ ] T022 [P] [US2] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/SoftDeleteIT.java` — 수단·지출유형을 `deleted = true`로 UPDATE해도 행이 남고 다시 읽히는지 확인
-- [ ] T023 [P] [US2] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/PaymentMethodConstraintIT.java` — `type`이 `CARD`/`ACCOUNT` 밖이면 CHECK 위반, `purpose`가 `EXPENSE`/`INCOME` 밖이면 CHECK 위반
+- [x] T021 **(완료 — 2026-09-01)** [P] [US2] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/ExpendGroupConstraintIT.java` — 같은 회원·같은 이름 지출유형 2건은 실패, 다른 회원은 같은 이름 성공(quickstart #7). 삭제 표시된 유형과 같은 이름도 실패하는지 확인(research §5 — 부분 유니크를 쓰지 않는다)
+- [x] T022 **(완료 — 2026-09-01)** [P] [US2] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/SoftDeleteIT.java` — 수단·지출유형을 `deleted = true`로 UPDATE해도 행이 남고 다시 읽히는지 확인
+- [x] T023 **(완료 — 2026-09-01)** [P] [US2] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/PaymentMethodConstraintIT.java` — `type`이 `CARD`/`ACCOUNT` 밖이면 CHECK 위반, `purpose`가 `EXPENSE`/`INCOME` 밖이면 CHECK 위반
 
 ### Implementation for User Story 2
 
-- [ ] T024 [P] [US2] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserPaymentMethod.java`에 `tbl_user_payment_method` Entity를 만든다 — `name`, `type`, `purpose`, `in_use`(DEFAULT true), `card_expiry`(CHAR(7) nullable), `deleted`(DEFAULT false), `id_key` FK RESTRICT, 인덱스 `ix_user_payment_method_active`(`id_key, purpose, in_use, deleted`). 상세: data-model.md §4
-- [ ] T025 [P] [US2] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserExpendGroup.java`에 `tbl_user_expend_group` Entity를 만든다 — `name`, `in_use`(DEFAULT true), `default_group`(DEFAULT false), `icon_filename`(nullable), `deleted`(DEFAULT false), `id_key` FK RESTRICT, UNIQUE `ux_user_expend_group_name`(`id_key, name`), 인덱스 `ix_user_expend_group_active`(`id_key, in_use, deleted`). 상세: data-model.md §5
-- [ ] T026 [P] [US2] `data-mod/src/main/java/com/dbdomino/moneylog/data/repository/UserPaymentMethodRepository.java`와 `UserExpendGroupRepository.java`를 만든다 — 사용 중 목록 조회(`findByIdKeyAndPurposeAndInUseTrueAndDeletedFalse`, `findByIdKeyAndInUseTrueAndDeletedFalse`), 이름 중복 확인(`existsByIdKeyAndName`)
-- [ ] T027 [US2] `sql/04_constraints.sql`에 수단 CHECK 2건을 추가한다 — `ck_payment_method_type`, `ck_payment_method_purpose`
-- [ ] T028 [US2] 스키마를 반영하고 T021~T023을 실행해 통과를 확인한다
+- [x] T024 **(완료 — 2026-09-01)** [P] [US2] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserPaymentMethod.java`에 `tbl_user_payment_method` Entity를 만든다 — `name`, `type`, `purpose`, `in_use`(DEFAULT true), `card_expiry`(CHAR(7) nullable), `deleted`(DEFAULT false), `id_key` FK RESTRICT, 인덱스 `ix_user_payment_method_active`(`id_key, purpose, in_use, deleted`). 상세: data-model.md §4 `type`·`purpose`를 자바 열거형이 아니라 문자열 + 상수로 뒀다. Hibernate 6은 `@Enumerated(STRING)` 컬럼에 CHECK을 자동 생성하는데, 이 프로젝트는 CHECK을 `04_constraints.sql`이 이름까지 정해 관리하기로 했으므로(contracts §7) 두 곳이 같은 제약을 중복 생성하지 않도록 했다.
+- [x] T025 **(완료 — 2026-09-01)** [P] [US2] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserExpendGroup.java`에 `tbl_user_expend_group` Entity를 만든다 — `name`, `in_use`(DEFAULT true), `default_group`(DEFAULT false), `icon_filename`(nullable), `deleted`(DEFAULT false), `id_key` FK RESTRICT, UNIQUE `ux_user_expend_group_name`(`id_key, name`), 인덱스 `ix_user_expend_group_active`(`id_key, in_use, deleted`). 상세: data-model.md §5
+- [x] T026 **(완료 — 2026-09-01)** [P] [US2] `data-mod/src/main/java/com/dbdomino/moneylog/data/repository/UserPaymentMethodRepository.java`와 `UserExpendGroupRepository.java`를 만든다 — 사용 중 목록 조회(`findByIdKeyAndPurposeAndInUseTrueAndDeletedFalse`, `findByIdKeyAndInUseTrueAndDeletedFalse`), 이름 중복 확인(`existsByIdKeyAndName`)
+- [x] T027 **(완료 — 2026-09-01)** [US2] `sql/04_constraints.sql`에 수단 CHECK 2건을 추가한다 — `ck_payment_method_type`, `ck_payment_method_purpose`
+- [x] T028 **(완료 — 2026-09-01)** [US2] 스키마를 반영하고 T021~T023을 실행해 통과를 확인한다 **검증 결과**: `:data-mod:test` 19건 전부 통과(US2 8건 추가). 테이블 5개, CHECK 3건, UNIQUE 3건, 인덱스 8건이 DB에 실재함을 `pg_constraint`·`pg_indexes`로 확인했다. 제약 적용 전 실행에서 CHECK 관련 2건이 먼저 실패하는 것을 확인한 뒤 T027을 채웠다. `04_constraints.sql`은 2회 연속 exit=0.
 
 **Checkpoint**: 지출·소득이 참조할 두 축이 준비됐다. US3·US4·US5의 목표금액이 이 단계에 의존한다
 

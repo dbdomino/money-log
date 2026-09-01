@@ -92,9 +92,25 @@ END $$;
 -- ============================================================================
 -- US2 — 지출·소득 수단 · 지출유형 (tasks.md T027)
 -- ============================================================================
--- ck_payment_method_type    : type IN ('CARD','ACCOUNT')       — FR-030
--- ck_payment_method_purpose : purpose IN ('EXPENSE','INCOME')  — FR-030
--- (T027 에서 채운다)
+-- 종류는 카드·계좌 둘뿐이다. (FR-030)
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_payment_method
+        ADD CONSTRAINT ck_payment_method_type CHECK (type IN ('CARD', 'ACCOUNT'));
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 용도는 지출·소득 둘뿐이며 한 수단은 한쪽만 갖는다. (FR-030·FR-033)
+-- "사용 중인 수단 목록"(2.6)이 이 값으로 지출용·소득용을 가르므로, 값이 어긋나면
+-- 입력 화면에 엉뚱한 수단이 뜬다.
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_payment_method
+        ADD CONSTRAINT ck_payment_method_purpose CHECK (purpose IN ('EXPENSE', 'INCOME'));
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
 
 -- ============================================================================
