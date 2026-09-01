@@ -1,0 +1,60 @@
+package com.dbdomino.moneylog.data.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.time.OffsetDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+/**
+ * 로그인 이력 — {@code tbl_user_login_history}.
+ *
+ * <p>로그인이 성공할 때마다 한 줄씩 쌓인다. 세션과 달리 갱신되지 않는 기록이다.
+ *
+ * <p><b>무기한 보존한다</b>(FR-019a). 보존 기간·건수 상한을 두지 않고 정리 배치도
+ * 두지 않는다. 사용자 수가 많지 않아 누적량이 문제되지 않는다는 판단이다.
+ *
+ * @see <a href="../../../../../../../../specs/001-backend-db-schema/data-model.md">data-model.md §3</a>
+ */
+@Entity
+@Table(
+        name = "tbl_user_login_history",
+        indexes = @Index(name = "ix_user_login_history_at", columnList = "id_key, login_at")
+)
+@Getter
+@Setter
+@NoArgsConstructor
+public class UserLoginHistory extends BaseAuditEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "idx")
+    private Long idx;
+
+    /** 로그인한 회원. */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+            name = "id_key",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_user_login_history_user")
+    )
+    private User user;
+
+    /** 로그인 시각. */
+    @Column(name = "login_at", nullable = false)
+    private OffsetDateTime loginAt;
+
+    /** 접속 IP. IPv6 표기(최대 45자)까지 수용한다. 확보하지 못하면 비어 있을 수 있다. */
+    @Column(name = "login_ip", length = 45)
+    private String loginIp;
+}

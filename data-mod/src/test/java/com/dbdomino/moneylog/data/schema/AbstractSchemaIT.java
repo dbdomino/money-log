@@ -35,8 +35,13 @@ import org.springframework.transaction.support.TransactionTemplate;
 @ActiveProfiles("postgresql")
 public abstract class AbstractSchemaIT {
 
-    /** 테스트가 만든 회원을 골라내기 위한 접두사. 정리할 때 이 접두사로 지운다. */
-    protected static final String TEST_USER_PREFIX = "it_";
+    /**
+     * 테스트가 만든 회원을 골라내기 위한 접두사. 정리할 때 이 접두사로 지운다.
+     *
+     * <p>밑줄을 쓰지 않는다 — SQL {@code LIKE}에서 {@code _}는 한 글자 와일드카드라
+     * {@code "it_%"}로 지우면 의도치 않은 아이디까지 걸린다.
+     */
+    protected static final String TEST_USER_PREFIX = "ittest";
 
     @Autowired
     protected TransactionTemplate tx;
@@ -114,20 +119,32 @@ public abstract class AbstractSchemaIT {
      * 여기 삭제 순서를 함께 늘린다 — FK RESTRICT라 자식을 먼저 지워야 한다.
      */
     protected void cleanUpUsers() {
-        deleteChildRows();
-        jdbc.update("DELETE FROM tbl_user WHERE user_id LIKE ?", TEST_USER_PREFIX + "%");
+        // 반드시 트랜잭션 안에서 지운다. datasource 가 auto-commit=false 라
+        // 트랜잭션 밖의 JdbcTemplate 갱신은 커밋되지 않고 조용히 사라진다.
+        inTx(() -> {
+            deleteChildRows();
+            jdbc.update("DELETE FROM tbl_user WHERE user_id LIKE ?", TEST_USER_PREFIX + "%");
+        });
     }
 
     /**
      * 회원에 딸린 자식 행을 지운다.
      *
-     * <p>지금은 자식 테이블이 없어 비어 있다. 자식 저장 단위가 생길 때마다(US1의
-     * 세션·로그인 이력부터) 여기 삭제문을 늘린다. FK가 RESTRICT라 <b>자식을 먼저</b>
-     * 지워야 회원 삭제가 통과한다.
+     * <p>자식 저장 단위가 생길 때마다 여기 삭제문을 늘린다. FK가 RESTRICT라
+     * <b>자식을 먼저</b> 지워야 회원 삭제가 통과한다. 삭제 순서는 참조 방향의
+     * 역순이다.
+     *
+     * <p>US2~US5의 수단·지출유형·지출·소득·고정지출·목표금액·통계가 생기면 여기에
+     * 이어 붙인다.
      */
     protected void deleteChildRows() {
-        // US1~US5 진행하면서 채운다. 예:
-        // jdbc.update("DELETE FROM tbl_user_session WHERE id_key IN "
-        //         + "(SELECT id_key FROM tbl_user WHERE user_id LIKE ?)", TEST_USER_PREFIX + "%");
+        deleteByOwner("tbl_user_session");
+        deleteByOwner("tbl_user_login_history");
+    }
+
+    /** 테스트 회원이 소유한 행을 그 테이블에서 지운다. */
+    protected void deleteByOwner(String tableName) {
+        jdbc.update("DELETE FROM " + tableName + " WHERE id_key IN "
+                + "(SELECT id_key FROM tbl_user WHERE user_id LIKE ?)", TEST_USER_PREFIX + "%");
     }
 }
