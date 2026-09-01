@@ -1,5 +1,5 @@
 ---
-name: reviewdog-java
+name: reviewdog-java-secure
 description: >
   Java 구현 diff 로컬 브랜치 리뷰(reviewdog-java). 사용자가 지정한 로컬 베이스 브랜치와 현재 HEAD를
   three-dot diff로 비교한다(베이스 브랜치 입력 필수). 메인 에이전트가 Task 서브를 띄워
