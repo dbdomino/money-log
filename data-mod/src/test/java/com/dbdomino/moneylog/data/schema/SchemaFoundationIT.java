@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.dbdomino.moneylog.data.entity.User;
 import com.dbdomino.moneylog.data.repository.UserRepository;
 import java.util.Map;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +21,6 @@ class SchemaFoundationIT extends AbstractSchemaIT {
 
     @Autowired
     private UserRepository userRepository;
-
-    @AfterEach
-    void tearDown() {
-        cleanUpUsers();
-    }
 
     @Test
     @DisplayName("tbl_user 가 생성되고 기본키 이름이 id_key 다")
@@ -79,7 +73,7 @@ class SchemaFoundationIT extends AbstractSchemaIT {
         assertThat(found.getIdKey()).isEqualTo(saved.getIdKey());
         assertThat(found.getNickname()).isEqualTo("테스트회원");
         // 가입 기본값
-        assertThat(found.getRole()).isEqualTo((short) 3);
+        assertThat(found.getRole()).isEqualTo(User.ROLE_MEMBER);
         assertThat(found.getActive()).isTrue();
         // 감사 시각은 JPA Auditing 이 채운다
         assertThat(found.getCreatedAt()).isNotNull();

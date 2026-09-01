@@ -93,7 +93,15 @@ public class UserPaymentMethod extends BaseAuditEntity {
     @ColumnDefault("true")
     private Boolean inUse = true;
 
-    /** 카드 유효기간 {@code YYYY-MM}. {@code type=ACCOUNT}면 비어 있다. */
+    /**
+     * 카드 유효기간 {@code YYYY-MM}. {@code type=ACCOUNT}면 비어 있다.
+     *
+     * <p>타입이 {@code CHAR(7)}인 것은 data-model.md §4가 정한 값이다. 고정 길이라
+     * <b>7자보다 짧은 값을 넣으면 읽을 때 공백이 붙어 돌아온다.</b> {@code YYYY-MM}은
+     * 항상 정확히 7자라 현재는 문제가 없지만, 형식이 어긋난 값이 들어오면 비교가
+     * 조용히 실패한다. 형식 검증을 붙일 때는 다른 CHECK와 같이
+     * {@code sql/04_constraints.sql}에 이름을 붙여 관리한다.
+     */
     @Column(name = "card_expiry", columnDefinition = "char(7)")
     private String cardExpiry;
 

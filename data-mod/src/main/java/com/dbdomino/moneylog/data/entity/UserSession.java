@@ -13,6 +13,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -79,9 +80,18 @@ public class UserSession extends BaseAuditEntity {
     @Column(name = "refresh_expires_at", nullable = false)
     private OffsetDateTime refreshExpiresAt;
 
-    /** JWT 비활성화 여부. 폐기 시 {@code true}(두 해시를 비우는 것과 함께). */
+    /**
+     * JWT 비활성화 여부. 폐기 시 {@code true}(두 해시를 비우는 것과 함께).
+     *
+     * <p><b>세터를 열지 않는다.</b> 전이 경로를 {@link #revoke()} 하나로 좁힌다.
+     * {@code setRevoked(false)} 한 줄로 폐기를 되돌릴 수 있으면, 토큰 해시가 이미
+     * 비워진 세션이 "활성"으로 되살아나 부분 유니크 인덱스
+     * {@code ux_user_session_active}의 슬롯을 점유한다. 그 회원은 인증에 쓸 수 없는
+     * 세션 때문에 정상 로그인이 제약 위반으로 막힌다.
+     */
     @Column(name = "revoked", nullable = false)
     @ColumnDefault("false")
+    @Setter(AccessLevel.NONE)
     private Boolean revoked = false;
 
     /** 마지막 API 인증 성공 시각. 선택 항목이라 비어 있을 수 있다. */

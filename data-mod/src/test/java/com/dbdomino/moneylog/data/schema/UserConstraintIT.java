@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.dbdomino.moneylog.data.entity.User;
 import com.dbdomino.moneylog.data.repository.UserRepository;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +21,6 @@ class UserConstraintIT extends AbstractSchemaIT {
     @Autowired
     private UserRepository userRepository;
 
-    @AfterEach
-    void tearDown() {
-        cleanUpUsers();
-    }
-
     @Test
     @DisplayName("#1 같은 user_id 로 회원을 두 번 저장하면 두 번째가 거부된다")
     void rejectsDuplicateUserId() {
@@ -34,7 +28,7 @@ class UserConstraintIT extends AbstractSchemaIT {
 
         inTx(() -> userRepository.save(newUser(duplicated)));
 
-        assertViolatesConstraint(() -> userRepository.saveAndFlush(newUser(duplicated)));
+        assertViolatesConstraint(() -> userRepository.saveAndFlush(newUser(duplicated)), "ux_user_user_id");
     }
 
     @Test
@@ -70,7 +64,7 @@ class UserConstraintIT extends AbstractSchemaIT {
             User second = newUser();
             second.setEmail(duplicated);
             userRepository.saveAndFlush(second);
-        });
+        }, "ux_user_email");
     }
 
     private int countTestUsers() {

@@ -34,6 +34,13 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @Getter
+// TODO 이 @Setter 는 임시다. 감사 값은 원래 AuditingEntityListener 만 채워야 하며,
+// 공개 세터가 열려 있으면 created_by 를 임의로 덮어쓸 수 있어 감사 기록의 신뢰도가
+// 떨어진다(@Column(updatable=false)는 UPDATE만 막고 INSERT 시점 위조는 못 막는다).
+// 지금은 AuditorAware 가 빈 Optional 을 돌려주는 임시 구현이라 테스트가
+// AbstractSchemaIT.stampAudit() 으로 직접 채우고 있어 세터가 필요하다.
+// JpaAuditingConfig.auditorAware() 의 TODO 와 한 묶음이다 — Phase 1(회원·인증)에서
+// AuditorAware 가 실제 id_key 를 공급하게 되면 이 @Setter 와 stampAudit 을 함께 없앤다.
 @Setter
 public abstract class BaseAuditEntity {
 

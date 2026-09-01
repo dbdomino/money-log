@@ -6,7 +6,6 @@ import com.dbdomino.moneylog.data.entity.User;
 import com.dbdomino.moneylog.data.entity.UserExpendGroup;
 import com.dbdomino.moneylog.data.repository.UserExpendGroupRepository;
 import com.dbdomino.moneylog.data.repository.UserRepository;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,11 +29,6 @@ class ExpendGroupConstraintIT extends AbstractSchemaIT {
     @Autowired
     private UserExpendGroupRepository expendGroupRepository;
 
-    @AfterEach
-    void tearDown() {
-        cleanUpUsers();
-    }
-
     @Test
     @DisplayName("#7 같은 회원이 같은 이름의 지출유형을 두 번 만들면 두 번째가 거부된다")
     void rejectsDuplicateNameWithinSameUser() {
@@ -43,7 +37,7 @@ class ExpendGroupConstraintIT extends AbstractSchemaIT {
         inTx(() -> expendGroupRepository.saveAndFlush(newExpendGroup(user, "식비")));
 
         assertViolatesConstraint(() ->
-                expendGroupRepository.saveAndFlush(newExpendGroup(user, "식비")));
+                expendGroupRepository.saveAndFlush(newExpendGroup(user, "식비")), "ux_user_expend_group_name");
     }
 
     @Test
@@ -77,7 +71,7 @@ class ExpendGroupConstraintIT extends AbstractSchemaIT {
 
         // 삭제 표시했더라도 같은 이름을 다시 만들 수 없다
         assertViolatesConstraint(() ->
-                expendGroupRepository.saveAndFlush(newExpendGroup(user, "취미")));
+                expendGroupRepository.saveAndFlush(newExpendGroup(user, "취미")), "ux_user_expend_group_name");
     }
 
     private UserExpendGroup newExpendGroup(User user, String name) {

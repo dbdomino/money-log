@@ -8,7 +8,6 @@ import com.dbdomino.moneylog.data.entity.UserPaymentMethod;
 import com.dbdomino.moneylog.data.repository.UserExpendGroupRepository;
 import com.dbdomino.moneylog.data.repository.UserPaymentMethodRepository;
 import com.dbdomino.moneylog.data.repository.UserRepository;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,11 +32,6 @@ class SoftDeleteIT extends AbstractSchemaIT {
 
     @Autowired
     private UserExpendGroupRepository expendGroupRepository;
-
-    @AfterEach
-    void tearDown() {
-        cleanUpUsers();
-    }
 
     @Test
     @DisplayName("수단을 삭제 표시해도 행과 이름이 그대로 남는다")

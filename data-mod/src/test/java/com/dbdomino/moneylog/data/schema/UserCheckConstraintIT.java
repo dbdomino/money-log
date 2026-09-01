@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.dbdomino.moneylog.data.entity.User;
 import com.dbdomino.moneylog.data.repository.UserRepository;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,11 +19,6 @@ class UserCheckConstraintIT extends AbstractSchemaIT {
     @Autowired
     private UserRepository userRepository;
 
-    @AfterEach
-    void tearDown() {
-        cleanUpUsers();
-    }
-
     @Test
     @DisplayName("#17 허용되지 않은 권한 값(2)은 CHECK 제약에 막힌다")
     void rejectsUnsupportedRole() {
@@ -32,7 +26,7 @@ class UserCheckConstraintIT extends AbstractSchemaIT {
             User user = newUser();
             user.setRole((short) 2);
             userRepository.saveAndFlush(user);
-        });
+        }, "ck_user_role");
     }
 
     @Test
@@ -40,17 +34,17 @@ class UserCheckConstraintIT extends AbstractSchemaIT {
     void acceptsAdminAndMemberRoles() {
         User admin = inTx(() -> {
             User user = newUser();
-            user.setRole((short) 1);
+            user.setRole(User.ROLE_ADMIN);
             return userRepository.saveAndFlush(user);
         });
 
         User member = inTx(() -> {
             User user = newUser();
-            user.setRole((short) 3);
+            user.setRole(User.ROLE_MEMBER);
             return userRepository.saveAndFlush(user);
         });
 
-        assertThat(admin.getRole()).isEqualTo((short) 1);
-        assertThat(member.getRole()).isEqualTo((short) 3);
+        assertThat(admin.getRole()).isEqualTo(User.ROLE_ADMIN);
+        assertThat(member.getRole()).isEqualTo(User.ROLE_MEMBER);
     }
 }

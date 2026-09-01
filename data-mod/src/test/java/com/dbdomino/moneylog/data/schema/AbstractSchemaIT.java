@@ -5,8 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.dbdomino.moneylog.data.entity.BaseAuditEntity;
 import com.dbdomino.moneylog.data.entity.User;
 import java.time.OffsetDateTime;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -79,8 +81,15 @@ public abstract class AbstractSchemaIT {
      * 되면 이 헬퍼의 {@code createdBy}/{@code updatedBy} 부분은 필요 없어진다.
      */
     protected void stampAudit(BaseAuditEntity entity) {
-        stampAudit(entity, 0L);
+        stampAudit(entity, PLACEHOLDER_AUDITOR_ID_KEY);
     }
+
+    /**
+     * 임시 감사자 {@code id_key}. 실재하지 않는 값이며, 감사 컬럼에 FK를 걸지 않기로 한
+     * 덕에 통과한다. {@code AuditorAware}가 실제 값을 공급하게 되는 Phase 1에서
+     * {@code stampAudit}과 함께 사라진다.
+     */
+    protected static final Long PLACEHOLDER_AUDITOR_ID_KEY = 0L;
 
     /** 감사 컬럼을 지정한 {@code id_key}로 채운다. */
     protected void stampAudit(BaseAuditEntity entity, Long auditorIdKey) {
@@ -113,10 +122,37 @@ public abstract class AbstractSchemaIT {
     }
 
     /**
+     * <b>지정한 이름의</b> 제약에 막히는지까지 확인한다.
+     *
+     * <p>이름 없는 버전만 쓰면 검증력이 샌다 — 확인하려던 제약이 아예 만들어지지
+     * 않았어도 다른 제약(예: {@code created_by} NOT NULL)이 먼저 터지면 테스트가
+     * 초록으로 통과한다. 이 테스트들의 존재 이유가 "그 제약이 실제로 강제되는가"이므로,
+     * 이름이 정해진 검사는 이 쪽을 쓴다.
+     */
+    protected void assertViolatesConstraint(Runnable work, String constraintName) {
+        assertThatThrownBy(() -> inTx(work))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining(constraintName);
+    }
+
+    /**
+     * 테스트가 만든 데이터를 정리한다.
+     *
+     * <p>하위 클래스에서도 자동 실행된다 — JUnit 5가 상위 클래스의
+     * {@code @AfterEach}를 함께 돌리므로, 새 IT 클래스가 정리를 빠뜨리는 일 자체가
+     * 불가능해진다. 빠뜨리면 남은 데이터가 다음 실행의 유일 제약 검사를 오염시키는데
+     * 그 사실이 바로 드러나지 않아 원인을 찾기 어렵다.
+     */
+    @AfterEach
+    protected void tearDownTestData() {
+        cleanUpUsers();
+    }
+
+    /**
      * 테스트가 만든 회원과 그에 딸린 데이터를 지운다.
      *
-     * <p>각 테스트 클래스의 {@code @AfterEach}에서 부른다. 자식 테이블이 늘어나면
-     * 여기 삭제 순서를 함께 늘린다 — FK RESTRICT라 자식을 먼저 지워야 한다.
+     * <p>자식 테이블이 늘어나면 {@link #deleteChildRows()}의 삭제 순서를 함께 늘린다
+     * — FK RESTRICT라 자식을 먼저 지워야 한다.
      */
     protected void cleanUpUsers() {
         // 반드시 트랜잭션 안에서 지운다. datasource 가 auto-commit=false 라
@@ -145,8 +181,24 @@ public abstract class AbstractSchemaIT {
         deleteByOwner("tbl_user_expend_group");
     }
 
+    /**
+     * 소유자 기준으로 지울 수 있는 자식 테이블. 여기 없는 이름은 받지 않는다.
+     *
+     * <p>테이블명은 바인딩할 수 없어 SQL에 문자열로 이어 붙일 수밖에 없다. 허용 목록으로
+     * 좁혀 두면 오타·오용이 들어올 자리가 없어진다. 자식 저장 단위가 늘어날 때
+     * {@link #deleteChildRows()}와 함께 이 목록도 갱신한다.
+     */
+    private static final Set<String> OWNED_TABLES = Set.of(
+            "tbl_user_session",
+            "tbl_user_login_history",
+            "tbl_user_payment_method",
+            "tbl_user_expend_group");
+
     /** 테스트 회원이 소유한 행을 그 테이블에서 지운다. */
     protected void deleteByOwner(String tableName) {
+        if (!OWNED_TABLES.contains(tableName)) {
+            throw new IllegalArgumentException("허용되지 않은 테이블: " + tableName);
+        }
         jdbc.update("DELETE FROM " + tableName + " WHERE id_key IN "
                 + "(SELECT id_key FROM tbl_user WHERE user_id LIKE ?)", TEST_USER_PREFIX + "%");
     }

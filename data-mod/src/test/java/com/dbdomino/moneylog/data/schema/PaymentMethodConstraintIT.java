@@ -7,7 +7,6 @@ import com.dbdomino.moneylog.data.entity.UserPaymentMethod;
 import com.dbdomino.moneylog.data.repository.UserPaymentMethodRepository;
 import com.dbdomino.moneylog.data.repository.UserRepository;
 import java.util.List;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,11 +26,6 @@ class PaymentMethodConstraintIT extends AbstractSchemaIT {
 
     @Autowired
     private UserPaymentMethodRepository paymentMethodRepository;
-
-    @AfterEach
-    void tearDown() {
-        cleanUpUsers();
-    }
 
     @Test
     @DisplayName("허용되지 않은 종류 값은 CHECK 제약에 막힌다")

@@ -8,7 +8,6 @@ import com.dbdomino.moneylog.data.repository.UserRepository;
 import com.dbdomino.moneylog.data.repository.UserSessionRepository;
 import java.time.OffsetDateTime;
 import java.util.UUID;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,11 +30,6 @@ class UserSessionConstraintIT extends AbstractSchemaIT {
     @Autowired
     private UserSessionRepository sessionRepository;
 
-    @AfterEach
-    void tearDown() {
-        cleanUpUsers();
-    }
-
     @Test
     @DisplayName("#4 한 회원에게 폐기되지 않은 세션이 둘이면 두 번째가 거부된다")
     void rejectsSecondActiveSession() {
@@ -43,7 +37,7 @@ class UserSessionConstraintIT extends AbstractSchemaIT {
 
         inTx(() -> sessionRepository.saveAndFlush(newSession(user)));
 
-        assertViolatesConstraint(() -> sessionRepository.saveAndFlush(newSession(user)));
+        assertViolatesConstraint(() -> sessionRepository.saveAndFlush(newSession(user)), "ux_user_session_active");
     }
 
     @Test
