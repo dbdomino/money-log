@@ -78,12 +78,18 @@ Spec: FR-019, FR-019a · Entity #3
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |------|------|------|------|
-| `login_at` | TIMESTAMPTZ | NOT NULL | 로그인 시각 |
+| `login_at` | TIMESTAMPTZ | NOT NULL | 로그인 시도 시각 |
 | `login_ip` | VARCHAR(45) | NULL | 접속 IP. IPv6 표기(최대 45자) 수용 |
+| `success` | BOOLEAN | NOT NULL | 로그인 성공 여부. 성공과 실패가 한 테이블에 섞이므로 "마지막 로그인"을 뽑을 때는 `success = true` 조건이 필요하다 |
 
 **INDEX**: `(id_key, login_at)`
 
-무기한 보존, 정리 배치 없음(FR-019a).
+무기한 보존, 정리 배치 없음(FR-019a). 실패 시도까지 쌓이므로 성공만 남길 때보다 증가
+속도가 빠르다.
+
+`id_key`가 NOT NULL이라 **회원이 특정되는 실패만** 행이 된다 — 비밀번호 불일치와 비활성
+계정이다. 존재하지 않는 아이디로 온 시도는 채울 `id_key`가 없어 행을 만들지 않고
+애플리케이션 로그로만 남긴다(`002-backend-member-auth` FR-127).
 
 ---
 
