@@ -29,6 +29,12 @@
 | 1.15 | `AdminMemberUpdate` | PATCH | `/api/v1/admin/members/{memberId}` | 관리자 |
 | 1.16 | `AdminMemberDeactivate` | PATCH | `/api/v1/admin/members/{memberId}/deactivate` | 관리자 |
 
+## Clarifications
+
+### Session 2026-09-02
+
+- Q: 실패한 로그인 시도를 `tbl_user_login_history`에 남기나? → A: 남긴다. 성공·실패를 구분하는 컬럼을 추가하고 둘 다 기록하되, 회원을 특정할 수 없는 시도(존재하지 않는 아이디)는 로그로만 남긴다
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - 인증 기반이 선다 (Priority: P1) 🎯 MVP
@@ -141,7 +147,10 @@
 - **FR-122**: 아이디 찾기·비밀번호 찾기·비밀번호 재설정은 비로그인 상태에서 호출할 수 있어야 한다
 - **FR-123**: 아이디 찾기(1.9)는 가입 이메일로 회원을 찾고, 응답 `memberId`는 일부를 가린 값(`use***01`)과 `masked=true`를 함께 돌려줘야 한다. 이메일 형식이 어긋나면 `9001`, 일치하는 회원이 없으면 `2001`로 거절한다
 - **FR-124**: 비밀번호 찾기(1.10)와 재설정(1.11)의 본인 확인 수단은 `memberId`+`nickname` 대조 하나이며, 재설정은 찾기 통과 여부와 무관하게 두 값을 **다시** 검증해야 한다. 불일치는 `2001`, 비활성 회원은 `1004`로 거절한다
-- **FR-125**: 로그인 성공 시 `tbl_user_login_history`에 이력 1건(회원 `id_key`, 로그인 시각 `login_at`, 요청 IP `login_ip`)을 남겨야 한다. 실패한 로그인 시도를 남길지는 정해져 있지 않다 [NEEDS CLARIFICATION: `1.3-MemberLogin.md`가 "기록할 수 있다"로만 적고 있고, 현재 테이블에 성공·실패를 구분할 컬럼이 없다]
+- **FR-125**: 로그인 시도는 성공·실패 **모두** `tbl_user_login_history`에 이력 1건(회원 `id_key`, 시도 시각 `login_at`, 요청 IP `login_ip`, 성공 여부)을 남겨야 한다
+- **FR-126**: 이력 행은 성공과 실패를 **구분할 수 있어야** 한다. `tbl_user_login_history`에 성공 여부 컬럼(`success boolean NOT NULL`)을 추가하며, 이는 `001-backend-db-schema`의 Entity·스키마 덤프 개정을 수반한다
+- **FR-127**: 실패 이력은 **회원이 특정되는 경우에만** 남긴다. 아이디는 맞고 비밀번호가 틀린 경우(`1003`)와 비활성 계정(`1004`)이 여기 해당한다. 존재하지 않는 아이디로 온 시도는 `id_key`를 채울 수 없으므로 행을 만들지 않고 애플리케이션 로그로만 남긴다 — `tbl_user_login_history`의 `id_key`·`created_by`·`updated_by`가 NOT NULL이고, 감사 컬럼을 nullable로 두는 것은 `tbl_user`에만 허용된 예외이기 때문이다
+- **FR-128**: 이력에 **비밀번호와 토큰을 저장하지 않는다.** 실패 이력에도 시도한 비밀번호를 남기지 않으며, 애플리케이션 로그에 찍는 아이디·비밀번호는 마스킹한다
 
 ### 이 기능이 쓰는 에러코드
 
@@ -167,7 +176,7 @@
 
 - **회원(`tbl_user`)**: 로그인 계정과 프로필. 기본키 `id_key`, 로그인 아이디 `user_id`, bcrypt 해시 `pw`, 권한 `role`(1 관리자 / 3 일반), 활성 여부 `active`
 - **회원 세션(`tbl_user_session`)**: 로그인 1회의 토큰 상태. 기본키는 대리키 `idx`이고, JWT 클레임 `sid`에 실리는 `session_id`(UUID)는 유니크 제약이 걸린 별도 컬럼이다(`_공통.md`가 `session_id`를 "PK"로 적은 것은 개정 대상이다). Access·Refresh 해시와 만료 시각, 폐기 여부 `revoked`를 갖고, 회원당 폐기되지 않은 것은 부분 유니크 인덱스 `ux_user_session_active`가 1건으로 강제한다
-- **로그인 이력(`tbl_user_login_history`)**: 로그인 시도 기록. 무기한 누적되므로 조회는 페이징으로 끊는다
+- **로그인 이력(`tbl_user_login_history`)**: 로그인 시도 기록. 회원 `id_key`, 시도 시각 `login_at`, 요청 IP `login_ip`, 성공 여부 `success`를 갖는다. 성공과 실패가 한 테이블에 섞이므로 "마지막 로그인"을 뽑을 때는 `success=true` 조건이 필요하다. 무기한 누적되므로 조회는 페이징으로 끊는다
 
 ## Success Criteria *(mandatory)*
 
@@ -178,10 +187,12 @@
 - **SC-103**: 같은 회원으로 두 번 로그인한 뒤 활성 세션을 세면 **정확히 1건**이다
 - **SC-104**: 폐기된 토큰으로 로그인 필요 API를 부르면 **100% `1006`** 으로 거부된다
 - **SC-105**: 가입(1.2) 직후와 관리자 회원 추가(1.12) 직후 모두 그 회원의 지출유형이 **정확히 10건**이고 전부 `defaultGroup=true`다
-- **SC-108**: 로그인 성공 1회마다 `tbl_user_login_history` 행이 **정확히 1건** 늘어난다
-- **SC-109**: 아이디 찾기 성공 응답의 `memberId`가 **원문과 다르고** `masked=true`다
 - **SC-106**: 일반 회원 토큰으로 관리자 API 5건을 부르면 **전부 `1002`** 로 거부된다
 - **SC-107**: 어떤 응답에도 비밀번호 해시가 포함되지 않는다
+- **SC-108**: 로그인 성공 1회와 비밀번호 오류 1회마다 `tbl_user_login_history` 행이 **각각 1건** 늘고, 두 행의 `success`가 각각 `true`·`false`다
+- **SC-109**: 아이디 찾기 성공 응답의 `memberId`가 **원문과 다르고** `masked=true`다
+- **SC-110**: 존재하지 않는 아이디로 로그인을 시도하면 이력 행이 **늘지 않는다**
+- **SC-111**: 이력 테이블 어느 행에도 비밀번호·토큰 값이 **포함되지 않는다**
 
 ## Assumptions
 
@@ -191,4 +202,5 @@
 - Refresh Token은 JWT가 아닌 불투명 랜덤 문자열이다
 - 비밀번호 해싱은 Spring Security `BCryptPasswordEncoder`(또는 동등 라이브러리)를 쓴다
 - 이메일 발송·SMS 인증 같은 외부 채널 연동은 이 기능의 범위 밖이다. 아이디 찾기의 본인 확인 수단은 가입 이메일 대조, 비밀번호 찾기·재설정의 본인 확인 수단은 `memberId`+`nickname` 대조이며 둘 다 외부 채널을 쓰지 않는다
-- 로그인 이력은 무기한 보존하며 정리 배치를 두지 않는다
+- 로그인 이력은 무기한 보존하며 정리 배치를 두지 않는다. 실패 이력까지 쌓이므로 성공만 남길 때보다 증가 속도가 빠르다 — 보관 기간 정책이 필요해지면 별도 기능으로 다룬다
+- 실패 이력은 무차별 대입 탐지에 쓸 수 있는 재료지만, 잠금·속도 제한(rate limiting)은 이 기능의 범위 밖이다
