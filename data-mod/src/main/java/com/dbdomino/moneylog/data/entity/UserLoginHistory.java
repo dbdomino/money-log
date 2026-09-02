@@ -29,6 +29,7 @@ import lombok.Setter;
 @Entity
 @Table(
         name = "tbl_user_login_history",
+        comment = "로그인 이력. 정리 배치 없이 무기한 누적되므로 조회는 반드시 페이징으로 끊는다",
         indexes = @Index(name = "ix_user_login_history_at", columnList = "id_key, login_at")
 )
 @Getter

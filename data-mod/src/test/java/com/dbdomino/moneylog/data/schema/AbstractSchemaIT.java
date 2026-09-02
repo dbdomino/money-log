@@ -4,7 +4,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.dbdomino.moneylog.data.entity.BaseAuditEntity;
 import com.dbdomino.moneylog.data.entity.User;
+import com.dbdomino.moneylog.data.entity.UserExpendGroup;
+import com.dbdomino.moneylog.data.entity.UserExpense;
+import com.dbdomino.moneylog.data.entity.UserFixedExpense;
+import com.dbdomino.moneylog.data.entity.UserFixedExpenseMonthly;
+import com.dbdomino.moneylog.data.entity.UserPaymentMethod;
+import com.dbdomino.moneylog.data.entity.UserStatistics;
+import com.dbdomino.moneylog.data.entity.UserStatisticsExpendGroup;
+import com.dbdomino.moneylog.data.entity.UserStatisticsPaymentMethod;
+import com.dbdomino.moneylog.data.entity.UserStatisticsWeekly;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.YearMonth;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -68,6 +80,191 @@ public abstract class AbstractSchemaIT {
         user.setNickname("테스트회원");
         stampAudit(user);
         return user;
+    }
+
+    /**
+     * 저장 가능한 지출용 카드 수단 1건을 만든다(아직 저장하지 않는다).
+     *
+     * <p>지출·소득·고정지출 검사가 전부 수단 1건을 먼저 필요로 해서 여기 둔다.
+     * 다른 값이 필요하면 돌려받은 객체의 세터로 바꾼다.
+     */
+    protected UserPaymentMethod newPaymentMethod(User user) {
+        UserPaymentMethod method = new UserPaymentMethod();
+        method.setUser(user);
+        method.setName("국민카드");
+        method.setType(UserPaymentMethod.TYPE_CARD);
+        method.setPurpose(UserPaymentMethod.PURPOSE_EXPENSE);
+        method.setCardExpiry("2028-12");
+        stampAudit(method, user.getIdKey());
+        return method;
+    }
+
+    /** 저장 가능한 지출유형 1건을 만든다(아직 저장하지 않는다). */
+    protected UserExpendGroup newExpendGroup(User user, String name) {
+        UserExpendGroup group = new UserExpendGroup();
+        group.setUser(user);
+        group.setName(name);
+        stampAudit(group, user.getIdKey());
+        return group;
+    }
+
+    /**
+     * 저장 가능한 일시불 지출 1건을 만든다(아직 저장하지 않는다).
+     *
+     * <p>이름 스냅샷은 넘겨받은 수단·유형의 <b>현재</b> 이름으로 채운다 — 등록 시점의
+     * 동작을 그대로 흉내 낸 것이다. 할부로 만들려면 돌려받은 객체에 할부 3개 값을
+     * 세터로 채운다.
+     */
+    protected UserExpense newExpense(User user, UserPaymentMethod method, UserExpendGroup group,
+                                     long amount, LocalDate paymentDate) {
+        UserExpense expense = new UserExpense();
+        expense.setUser(user);
+        expense.setPaymentMethod(method);
+        expense.setPaymentMethodName(method.getName());
+        expense.setExpendGroup(group);
+        expense.setExpendGroupName(group.getName());
+        expense.setAmount(amount);
+        expense.setPaymentDate(paymentDate);
+        expense.setPlace("동네식당");
+        expense.setContent("점심");
+        stampAudit(expense, user.getIdKey());
+        return expense;
+    }
+
+    /**
+     * 저장 가능한 고정지출 관리 1건을 만든다(아직 저장하지 않는다).
+     *
+     * <p>적용 기간을 <b>해를 넘기게</b> 잡는다 — 2026-11 ~ 2027-02. 연·월을 따로
+     * 비교하는 실수가 있으면 이 구간의 1·2월이 빠지므로 픽스처 단계에서 그 함정을
+     * 밟도록 해 뒀다. 결제일 31은 말일 보정이 필요한 값이다.
+     */
+    protected UserFixedExpense newFixedExpense(User user, UserPaymentMethod method,
+                                               UserExpendGroup group) {
+        UserFixedExpense fixed = new UserFixedExpense();
+        fixed.setUser(user);
+        fixed.setName("월세");
+        fixed.setPaymentMethod(method);
+        fixed.setExpendGroup(group);
+        fixed.setAmount(500_000L);
+        fixed.setPaymentDayOfMonth(31);
+        fixed.setContent("원룸 월세");
+        fixed.setStartYear(2026);
+        fixed.setStartMonth(11);
+        fixed.setEndYear(2027);
+        fixed.setEndMonth(2);
+        stampAudit(fixed, user.getIdKey());
+        return fixed;
+    }
+
+    /**
+     * 저장 가능한 월별 고정지출 내역 1건을 만든다(아직 저장하지 않는다).
+     *
+     * <p>결제일은 <b>말일 보정을 끝낸</b> 값으로 채운다(FR-055) — 설정의 결제일이
+     * 그 달 말일보다 크면 말일로 내린다. 운영 코드가 저장 전에 하는 일과 같다.
+     */
+    protected UserFixedExpenseMonthly newFixedExpenseMonthly(UserFixedExpense fixed,
+                                                             int year, int month) {
+        UserFixedExpenseMonthly monthly = new UserFixedExpenseMonthly();
+        monthly.setUser(fixed.getUser());
+        monthly.setFixedExpense(fixed);
+        monthly.setYear(year);
+        monthly.setMonth(month);
+        monthly.setAmount(fixed.getAmount());
+        monthly.setPaymentDate(clampToMonthEnd(year, month, fixed.getPaymentDayOfMonth()));
+        monthly.setContent(fixed.getContent());
+        monthly.setPaymentMethod(fixed.getPaymentMethod());
+        monthly.setExpendGroup(fixed.getExpendGroup());
+        stampAudit(monthly, fixed.getUser().getIdKey());
+        return monthly;
+    }
+
+    /** 결제일을 그 달 안으로 내린다 — 2월에 31일은 없다(FR-055). */
+    protected LocalDate clampToMonthEnd(int year, int month, int dayOfMonth) {
+        YearMonth yearMonth = YearMonth.of(year, month);
+        return yearMonth.atDay(Math.min(dayOfMonth, yearMonth.lengthOfMonth()));
+    }
+
+    /**
+     * 저장 가능한 월별 통계 스냅샷 1건을 만든다(아직 저장하지 않는다).
+     *
+     * <p>비율 2개는 {@code NUMERIC(5,2)}라 소수점 둘째 자리까지 담긴다. 읽을 때
+     * 자릿수가 맞춰져 돌아오므로 픽스처도 같은 자릿수로 둔다.
+     */
+    protected UserStatistics newStatistics(User user, int year, int month) {
+        UserStatistics statistics = new UserStatistics();
+        statistics.setUser(user);
+        statistics.setYear(year);
+        statistics.setMonth(month);
+        statistics.setSavedAt(OffsetDateTime.now());
+        statistics.setIncomeTotal(3_000_000L);
+        statistics.setExpenseTotal(1_000_000L);
+        statistics.setFixedAmount(400_000L);
+        statistics.setRegularAmount(600_000L);
+        statistics.setFixedPercent(new BigDecimal("40.00"));
+        statistics.setRegularPercent(new BigDecimal("60.00"));
+        stampAudit(statistics, user.getIdKey());
+        return statistics;
+    }
+
+    /** 저장 가능한 통계 주별 지출 1건을 만든다(아직 저장하지 않는다). */
+    protected UserStatisticsWeekly newStatisticsWeekly(UserStatistics statistics, int weekIndex,
+                                                       LocalDate weekStart, LocalDate weekEnd) {
+        UserStatisticsWeekly weekly = new UserStatisticsWeekly();
+        weekly.setUser(statistics.getUser());
+        weekly.setStatistics(statistics);
+        weekly.setWeekIndex(weekIndex);
+        weekly.setWeekStart(weekStart);
+        weekly.setWeekEnd(weekEnd);
+        weekly.setAmount(150_000L);
+        stampAudit(weekly, statistics.getUser().getIdKey());
+        return weekly;
+    }
+
+    /**
+     * 저장 가능한 통계 지출유형별 요약 1건을 만든다(아직 저장하지 않는다).
+     *
+     * <p>{@code expendGroupIdx}를 <b>값으로</b> 받는다 — 이 컬럼에는 FK가 없어서
+     * (FR-078a) 실재하지 않는 대리키도 넣을 수 있고, 그것이 이 설계의 요점이다.
+     */
+    protected UserStatisticsExpendGroup newStatisticsExpendGroup(UserStatistics statistics,
+                                                                 Long expendGroupIdx, String name) {
+        UserStatisticsExpendGroup group = new UserStatisticsExpendGroup();
+        group.setUser(statistics.getUser());
+        group.setStatistics(statistics);
+        group.setExpendGroupIdx(expendGroupIdx);
+        group.setExpendGroupName(name);
+        group.setAmount(250_000L);
+        group.setTargetAmount(300_000L);
+        group.setUsageRate(new BigDecimal("83.33"));
+        group.setStatus(UserStatisticsExpendGroup.STATUS_UNDER);
+        stampAudit(group, statistics.getUser().getIdKey());
+        return group;
+    }
+
+    /** 저장 가능한 통계 수단별 요약 1건을 만든다. {@code paymentMethodIdx}도 값일 뿐이다. */
+    protected UserStatisticsPaymentMethod newStatisticsPaymentMethod(UserStatistics statistics,
+                                                                     Long paymentMethodIdx,
+                                                                     String name) {
+        UserStatisticsPaymentMethod method = new UserStatisticsPaymentMethod();
+        method.setUser(statistics.getUser());
+        method.setStatistics(statistics);
+        method.setPaymentMethodIdx(paymentMethodIdx);
+        method.setPaymentMethodName(name);
+        method.setAmount(250_000L);
+        stampAudit(method, statistics.getUser().getIdKey());
+        return method;
+    }
+
+    /**
+     * 할부 그룹 식별자를 시퀀스에서 하나 발급받는다.
+     *
+     * <p>Entity의 {@code @GeneratedValue}가 아니라 <b>미리 받아 N개 행에 같이 넣는</b>
+     * 값이다(FR-044). 운영 코드도 같은 방식으로 쓰게 되므로 테스트도 시퀀스를 그대로
+     * 탄다 — 임의의 상수를 쓰면 시퀀스가 실재하는지({@code T035}) 검증되지 않는다.
+     */
+    protected Long nextInstallmentGroupId() {
+        return inTx(() -> jdbc.queryForObject(
+                "SELECT nextval('" + UserExpense.INSTALLMENT_GROUP_SEQUENCE + "')", Long.class));
     }
 
     /**
@@ -176,6 +373,21 @@ public abstract class AbstractSchemaIT {
     protected void deleteChildRows() {
         deleteByOwner("tbl_user_session");
         deleteByOwner("tbl_user_login_history");
+        // 거래는 수단·지출유형을 참조하므로 기준 데이터보다 먼저 지운다.
+        deleteByOwner("tbl_expense");
+        deleteByOwner("tbl_income");
+        // 월별 내역은 관리 행을 참조한다. FK가 CASCADE라 순서가 어긋나도 부모 삭제가
+        // 막히진 않지만, 삭제 순서를 참조 역순으로 유지해 규칙을 한 가지로 둔다.
+        deleteByOwner("tbl_fixed_expense_monthly");
+        deleteByOwner("tbl_fixed_expense");
+        // 통계 상세는 스냅샷을 참조한다. 유형·수단 참조는 FK가 없어(FR-078a)
+        // 기준 데이터보다 먼저 지울 필요는 없지만 순서를 한 규칙으로 유지한다.
+        deleteByOwner("tbl_statistics_weekly");
+        deleteByOwner("tbl_statistics_expend_group");
+        deleteByOwner("tbl_statistics_payment_method");
+        deleteByOwner("tbl_statistics");
+        deleteByOwner("tbl_expend_target_monthly");
+        deleteByOwner("tbl_expend_target_default");
         // 기준 데이터는 거래·고정지출·목표·통계가 참조하므로 그것들보다 나중에 지운다.
         deleteByOwner("tbl_user_payment_method");
         deleteByOwner("tbl_user_expend_group");
@@ -191,6 +403,16 @@ public abstract class AbstractSchemaIT {
     private static final Set<String> OWNED_TABLES = Set.of(
             "tbl_user_session",
             "tbl_user_login_history",
+            "tbl_expense",
+            "tbl_income",
+            "tbl_fixed_expense_monthly",
+            "tbl_fixed_expense",
+            "tbl_statistics_weekly",
+            "tbl_statistics_expend_group",
+            "tbl_statistics_payment_method",
+            "tbl_statistics",
+            "tbl_expend_target_monthly",
+            "tbl_expend_target_default",
             "tbl_user_payment_method",
             "tbl_user_expend_group");
 

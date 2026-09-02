@@ -4,7 +4,9 @@
 
 ## 1. 물리 테이블 명명
 
-**Decision**: 회원 저장 단위를 `tbl_user`로 두고, 회원 소유 저장 단위 전체에 **`tbl_user_` 접두사**를 쓴다.
+**Decision (2026-09-02 개정)**: 테이블 이름은 **`tbl_<자원명>`** 이 기본이고, `tbl_user_` 접두사는 **꼭 필요한 곳에만** 쓴다. 필요한 곳은 두 가지다 — ① 레거시 `money-app` 이름과 정면 충돌하는 3개, ② FR-009가 이름을 확정한 2개.
+
+이전 판은 15개 전부에 `tbl_user_`를 붙였다. 실제로 충돌하는 것은 3개뿐인데 전면 적용해서, `tbl_user_statistics_payment_method`가 "통계의 수단별 요약"이 아니라 "회원 통계 수단 방법"처럼 읽혔다. 이름이 자원을 설명하지 못하면 접두사가 값을 못 한다.
 
 | # | 논리 단위 | 물리 테이블 | 레거시(비겹침 확인) |
 |---|-----------|-------------|---------------------|
@@ -13,28 +15,42 @@
 | 3 | 로그인 이력 | `tbl_user_login_history` | `tbl_login_history` |
 | 4 | 지출·소득 수단 | `tbl_user_payment_method` | `tbl_payment_Method` → PG 소문자 `tbl_payment_method` |
 | 5 | 지출유형 | `tbl_user_expend_group` | `tbl_expend_group` |
-| 6 | 월별 지출 내역 | `tbl_user_expense` | `tbl_expend` |
-| 7 | 월별 수입 내역 | `tbl_user_income` | (없음) |
-| 8 | 고정지출 관리 | `tbl_user_fixed_expense` | `tbl_expend_fix` |
-| 9 | 월별 고정지출 내역 | `tbl_user_fixed_expense_monthly` | (없음) |
-| 10 | 기본 목표금액 | `tbl_user_expend_target_default` | `tbl_Ammount` → `tbl_ammount` |
-| 11 | 월별 목표금액 | `tbl_user_expend_target_monthly` | (없음) |
-| 12 | 월별 통계 스냅샷 | `tbl_user_statistics` | `tbl_system_stat`, `expend_statistics` |
-| 13 | 통계 주별 지출 | `tbl_user_statistics_weekly` | (없음) |
-| 14 | 통계 지출유형별 요약 | `tbl_user_statistics_expend_group` | `expend_statistics_detail` |
-| 15 | 통계 수단별 요약 | `tbl_user_statistics_payment_method` | (없음) |
+| 6 | 월별 지출 내역 | `tbl_expense` | `tbl_expend` |
+| 7 | 월별 수입 내역 | `tbl_income` | (없음) |
+| 8 | 고정지출 관리 | `tbl_fixed_expense` | `tbl_expend_fix` |
+| 9 | 월별 고정지출 내역 | `tbl_fixed_expense_monthly` | (없음) |
+| 10 | 기본 목표금액 | `tbl_expend_target_default` | `tbl_Ammount` → `tbl_ammount` |
+| 11 | 월별 목표금액 | `tbl_expend_target_monthly` | (없음) |
+| 12 | 월별 통계 스냅샷 | `tbl_statistics` | `tbl_system_stat`, `expend_statistics` |
+| 13 | 통계 주별 지출 | `tbl_statistics_weekly` | (없음) |
+| 14 | 통계 지출유형별 요약 | `tbl_statistics_expend_group` | `expend_statistics_detail` |
+| 15 | 통계 수단별 요약 | `tbl_statistics_payment_method` | (없음) |
 
-**Rationale**: FR-009는 회원 `tbl_user`·세션 `tbl_user_session`만 확정하고 나머지를 "레거시와 겹치지 않는 신규 명명"으로 남겼다. `tbl_user_` 접두사를 일괄 적용하면 (a) 레거시 9개 이름 중 어떤 것과도 기계적으로 겹치지 않고, (b) 모든 자식이 `id_key`로 `tbl_user`에 매달린다는 FR-008 구조가 이름에 드러나며, (c) 접두사 뒤 부분을 명세의 API 자원 이름(`payment-method`, `expend-group`, `expense`, `income`, `fixed-expense`, `expend-target`, `statistics`)과 1:1로 맞출 수 있다.
+**접두사를 유지하는 5개와 그 사유**
 
-PostgreSQL은 따옴표 없는 식별자를 소문자로 접으므로 레거시 `tbl_payment_Method`는 실제로 `tbl_payment_method`다. 접두사 없이 API 자원 이름을 그대로 쓰면 이 테이블과 정면 충돌한다 — 접두사가 필요한 실제 이유다.
+| 테이블 | 사유 |
+|--------|------|
+| `tbl_user` | 회원 테이블 자체. FR-009 확정 |
+| `tbl_user_session` | FR-009 확정. "회원 세션"으로 자연스럽게 읽힌다 |
+| `tbl_user_login_history` | 레거시 `tbl_login_history`와 충돌 |
+| `tbl_user_payment_method` | 레거시 `tbl_payment_Method`(PG 소문자 접힘 → `tbl_payment_method`)와 충돌 |
+| `tbl_user_expend_group` | 레거시 `tbl_expend_group`과 충돌 |
 
-가장 긴 이름은 `tbl_user_statistics_payment_method`(34자)로 PostgreSQL 식별자 한계(63자) 안이다.
+**Rationale**: FR-009는 `tbl_user`·`tbl_user_session`만 확정하고 나머지를 "레거시와 겹치지 않는 신규 명명"으로 남겼다. 겹치지 않기만 하면 되므로, 겹치지 않는 이름에까지 접두사를 붙일 근거가 없다. 접두사 뒤 부분이 명세의 API 자원 이름(`expense`, `income`, `fixed-expense`, `expend-target`, `statistics`)과 1:1로 맞는다는 이점은 접두사를 떼면 오히려 더 곧게 드러난다.
+
+**충돌이 실재하는 이유** — `money-app`은 루트 `build.gradle`에서 `data-mod`를 의존하고, 자기 `application.yml`의 `spring.profiles.active: postgresql`로 data-mod의 datasource 설정을 쓴다. 그리고 레거시 Entity 12개(`tbl_member`·`tbl_expend`·`tbl_expend_group`·`tbl_payment_Method` 등)를 `ddl-auto`와 함께 갖고 있다. 즉 `money-app`을 띄우면 **같은 `moneylog` 스키마에 레거시 테이블이 생긴다.** 가정이 아니라 현재 구성이다.
+
+PostgreSQL은 따옴표 없는 식별자를 소문자로 접으므로 대소문자 차이는 충돌 회피 근거가 되지 않는다.
+
+가장 긴 이름은 `tbl_statistics_payment_method`(29자)로 PostgreSQL 식별자 한계(63자) 안이다.
+
+**제약·인덱스 이름도 함께 맞춘다** — 테이블 이름이 바뀌면 `ix_<테이블>_<컬럼들>`·`ux_<테이블>_<컬럼들>`·`fk_<테이블>_<대상>` 규칙에 따라 그 테이블의 제약 이름에서도 `user_`가 빠진다(예: `ix_user_expense_date` → `ix_expense_date`). 접두사를 유지하는 5개 테이블의 제약 이름은 그대로다.
 
 **Alternatives considered**:
-- `tbl_be_*`(이전 판) — `be`가 무엇인지 이름만 보고 알 수 없고, `tbl_user` 확정과 어긋난다
-- 접두사 없이 자원 이름만(`tbl_payment_method`, `tbl_expend_group`) — 레거시와 2건 정면 충돌
-- 충돌하는 것만 다른 이름(`tbl_payment`, `tbl_expend_type`) — 충돌 여부를 이름마다 따로 판단해야 하고, `expend_type`처럼 명세에 없는 용어가 생긴다
-- 별도 스키마 분리(`moneylog_be`) — 헌장이 `moneylog` 단일 스키마를 전제
+- `tbl_be_*` — `be`가 무엇인지 이름만 보고 알 수 없고, `tbl_user` 확정과 어긋난다
+- **15개 전면 `tbl_user_` 접두사**(이전 판) — 충돌하지 않는 이름까지 길어지고, 이름이 자원을 설명하지 못한다. 실제로 이 이유로 폐기했다
+- 접두사 없이 자원 이름만 15개 전부 — 레거시와 3건 정면 충돌
+- 레거시를 별도 스키마(`moneylog_legacy`)로 분리하고 15개 전부 접두사 제거 — 충돌 자체가 사라져 가장 깨끗하지만, `money-app`의 서비스·컨트롤러 다수가 레거시 Entity를 쓰고 있어 이 기능의 범위를 넘는다. `money-app`이 "DB 직접 접근 없음"(CLAUDE.md)에 도달하면 그때 다시 본다
 
 ---
 
@@ -104,13 +120,13 @@ API가 주고받는 `memberId`는 `user_id` 값이므로, 인증 필터가 토�
 | `tbl_user` | `(user_id)` / `(email) WHERE email IS NOT NULL` | FR-010 / FR-012 |
 | `tbl_user_session` | `(session_id)` / `(id_key) WHERE revoked = false` | FR-015 / FR-017 |
 | `tbl_user_expend_group` | `(id_key, name)` | FR-035 |
-| `tbl_user_fixed_expense_monthly` | `(fixed_expense_idx, year, month)` | FR-053 |
-| `tbl_user_expend_target_default` | `(id_key, expend_group_idx)` | FR-070 |
-| `tbl_user_expend_target_monthly` | `(id_key, year, month, expend_group_idx)` | FR-071 |
-| `tbl_user_statistics` | `(id_key, year, month)` | FR-074 |
-| `tbl_user_statistics_weekly` | `(statistics_idx, week_index)` | FR-077 |
-| `tbl_user_statistics_expend_group` | `(statistics_idx, expend_group_idx)` | FR-077 |
-| `tbl_user_statistics_payment_method` | `(statistics_idx, payment_method_idx)` | FR-077 |
+| `tbl_fixed_expense_monthly` | `(fixed_expense_idx, year, month)` | FR-053 |
+| `tbl_expend_target_default` | `(id_key, expend_group_idx)` | FR-070 |
+| `tbl_expend_target_monthly` | `(id_key, year, month, expend_group_idx)` | FR-071 |
+| `tbl_statistics` | `(id_key, year, month)` | FR-074 |
+| `tbl_statistics_weekly` | `(statistics_idx, week_index)` | FR-077 |
+| `tbl_statistics_expend_group` | `(statistics_idx, expend_group_idx)` | FR-077 |
+| `tbl_statistics_payment_method` | `(statistics_idx, payment_method_idx)` | FR-077 |
 
 **이메일 부분 유니크**: `UNIQUE (email) WHERE email IS NOT NULL`. 빈 이메일은 여러 명 허용, 값이 있으면 전역 유일(FR-012·Edge Cases).
 
@@ -131,7 +147,7 @@ API가 주고받는 `memberId`는 `user_id` 값이므로, 인증 필터가 토�
 | 연 | `INT` | 고정지출 시작·종료, 월별 내역·목표·통계 키 |
 | 월 | `INT` + `CHECK (month BETWEEN 1 AND 12)` | 위와 같음 |
 | 결제일·주 시작·종료일 | `DATE` | `payment_date`, `week_start`, `week_end` |
-| 매달 결제일 | `INT` + `CHECK (BETWEEN 1 AND 31)` | `tbl_user_fixed_expense.payment_day_of_month` |
+| 매달 결제일 | `INT` + `CHECK (BETWEEN 1 AND 31)` | `tbl_fixed_expense.payment_day_of_month` |
 | 금액 | `BIGINT` | 원 단위 정수(FR-005) |
 | 비율·사용률 | `NUMERIC(5,2)` | 0.00~100.00 (FR-005 예외) |
 | 시각 | `TIMESTAMPTZ` | 감사 컬럼, 토큰 만료, 저장 시각 |
@@ -166,14 +182,28 @@ API가 주고받는 `memberId`는 `user_id` 값이므로, 인증 필터가 토�
 
 ## 8. 스키마 반영 수단
 
-**Decision**: JPA `ddl-auto: update`로 테이블·컬럼·기본 인덱스를 만들고, Hibernate가 표현하지 못하는 것만 **보조 DDL 스크립트** `sql/04_constraints.sql`로 적용한다.
+**Decision (2026-09-02 개정)**: **스키마 객체를 전부 Hibernate가 만든다.** 앱 기동 한 번으로 끝나며 뒤이어 실행할 보조 DDL 스크립트가 없다. `sql/04_constraints.sql`은 삭제했다.
 
-보조 스크립트가 맡는 것:
-- 부분 유니크 인덱스 3건 — 이메일, 활성 세션(§5)
-- `CHECK` 제약 — `month` 1~12, `payment_day_of_month` 1~31, `role IN (1,3)`, `amount > 0`, 목표금액 0~100000000, `week_index >= 1`, `installment_index >= 1`
-- 할부 그룹 시퀀스 `seq_installment_group`
+| 수단 | 만드는 것 |
+|------|-----------|
+| `hibernate.hbm2ddl.create_namespaces: true` | 스키마 `moneylog` |
+| Entity 애너테이션 (JPA 3.2 `@Table`) | 테이블·컬럼·PK·FK·일반 인덱스·조건 없는 UNIQUE·**CHECK 20건**·**테이블 주석 15건** |
+| `AdditionalMappingContributor` (`MoneylogSchemaContributor`) | **부분 유니크 2건**·**시퀀스 `seq_installment_group`** |
 
-**Rationale**: 헌장 원칙 VI와 현재 `application-postgresql.yml`이 `ddl-auto: update`를 전제한다. Flyway 도입은 이 기능의 범위를 넘고, 순수 수동 DDL만 쓰면 Entity와 이중 관리가 된다. 보조 스크립트는 **멱등**하게 작성한다(`CREATE ... IF NOT EXISTS`, `DO $$ ... EXCEPTION WHEN duplicate_object`) — `ddl-auto: update`가 반복 실행되는 환경이라 재실행이 잦다.
+**이전 판이 틀렸던 지점**: "Hibernate가 CHECK을 만들지 못한다"는 전제가 사실이 아니었다. Hibernate에는 `@Check(name, constraints)`가 있었고, Hibernate 7에서는 그것이 deprecated되고 **JPA 3.2 표준** `@Table(check = @CheckConstraint(name, constraint))`로 대체됐다 — 둘 다 **제약 이름을 지정할 수 있다.** 이름 통제가 스크립트를 둔 유일한 이유였으므로 근거가 사라졌다. 주석도 `@Table(comment = ...)`로 표준화되어 있다.
+
+애너테이션으로 <b>정말</b> 표현할 수 없는 것은 둘뿐이다:
+
+- **부분 유니크 인덱스** — `@Table(uniqueConstraints)`·`@Index`에 `WHERE` 절을 붙일 자리가 없다. JPA에도 Hibernate 애너테이션에도 부분 인덱스 개념이 없다
+- **독립 시퀀스** — `@SequenceGenerator`는 어떤 Entity의 식별자 생성기로 쓰일 때만 DDL에 나온다. `seq_installment_group`은 N개 행이 공유하는 값이라 어느 PK의 생성기도 아니다(§9)
+
+이 둘은 Hibernate의 `AdditionalMappingContributor` SPI(`META-INF/services`로 등록)가 보조 데이터베이스 객체로 낸다. **스크립트가 아니라 Hibernate의 스키마 관리 안에서** 실행되므로 별도 단계가 생기지 않는다. SQL은 `CREATE ... IF NOT EXISTS`로 멱등하게 두고, 스키마는 `${schema}` 자리표시자로 적는다 — 기여 시점에는 기본 네임스페이스가 확정되지 않아 이름을 직접 읽으면 빈 문자열이 되고, SQL이 스키마 없이 나가 접속의 `search_path`를 타고 엉뚱한 스키마에 만들어진다(실측 확인).
+
+**Rationale**: 반영 단계가 둘에서 하나로 준다. 종전에는 앱을 띄운 뒤 스크립트를 잊지 않고 실행해야 했고, 잊으면 CHECK·부분 유니크가 없는 채로 조용히 동작했다 — 제약 위반이 잡히지 않는 상태라 발견이 늦다. 이제 기동만으로 완결된다. Flyway 도입은 여전히 이 기능의 범위 밖이다.
+
+**동등성 검증**: 빈 스키마에 Hibernate만으로 만든 결과와 종전 방식으로 만든 스키마를 대조해 제약 72건·인덱스 35건·전 컬럼의 정의 차이가 **0건**임을 확인했다(주석 15건만 추가).
+
+**`ddl-auto`**: 개발 단계라 `create`를 쓴다. `update`는 **이미 있는 테이블에 주석을 붙이지 않는다** — `comment on table`이 `create table`과 함께만 나가기 때문이다. 데이터를 남겨야 하는 시점이 오면 `update`로 되돌리고 주석 변경분은 스키마 재생성으로 반영한다.
 
 반영 후 `pg_dump`로 `sql/schema-moneylogdb.sql`을 재생성한다(헌장 VI·FR-007). 이때 시드 데이터는 없다 — 기본 지출유형 10종은 마스터가 아니라 **회원마다 생기는 데이터**라 덤프에 넣지 않는다.
 
@@ -203,11 +233,11 @@ API가 주고받는 `memberId`는 `user_id` 값이므로, 인증 필터가 토�
 
 | 테이블 | 인덱스 | 쓰이는 곳 |
 |--------|--------|-----------|
-| `tbl_user_expense` | `(id_key, payment_date)` | 4.8 월별 가계부, 5.5 통계 |
-| `tbl_user_expense` | `(installment_group_id, payment_date)` | 3.6 중도상환 |
-| `tbl_user_income` | `(id_key, payment_date)` | 4.8, 5.5 |
-| `tbl_user_fixed_expense` | `(id_key, start_year, start_month, end_year, end_month)` | 4.5·4.9 적용 기간 판정 |
-| `tbl_user_fixed_expense_monthly` | `(id_key, year, month)` | 4.5·4.8·4.9 |
+| `tbl_expense` | `(id_key, payment_date)` | 4.8 월별 가계부, 5.5 통계 |
+| `tbl_expense` | `(installment_group_id, payment_date)` | 3.6 중도상환 |
+| `tbl_income` | `(id_key, payment_date)` | 4.8, 5.5 |
+| `tbl_fixed_expense` | `(id_key, start_year, start_month, end_year, end_month)` | 4.5·4.9 적용 기간 판정 |
+| `tbl_fixed_expense_monthly` | `(id_key, year, month)` | 4.5·4.8·4.9 |
 | `tbl_user_payment_method` | `(id_key, purpose, in_use, deleted)` | 2.6 사용 중 수단 |
 | `tbl_user_expend_group` | `(id_key, in_use, deleted)` | 2.13 사용 중 유형 |
 | `tbl_user_login_history` | `(id_key, login_at)` | 이력 조회 |

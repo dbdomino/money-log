@@ -73,12 +73,4 @@ class ExpendGroupConstraintIT extends AbstractSchemaIT {
         assertViolatesConstraint(() ->
                 expendGroupRepository.saveAndFlush(newExpendGroup(user, "취미")), "ux_user_expend_group_name");
     }
-
-    private UserExpendGroup newExpendGroup(User user, String name) {
-        UserExpendGroup group = new UserExpendGroup();
-        group.setUser(user);
-        group.setName(name);
-        stampAudit(group, user.getIdKey());
-        return group;
-    }
 }

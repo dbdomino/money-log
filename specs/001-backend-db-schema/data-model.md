@@ -135,7 +135,7 @@ Spec: FR-020, FR-034 ~ FR-037 · Entity #5
 
 ---
 
-## 6. `tbl_user_expense` — 월별 지출 내역
+## 6. `tbl_expense` — 월별 지출 내역
 
 Spec: FR-040 ~ FR-045, FR-047 ~ FR-049 · Entity #6
 
@@ -162,11 +162,11 @@ Spec: FR-040 ~ FR-045, FR-047 ~ FR-049 · Entity #6
 - 이름 스냅샷은 참조가 바뀔 때만 새 참조의 현재 이름으로 갱신한다(FR-042). 원본 이름만 바뀐 경우 과거 건은 그대로
 - 삭제는 물리 삭제(FR-047). 같은 날짜·금액·수단 중복 허용 — 업무 유일 제약 없음(FR-048)
 - **고정지출 행은 이 테이블에 들어오지 않는다**(FR-052)
-- 엑셀 일괄 등록은 이 테이블과 `tbl_user_income`에만 행을 만든다. 업로드 이력을 저장하지 않는다(FR-049)
+- 엑셀 일괄 등록은 이 테이블과 `tbl_income`에만 행을 만든다. 업로드 이력을 저장하지 않는다(FR-049)
 
 ---
 
-## 7. `tbl_user_income` — 월별 수입 내역
+## 7. `tbl_income` — 월별 수입 내역
 
 Spec: FR-046 ~ FR-049 · Entity #7
 
@@ -184,7 +184,7 @@ Spec: FR-046 ~ FR-049 · Entity #7
 
 ---
 
-## 8. `tbl_user_fixed_expense` — 고정지출 관리 (설정)
+## 8. `tbl_fixed_expense` — 고정지출 관리 (설정)
 
 Spec: FR-050, FR-051, FR-058, FR-059 · Entity #8
 
@@ -205,19 +205,19 @@ Spec: FR-050, FR-051, FR-058, FR-059 · Entity #8
 
 **규칙**
 - **수단 이름·유형 이름 스냅샷 컬럼이 없다.** 조회 시 원본의 현재 이름을 읽는다(FR-050)
-- 종료 연월 > 시작 연월. `year * 12 + month` 합성값으로 비교한다(FR-051)
+- 종료 연월 >= 시작 연월. `year * 12 + month` 합성값으로 비교한다 — 연과 월을 따로 비교하면 해를 넘기는 구간에서 조건이 어긋난다(FR-051). 시작과 종료가 같은 **한 달짜리 고정지출은 허용된다**. 제약 이름과 식은 [contracts/naming-and-constraints.md](./contracts/naming-and-constraints.md) §5의 `ck_fixed_expense_period`가 기준이다
 - 이 행이 삭제되면 그 고정지출의 월별 내역이 지난 달 포함 전부 함께 사라진다 — FK CASCADE(FR-059)
 - 값을 바꿔도 이미 만들어진 월별 내역은 **미래 달 + `modified = false`** 인 것만 따라간다(FR-058). 애플리케이션 로직
 
 ---
 
-## 9. `tbl_user_fixed_expense_monthly` — 월별 고정지출 내역
+## 9. `tbl_fixed_expense_monthly` — 월별 고정지출 내역
 
 Spec: FR-052 ~ FR-060 · Entity #9
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |------|------|------|------|
-| `fixed_expense_idx` | BIGINT | NOT NULL, FK → `tbl_user_fixed_expense(idx)` **CASCADE** | 어느 고정지출의 그 달 내역인가 |
+| `fixed_expense_idx` | BIGINT | NOT NULL, FK → `tbl_fixed_expense(idx)` **CASCADE** | 어느 고정지출의 그 달 내역인가 |
 | `year` | INT | NOT NULL | 연 |
 | `month` | INT | NOT NULL, CHECK 1~12 | 월 |
 | `amount` | BIGINT | NOT NULL, CHECK > 0 | **그 달** 금액 |
@@ -251,7 +251,7 @@ Spec: FR-052 ~ FR-060 · Entity #9
 
 ---
 
-## 10. `tbl_user_expend_target_default` — 기본 목표금액
+## 10. `tbl_expend_target_default` — 기본 목표금액
 
 Spec: FR-038, FR-070, FR-072 · Entity #10
 
@@ -266,7 +266,7 @@ Spec: FR-038, FR-070, FR-072 · Entity #10
 
 ---
 
-## 11. `tbl_user_expend_target_monthly` — 월별 목표금액
+## 11. `tbl_expend_target_monthly` — 월별 목표금액
 
 Spec: FR-038, FR-071 ~ FR-073 · Entity #11
 
@@ -286,7 +286,7 @@ Spec: FR-038, FR-071 ~ FR-073 · Entity #11
 
 ---
 
-## 12. `tbl_user_statistics` — 월별 통계 스냅샷 (머리)
+## 12. `tbl_statistics` — 월별 통계 스냅샷 (머리)
 
 Spec: FR-074 ~ FR-076, FR-079 · Entity #12
 
@@ -312,13 +312,13 @@ Spec: FR-074 ~ FR-076, FR-079 · Entity #12
 
 ---
 
-## 13. `tbl_user_statistics_weekly` — 통계 주별 지출
+## 13. `tbl_statistics_weekly` — 통계 주별 지출
 
 Spec: FR-076, FR-077 · Entity #13
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |------|------|------|------|
-| `statistics_idx` | BIGINT | NOT NULL, FK → `tbl_user_statistics(idx)` **CASCADE** | 소속 스냅샷 |
+| `statistics_idx` | BIGINT | NOT NULL, FK → `tbl_statistics(idx)` **CASCADE** | 소속 스냅샷 |
 | `week_index` | INT | NOT NULL, CHECK >= 1 | 주차(1부터) |
 | `week_start` | DATE | NOT NULL | 주 시작일. 월요일 기준, 1일이 월요일이 아니면 첫 주는 1일부터 |
 | `week_end` | DATE | NOT NULL | 주 종료일 |
@@ -328,13 +328,13 @@ Spec: FR-076, FR-077 · Entity #13
 
 ---
 
-## 14. `tbl_user_statistics_expend_group` — 통계 지출유형별 요약
+## 14. `tbl_statistics_expend_group` — 통계 지출유형별 요약
 
 Spec: FR-076 ~ FR-078a · Entity #14
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |------|------|------|------|
-| `statistics_idx` | BIGINT | NOT NULL, FK → `tbl_user_statistics(idx)` **CASCADE** | 소속 스냅샷 |
+| `statistics_idx` | BIGINT | NOT NULL, FK → `tbl_statistics(idx)` **CASCADE** | 소속 스냅샷 |
 | `expend_group_idx` | BIGINT | NOT NULL, **FK 없음** | 지출유형 대리키. 값으로만 보관 |
 | `expend_group_name` | VARCHAR(30) | NOT NULL | **저장 당시** 유형 이름(한글) |
 | `amount` | BIGINT | NOT NULL | 유형별 지출 합계 |
@@ -354,13 +354,13 @@ Spec: FR-076 ~ FR-078a · Entity #14
 
 ---
 
-## 15. `tbl_user_statistics_payment_method` — 통계 수단별 요약
+## 15. `tbl_statistics_payment_method` — 통계 수단별 요약
 
 Spec: FR-076 ~ FR-078a · Entity #15
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |------|------|------|------|
-| `statistics_idx` | BIGINT | NOT NULL, FK → `tbl_user_statistics(idx)` **CASCADE** | 소속 스냅샷 |
+| `statistics_idx` | BIGINT | NOT NULL, FK → `tbl_statistics(idx)` **CASCADE** | 소속 스냅샷 |
 | `payment_method_idx` | BIGINT | NOT NULL, **FK 없음** | 수단 대리키. 값으로만 보관 |
 | `payment_method_name` | VARCHAR(50) | NOT NULL | **저장 당시** 수단 이름 |
 | `amount` | BIGINT | NOT NULL | 그 수단 지출 합계 |
@@ -379,16 +379,16 @@ tbl_user (id_key)
 ├── tbl_user_login_history              (id_key)
 ├── tbl_user_payment_method             (id_key)  ←──┐
 ├── tbl_user_expend_group               (id_key)  ←┐ │
-├── tbl_user_expense                    (id_key)  ─┴─┤  + installment_group_id (시퀀스)
-├── tbl_user_income                     (id_key)  ───┤
-├── tbl_user_fixed_expense              (id_key)  ─┬─┘
-│   └── tbl_user_fixed_expense_monthly  (id_key)  ─┘  CASCADE ← fixed_expense_idx
-├── tbl_user_expend_target_default      (id_key)  → expend_group
-├── tbl_user_expend_target_monthly      (id_key)  → expend_group
-└── tbl_user_statistics                 (id_key)
-    ├── tbl_user_statistics_weekly              CASCADE
-    ├── tbl_user_statistics_expend_group        CASCADE  (expend_group_idx = 값만)
-    └── tbl_user_statistics_payment_method      CASCADE  (payment_method_idx = 값만)
+├── tbl_expense                    (id_key)  ─┴─┤  + installment_group_id (시퀀스)
+├── tbl_income                     (id_key)  ───┤
+├── tbl_fixed_expense              (id_key)  ─┬─┘
+│   └── tbl_fixed_expense_monthly  (id_key)  ─┘  CASCADE ← fixed_expense_idx
+├── tbl_expend_target_default      (id_key)  → expend_group
+├── tbl_expend_target_monthly      (id_key)  → expend_group
+└── tbl_statistics                 (id_key)
+    ├── tbl_statistics_weekly              CASCADE
+    ├── tbl_statistics_expend_group        CASCADE  (expend_group_idx = 값만)
+    └── tbl_statistics_payment_method      CASCADE  (payment_method_idx = 값만)
 ```
 
 실선 화살표는 FK, 괄호 안은 소유자 컬럼이다. 통계 상세 2종의 유형·수단 참조만 FK가 없다.
@@ -399,7 +399,7 @@ tbl_user (id_key)
 
 | 개념 | 이유 |
 |------|------|
-| 월별 가계부 목록 | `tbl_user_expense` + `tbl_user_income` + `tbl_user_fixed_expense_monthly`를 조회 시점에 합친 결과(FR-061). `ledgerItemId`는 `type` + 원본 키로 조립 |
+| 월별 가계부 목록 | `tbl_expense` + `tbl_income` + `tbl_fixed_expense_monthly`를 조회 시점에 합친 결과(FR-061). `ledgerItemId`는 `type` + 원본 키로 조립 |
 | 할부 그룹 | 시퀀스 값을 지출 행들이 공유(FR-044) |
 | 고정지출 월별 예외 | 월별 내역 행 직접 수정이 대체(FR-057) |
 | 엑셀 업로드 이력 | 저장하지 않음(FR-049) |

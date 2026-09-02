@@ -125,17 +125,17 @@ Controller·Service·DTO는 이 기능에서 만들지 않는다.
 
 ### Tests for User Story 3
 
-- [ ] T029 [P] [US3] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/ExpenseSnapshotIT.java` — 지출 저장 뒤 원본 수단 이름을 바꿔도 `payment_method_name`이 등록 당시 값 그대로인지, 수단을 `deleted = true`로 해도 이름이 읽히는지(quickstart #6)
-- [ ] T030 [P] [US3] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/InstallmentIT.java` — 같은 `installment_group_id`로 12행 INSERT, `installment_index` 1~12·`installment_total` 12 확인(#9). 할부 3컬럼이 모두 NULL인 일시불 행도 함께 저장되는지 확인
-- [ ] T031 [P] [US3] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/InstallmentSettleIT.java` — `WHERE installment_group_id = ? AND payment_date > CURRENT_DATE` 삭제 후 오늘·과거 결제일 회차가 남는지(#10)
+- [x] T029 **(완료 — 2026-09-02)** [P] [US3] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/ExpenseSnapshotIT.java` — 지출 저장 뒤 원본 수단 이름을 바꿔도 `payment_method_name`이 등록 당시 값 그대로인지, 수단을 `deleted = true`로 해도 이름이 읽히는지(quickstart #6)
+- [x] T030 **(완료 — 2026-09-02)** [P] [US3] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/InstallmentIT.java` — 같은 `installment_group_id`로 12행 INSERT, `installment_index` 1~12·`installment_total` 12 확인(#9). 할부 3컬럼이 모두 NULL인 일시불 행도 함께 저장되는지 확인
+- [x] T031 **(완료 — 2026-09-02)** [P] [US3] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/InstallmentSettleIT.java` — `WHERE installment_group_id = ? AND payment_date > CURRENT_DATE` 삭제 후 오늘·과거 결제일 회차가 남는지(#10)
 
 ### Implementation for User Story 3
 
-- [ ] T032 [P] [US3] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserExpense.java`에 `tbl_user_expense` Entity를 만든다 — `payment_method_idx` FK RESTRICT, `payment_method_name`, `amount`, `payment_date`, `place`, `content`, `expend_group_idx` FK RESTRICT, `expend_group_name`, `installment_group_id`/`installment_index`/`installment_total`(전부 nullable), 인덱스 `ix_user_expense_date`(`id_key, payment_date`)·`ix_user_expense_installment`(`installment_group_id, payment_date`). 상세: data-model.md §6
-- [ ] T033 [P] [US3] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserIncome.java`에 `tbl_user_income` Entity를 만든다 — `payment_method_idx` FK RESTRICT, `payment_method_name`, `amount`, `payment_date`, `content`(nullable), 인덱스 `ix_user_income_date`(`id_key, payment_date`). 장소·지출유형·할부 컬럼은 **없다**. 상세: data-model.md §7
-- [ ] T034 [US3] `data-mod/src/main/java/com/dbdomino/moneylog/data/repository/UserExpenseRepository.java`와 `UserIncomeRepository.java`를 만든다 — 월 범위 조회(`findByIdKeyAndPaymentDateBetween`), 할부 그룹 조회, 중도상환용 `deleteByInstallmentGroupIdAndPaymentDateAfter`, 지출유형 사용 이력 확인용 `existsByExpendGroupIdx`(2.12의 `3106` 판정에 쓰인다)
-- [ ] T035 [US3] `sql/04_constraints.sql`에 시퀀스와 CHECK를 추가한다 — `seq_installment_group`(`CREATE SEQUENCE IF NOT EXISTS`), `ck_expense_amount`(`> 0`), `ck_expense_installment_index`(`IS NULL OR >= 1`), `ck_expense_installment_total`(`IS NULL OR >= 2`), `ck_income_amount`(`> 0`)
-- [ ] T036 [US3] 스키마를 반영하고 T029~T031을 실행해 통과를 확인한다
+- [x] T032 **(완료 — 2026-09-02)** [P] [US3] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserExpense.java`에 `tbl_expense` Entity를 만든다 — `payment_method_idx` FK RESTRICT, `payment_method_name`, `amount`, `payment_date`, `place`, `content`, `expend_group_idx` FK RESTRICT, `expend_group_name`, `installment_group_id`/`installment_index`/`installment_total`(전부 nullable), 인덱스 `ix_expense_date`(`id_key, payment_date`)·`ix_expense_installment`(`installment_group_id, payment_date`). 상세: data-model.md §6
+- [x] T033 **(완료 — 2026-09-02)** [P] [US3] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserIncome.java`에 `tbl_income` Entity를 만든다 — `payment_method_idx` FK RESTRICT, `payment_method_name`, `amount`, `payment_date`, `content`(nullable), 인덱스 `ix_income_date`(`id_key, payment_date`). 장소·지출유형·할부 컬럼은 **없다**. 상세: data-model.md §7
+- [x] T034 **(완료 — 2026-09-02)** [US3] `data-mod/src/main/java/com/dbdomino/moneylog/data/repository/UserExpenseRepository.java`와 `UserIncomeRepository.java`를 만든다 — 월 범위 조회(`findByIdKeyAndPaymentDateBetween`), 할부 그룹 조회, 중도상환용 `deleteByInstallmentGroupIdAndPaymentDateAfter`, 지출유형 사용 이력 확인용 `existsByExpendGroupIdx`(2.12의 `3106` 판정에 쓰인다)
+- [x] T035 **(완료 — 2026-09-02)** [US3] `sql/04_constraints.sql`에 시퀀스와 CHECK를 추가한다 — `seq_installment_group`(`CREATE SEQUENCE IF NOT EXISTS`), `ck_expense_amount`(`> 0`), `ck_expense_installment_index`(`IS NULL OR >= 1`), `ck_expense_installment_total`(`IS NULL OR >= 2`), `ck_income_amount`(`> 0`)
+- [x] T036 **(완료 — 2026-09-02)** [US3] 스키마를 반영하고 T029~T031을 실행해 통과를 확인한다 **검증 결과**: `:data-mod:test` 32건 전부 통과(US3 13건 추가 — 스냅샷 6, 할부 5, 중도상환 2). 제약 적용 전 실행에서 US3 8건이 시퀀스 부재(`BadSqlGrammarException`)와 CHECK 부재로 먼저 실패하는 것을 확인한 뒤 T035를 채웠다. `tbl_expense`·`tbl_income` 2개 테이블, CHECK 4건(`ck_expense_amount`·`ck_expense_installment_index`·`ck_expense_installment_total`·`ck_income_amount`), FK 5건, 인덱스 3건(`ix_expense_date`·`ix_expense_installment`·`ix_income_date`), 시퀀스 `seq_installment_group`이 DB에 실재함을 `pg_constraint`·`pg_indexes`·`pg_sequences`로 확인했다. `04_constraints.sql`은 2회 연속 exit=0.
 
 **Checkpoint**: 가계부 핵심 데이터가 저장 가능하다. 고정지출을 섞지 않는 구조가 성립했다
 
@@ -151,17 +151,18 @@ Controller·Service·DTO는 이 기능에서 만들지 않는다.
 
 ### Tests for User Story 4
 
-- [ ] T037 [P] [US4] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/FixedExpenseMonthlyUniqueIT.java` — 같은 `(fixed_expense_idx, year, month)` 2건은 실패(quickstart #11). `month = 13`은 CHECK 위반(#19)
-- [ ] T038 [P] [US4] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/FixedExpenseMonthlyConcurrencyIT.java` — 같은 조합을 별도 트랜잭션 2개에서 `INSERT ... ON CONFLICT DO NOTHING`으로 동시 시도해도 1건만 남는지(#12). `@Transactional` **밖에서** 실행한다
-- [ ] T039 [P] [US4] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/FixedExpenseCascadeIT.java` — 고정지출 관리 행을 DELETE하면 그 월별 내역이 지난 달 포함 전부 사라지는지(#13)
+- [x] T037 **(완료 — 2026-09-02)** [P] [US4] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/FixedExpenseMonthlyUniqueIT.java` — 같은 `(fixed_expense_idx, year, month)` 2건은 실패(quickstart #11). `month = 13`은 CHECK 위반(#19)
+- [x] T038 **(완료 — 2026-09-02)** [P] [US4] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/FixedExpenseMonthlyConcurrencyIT.java` — 같은 조합을 별도 트랜잭션 2개에서 `INSERT ... ON CONFLICT DO NOTHING`으로 동시 시도해도 1건만 남는지(#12). `@Transactional` **밖에서** 실행한다
+- [x] T039 **(완료 — 2026-09-02)** [P] [US4] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/FixedExpenseCascadeIT.java` — 고정지출 관리 행을 DELETE하면 그 월별 내역이 지난 달 포함 전부 사라지는지(#13)
 
 ### Implementation for User Story 4
 
-- [ ] T040 [US4] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserFixedExpense.java`에 `tbl_user_fixed_expense` Entity를 만든다 — `name`, `payment_method_idx` FK RESTRICT, `amount`, `payment_day_of_month`, `content`, `expend_group_idx` FK RESTRICT, `start_year`/`start_month`/`end_year`/`end_month`, 인덱스 `ix_user_fixed_expense_period`. **수단·유형 이름 스냅샷 컬럼을 두지 않는다**(FR-050). 상세: data-model.md §8
-- [ ] T041 [US4] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserFixedExpenseMonthly.java`에 `tbl_user_fixed_expense_monthly` Entity를 만든다 — `fixed_expense_idx` FK **CASCADE**, `year`, `month`, `amount`, `payment_date`(말일 보정이 끝난 완전한 날짜), `content`, `payment_method_idx` FK RESTRICT, `expend_group_idx` FK RESTRICT, `modified`(DEFAULT false), UNIQUE `ux_user_fixed_expense_monthly`(`fixed_expense_idx, year, month`), 인덱스 `ix_user_fixed_monthly_ym`. T040에 의존한다. 상세: data-model.md §9
-- [ ] T042 [P] [US4] `data-mod/src/main/java/com/dbdomino/moneylog/data/repository/UserFixedExpenseRepository.java`와 `UserFixedExpenseMonthlyRepository.java`를 만든다 — 적용 기간에 걸리는 관리 행 조회(`year*12+month` 합성값 비교 JPQL), 그 달 내역 목록, 수동 재작성용 `deleteByFixedExpenseIdxInAndYearAndMonth`, lazy 생성용 `ON CONFLICT DO NOTHING` 네이티브 INSERT
-- [ ] T043 [US4] `sql/04_constraints.sql`에 고정지출 CHECK를 추가한다 — `ck_fixed_expense_amount`, `ck_fixed_expense_day`(1~31), `ck_fixed_expense_start_month`·`ck_fixed_expense_end_month`(1~12), `ck_fixed_expense_period`(`end_year*12+end_month >= start_year*12+start_month`), `ck_fixed_monthly_amount`, `ck_fixed_monthly_month`
-- [ ] T044 [US4] 스키마를 반영하고 T037~T039를 실행해 통과를 확인한다
+- [x] T040 **(완료 — 2026-09-02)** [US4] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserFixedExpense.java`에 `tbl_fixed_expense` Entity를 만든다 — `name`, `payment_method_idx` FK RESTRICT, `amount`, `payment_day_of_month`, `content`, `expend_group_idx` FK RESTRICT, `start_year`/`start_month`/`end_year`/`end_month`, 인덱스 `ix_fixed_expense_period`. **수단·유형 이름 스냅샷 컬럼을 두지 않는다**(FR-050). 상세: data-model.md §8
+- [x] T041 **(완료 — 2026-09-02)** [US4] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserFixedExpenseMonthly.java`에 `tbl_fixed_expense_monthly` Entity를 만든다 — `fixed_expense_idx` FK **CASCADE**, `year`, `month`, `amount`, `payment_date`(말일 보정이 끝난 완전한 날짜), `content`, `payment_method_idx` FK RESTRICT, `expend_group_idx` FK RESTRICT, `modified`(DEFAULT false), UNIQUE `ux_fixed_expense_monthly`(`fixed_expense_idx, year, month`), 인덱스 `ix_fixed_monthly_ym`. T040에 의존한다. 상세: data-model.md §9
+- [x] T042 **(완료 — 2026-09-02)** [P] [US4] `data-mod/src/main/java/com/dbdomino/moneylog/data/repository/UserFixedExpenseRepository.java`와 `UserFixedExpenseMonthlyRepository.java`를 만든다 — 적용 기간에 걸리는 관리 행 조회(`year*12+month` 합성값 비교 JPQL), 그 달 내역 목록, 수동 재작성용 `deleteByFixedExpenseIdxInAndYearAndMonth`, lazy 생성용 `ON CONFLICT DO NOTHING` 네이티브 INSERT
+- [x] T043 **(완료 — 2026-09-02)** [US4] `sql/04_constraints.sql`에 고정지출 CHECK를 추가한다 — `ck_fixed_expense_amount`, `ck_fixed_expense_day`(1~31), `ck_fixed_expense_start_month`·`ck_fixed_expense_end_month`(1~12), `ck_fixed_expense_period`(`end_year*12+end_month >= start_year*12+start_month`), `ck_fixed_monthly_amount`, `ck_fixed_monthly_month`
+- [x] T044 **(완료 — 2026-09-02)** [US4] 스키마를 반영하고 T037~T039를 실행해 통과를 확인한다 **검증 결과**: `:data-mod:test` 45건 전부 통과(US4 13건 추가 — 유일·기간·보정 9, 동시성 2, CASCADE 2). 제약 적용 전 실행에서 CHECK 관련 4건이 먼저 실패하는 것을 확인한 뒤 T043을 채웠다. `tbl_fixed_expense`·`tbl_fixed_expense_monthly` 2개 테이블, CHECK 7건, UNIQUE 1건(`ux_fixed_expense_monthly`), FK 7건, 인덱스 2건(`ix_fixed_expense_period`·`ix_fixed_monthly_ym`)이 DB에 실재함을 확인했다. **CASCADE 검증**: `pg_constraint.confdeltype`이 `fk_fixed_monthly_fixed_expense`만 `c`(CASCADE)이고 나머지 FK는 `a`다 — Hibernate는 `@JoinColumn`만으로는 CASCADE를 DDL에 내지 않아 `@OnDelete(action = OnDeleteAction.CASCADE)`를 붙여야 했다. `04_constraints.sql`은 2회 연속 exit=0.
+- **명세 개정 1건**: `data-model.md` §8의 "종료 연월 > 시작 연월"이 `contracts/naming-and-constraints.md` §5의 `ck_fixed_expense_period`(`>=`)·T043과 어긋나 있었다. 시작과 종료가 같은 한 달짜리 고정지출은 정당하므로 제약 등록부를 기준으로 data-model 쪽을 `>=`로 고쳤다.
 
 **Checkpoint**: 고정지출 3분할 구조가 완성됐다. 월별 가계부 목록이 세 테이블을 합쳐 만들어질 수 있다
 
@@ -177,24 +178,25 @@ Controller·Service·DTO는 이 기능에서 만들지 않는다.
 
 ### Tests for User Story 5
 
-- [ ] T045 [P] [US5] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/ExpendTargetIT.java` — 지출유형을 `deleted = true`로 해도 목표금액 행과 참조가 유지되는지(quickstart #8), 같은 `(id_key, expend_group_idx)` 2건은 실패, 같은 `(id_key, year, month, expend_group_idx)` 2건은 실패, `target_amount = 100000001`은 CHECK 위반(#18)
-- [ ] T046 [P] [US5] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/StatisticsUniqueIT.java` — 같은 `(id_key, year, month)` 통계 2건은 실패(#14)
-- [ ] T047 [P] [US5] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/StatisticsCascadeIT.java` — 통계 스냅샷을 DELETE하면 상세 3종이 함께 사라지는지(#16)
-- [ ] T048 [P] [US5] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/StatisticsBrokenRefIT.java` — 통계 상세에 **실재하지 않는** `expend_group_idx`·`payment_method_idx` 값을 넣어도 INSERT가 성공하는지(#15, FR-078a — FK가 없어야 통과한다)
+- [x] T045 **(완료 — 2026-09-02)** [P] [US5] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/ExpendTargetIT.java` — 지출유형을 `deleted = true`로 해도 목표금액 행과 참조가 유지되는지(quickstart #8), 같은 `(id_key, expend_group_idx)` 2건은 실패, 같은 `(id_key, year, month, expend_group_idx)` 2건은 실패, `target_amount = 100000001`은 CHECK 위반(#18)
+- [x] T046 **(완료 — 2026-09-02)** [P] [US5] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/StatisticsUniqueIT.java` — 같은 `(id_key, year, month)` 통계 2건은 실패(#14)
+- [x] T047 **(완료 — 2026-09-02)** [P] [US5] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/StatisticsCascadeIT.java` — 통계 스냅샷을 DELETE하면 상세 3종이 함께 사라지는지(#16)
+- [x] T048 **(완료 — 2026-09-02)** [P] [US5] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/StatisticsBrokenRefIT.java` — 통계 상세에 **실재하지 않는** `expend_group_idx`·`payment_method_idx` 값을 넣어도 INSERT가 성공하는지(#15, FR-078a — FK가 없어야 통과한다)
 
 ### Implementation for User Story 5
 
-- [ ] T049 [P] [US5] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserExpendTargetDefault.java`에 `tbl_user_expend_target_default` Entity를 만든다 — `expend_group_idx` FK RESTRICT, `target_amount`, UNIQUE `ux_user_target_default`(`id_key, expend_group_idx`). 상세: data-model.md §10
-- [ ] T050 [P] [US5] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserExpendTargetMonthly.java`에 `tbl_user_expend_target_monthly` Entity를 만든다 — `year`, `month`, `expend_group_idx` FK RESTRICT, `target_amount`, UNIQUE `ux_user_target_monthly`(`id_key, year, month, expend_group_idx`). 상세: data-model.md §11
-- [ ] T051 [US5] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserStatistics.java`에 `tbl_user_statistics` Entity를 만든다 — `year`, `month`, `saved_at`, `income_total`, `expense_total`, `fixed_amount`, `regular_amount`, `fixed_percent`/`regular_percent`(NUMERIC(5,2)), UNIQUE `ux_user_statistics`(`id_key, year, month`). 상세: data-model.md §12
-- [ ] T052 [US5] 통계 상세 3종 Entity를 만든다. T051에 의존한다
+- [x] T049 **(완료 — 2026-09-02)** [P] [US5] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserExpendTargetDefault.java`에 `tbl_expend_target_default` Entity를 만든다 — `expend_group_idx` FK RESTRICT, `target_amount`, UNIQUE `ux_target_default`(`id_key, expend_group_idx`). 상세: data-model.md §10
+- [x] T050 **(완료 — 2026-09-02)** [P] [US5] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserExpendTargetMonthly.java`에 `tbl_expend_target_monthly` Entity를 만든다 — `year`, `month`, `expend_group_idx` FK RESTRICT, `target_amount`, UNIQUE `ux_target_monthly`(`id_key, year, month, expend_group_idx`). 상세: data-model.md §11
+- [x] T051 **(완료 — 2026-09-02)** [US5] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserStatistics.java`에 `tbl_statistics` Entity를 만든다 — `year`, `month`, `saved_at`, `income_total`, `expense_total`, `fixed_amount`, `regular_amount`, `fixed_percent`/`regular_percent`(NUMERIC(5,2)), UNIQUE `ux_statistics`(`id_key, year, month`). 상세: data-model.md §12
+- [x] T052 **(완료 — 2026-09-02)** [US5] 통계 상세 3종 Entity를 만든다. T051에 의존한다
   - `data-mod/.../entity/UserStatisticsWeekly.java` — `statistics_idx` FK CASCADE, `week_index`, `week_start`, `week_end`, `amount`, UNIQUE(`statistics_idx, week_index`)
   - `data-mod/.../entity/UserStatisticsExpendGroup.java` — `statistics_idx` FK CASCADE, `expend_group_idx`(**FK 없이 값만**), `expend_group_name`, `amount`, `target_amount`, `usage_rate`(NUMERIC(6,2)), `status`, UNIQUE(`statistics_idx, expend_group_idx`)
   - `data-mod/.../entity/UserStatisticsPaymentMethod.java` — `statistics_idx` FK CASCADE, `payment_method_idx`(**FK 없이 값만**), `payment_method_name`, `amount`, UNIQUE(`statistics_idx, payment_method_idx`)
   - 상세: data-model.md §13~§15. 두 상세의 유형·수단 컬럼에 `@ManyToOne`이나 `@JoinColumn`을 쓰지 않는다 — Hibernate가 FK를 만들어 버린다
-- [ ] T053 [P] [US5] `data-mod/src/main/java/com/dbdomino/moneylog/data/repository/` 에 목표금액 2개·통계 4개 Repository를 만든다 — 목표금액은 upsert 판정용 조회(`findByIdKeyAndExpendGroupIdx`, `findByIdKeyAndYearAndMonthAndExpendGroupIdx`), 통계는 `findByIdKeyAndYearAndMonth`와 상세 일괄 삭제
-- [ ] T054 [US5] `sql/04_constraints.sql`에 목표금액·통계 CHECK를 추가한다 — `ck_target_default_amount`·`ck_target_monthly_amount`(0~100000000), `ck_target_monthly_month`, `ck_statistics_month`, `ck_stat_weekly_index`(`>= 1`), `ck_stat_group_status`(`IN ('UNDER','OK','OVER')`)
-- [ ] T055 [US5] 스키마를 반영하고 T045~T048을 실행해 통과를 확인한다
+- [x] T053 **(완료 — 2026-09-02)** [P] [US5] `data-mod/src/main/java/com/dbdomino/moneylog/data/repository/` 에 목표금액 2개·통계 4개 Repository를 만든다 — 목표금액은 upsert 판정용 조회(`findByIdKeyAndExpendGroupIdx`, `findByIdKeyAndYearAndMonthAndExpendGroupIdx`), 통계는 `findByIdKeyAndYearAndMonth`와 상세 일괄 삭제
+- [x] T054 **(완료 — 2026-09-02)** [US5] `sql/04_constraints.sql`에 목표금액·통계 CHECK를 추가한다 — `ck_target_default_amount`·`ck_target_monthly_amount`(0~100000000), `ck_target_monthly_month`, `ck_statistics_month`, `ck_stat_weekly_index`(`>= 1`), `ck_stat_group_status`(`IN ('UNDER','OK','OVER')`)
+- [x] T055 **(완료 — 2026-09-02)** [US5] 스키마를 반영하고 T045~T048을 실행해 통과를 확인한다 **검증 결과**: `:data-mod:test` 65건 전부 통과(US5 20건 추가 — 목표금액 9, 통계 유일·재저장 4, CASCADE 3, FK 부재 4). 제약 적용 전 실행에서 CHECK 관련 4건이 먼저 실패하는 것을 확인한 뒤 T054를 채웠다. **15개 테이블이 모두 생성됐다.** 전체 집계: CHECK 20건(contracts §5 등록부와 같은 수), UNIQUE 제약 10건(+ 부분 유니크 인덱스 2건 = 등록부 12건), FK 27건, PK 15건. PK 규칙도 확인했다 — `idx`가 아닌 기본키를 가진 테이블은 `tbl_user`(`id_key`) 하나뿐이다. `04_constraints.sql`은 2회 연속 exit=0.
+- **FR-078a 회귀 방지**: `StatisticsBrokenRefIT`가 통계 상세 2종의 FK 대상을 `pg_constraint`로 직접 조회해 `tbl_user`·`tbl_statistics` 둘뿐임을 단언한다. 누군가 `expendGroupIdx`·`paymentMethodIdx`에 `@ManyToOne`을 붙이면 Hibernate가 FK를 만들어 이 단언이 깨진다 — 값 INSERT 성공만 보는 검사로는 그 회귀를 놓친다.
 
 **Checkpoint**: 15개 저장 단위가 모두 만들어졌다. 5개 User Story 전부 독립 검증 가능하다
 
@@ -204,14 +206,14 @@ Controller·Service·DTO는 이 기능에서 만들지 않는다.
 
 **Purpose**: 전 테이블에 걸친 검증, 명세 정합, 덤프 재생성
 
-- [ ] T056 `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/AuditColumnIT.java` — 15개 테이블 전부가 감사 컬럼 4종을 갖는지 `information_schema.columns`로 확인(quickstart §2-4), `created_by` 없이 INSERT하면 NOT NULL 위반(`tbl_user` 제외, #20)
-- [ ] T057 [P] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/SchemaStructureIT.java` — quickstart §2의 나머지 SQL 검증을 테스트로 옮긴다: `tbl_user%` 테이블 15개(§2-1), 레거시 이름 0건(§2-2), PK 규칙 — `tbl_user`만 `id_key`(§2-3), 부분 유니크 2건 존재(§2-5), 통계 상세의 유형·수단 FK 부재(§2-6)
-- [ ] T058 `sql/04_constraints.sql`을 **두 번 연속 실행**해 두 번째에도 오류가 없는지 확인한다. 실패하면 해당 문장을 `IF NOT EXISTS` 또는 `DO $$ ... EXCEPTION WHEN duplicate_object` 패턴으로 고친다
-- [ ] T059 [P] `프로젝트설계/기능명세상세-백엔드/phase2-수단-지출유형/2.1-PaymentMethodCreate.md`와 `2.4-PaymentMethodUpdate.md`의 Body 표에 `purpose`(`EXPENSE`\|`INCOME`)를 추가하고, 용도 변경은 그 수단을 참조하는 지출·소득·고정지출이 0건일 때만 허용한다는 규칙을 비고에 적는다(research §13-1)
-- [ ] T060 [P] `프로젝트설계/기능명세상세-백엔드/phase1-회원/1.2-MemberSignup.md`의 비고에서 "식비, 교통, 주거 등"을 확정 10종(식비·교통·주거·통신·쇼핑·장보기·의료·교육·문화·기타)으로 바꾸고 30×30 기본 아이콘이 함께 생성된다는 점을 적는다(research §13-2)
-- [ ] T061 [P] `프로젝트설계/기능명세상세-백엔드/_공통.md`의 `tbl_member_session` 절 제목과 `tbl_member.pw` 표기를 `tbl_user_session`·`tbl_user.pw`로 갱신한다(research §13-3)
-- [ ] T062 `sql/schema-moneylogdb.sql`을 재생성한다 — 헌장 원칙 VI의 `pg_dump` 명령을 옵션 그대로 실행. **시드 데이터 덧붙이기는 하지 않는다**(기본 지출유형 10종은 회원마다 생기는 데이터). 재생성 후 `CREATE TABLE` 15건·`INSERT INTO` 0건을 확인하고 **같은 커밋에 포함**한다
-- [ ] T063 `specs/001-backend-db-schema/quickstart.md` §5 완료 판정 9개 항목을 처음부터 끝까지 실행해 전부 통과하는지 확인한다
+- [x] T056 **(완료 — 2026-09-02)** `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/AuditColumnIT.java` — 15개 테이블 전부가 감사 컬럼 4종을 갖는지 `information_schema.columns`로 확인(quickstart §2-4), `created_by` 없이 INSERT하면 NOT NULL 위반(`tbl_user` 제외, #20) **검증 결과**: 15개 테이블 전부가 감사 4종을 갖는 것을 information_schema 질의로 확인했다(테이블을 나열하지 않는다 — 나열하면 새 테이블이 목록에서 빠져도 초록으로 통과한다). tbl_user 외 전 테이블에서 4종이 NOT NULL이고, tbl_user만 created_by·updated_by가 NULL 허용이며 시각 2종은 여기서도 NOT NULL이다. #20은 **JdbcTemplate 원시 INSERT로** 확인한다 — Entity 경로는 Hibernate가 @Column(nullable=false)를 보고 DB에 닿기 전에 PropertyValueException을 던져 정작 확인하려던 DB NOT NULL이 한 번도 실행되지 않는다. 두 겹을 각각 보는 테스트 2건으로 나눴다. 6건 통과.
+- [x] T057 **(완료 — 2026-09-02)** [P] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/SchemaStructureIT.java` — quickstart §2의 나머지 SQL 검증을 테스트로 옮긴다: 테이블 15개(§2-1), 레거시 이름 0건(§2-2), PK 규칙 — `tbl_user`만 `id_key`(§2-3), 부분 유니크 2건 존재(§2-5), 통계 상세의 유형·수단 FK 부재(§2-6) **검증 결과**: 6건 통과. §2-5는 인덱스 정의의 WHERE 절까지 본다(email IS NOT NULL·revoked = false). §2-6은 FK **개수**를 보고, StatisticsBrokenRefIT가 FK **대상**을 본다 — 하나만 두면 "허용 목록 안에서 FK를 하나 더 붙인" 변경이나 "개수는 맞는데 대상이 바뀐" 변경을 놓친다.
+- [x] T058 **(완료 — 2026-09-02)** `sql/04_constraints.sql`을 **두 번 연속 실행**해 두 번째에도 오류가 없는지 확인한다. 실패하면 해당 문장을 `IF NOT EXISTS` 또는 `DO $$ ... EXCEPTION WHEN duplicate_object` 패턴으로 고친다 **검증 결과**: 2회 연속 exit=0. 고칠 문장이 없었다 — US1~US5가 각자 절을 채우면서 멱등 패턴(IF NOT EXISTS / duplicate_object)을 지켰다.
+- [x] T059 **(완료 — 2026-09-02)** [P] `프로젝트설계/기능명세상세-백엔드/phase2-수단-지출유형/2.1-PaymentMethodCreate.md`와 `2.4-PaymentMethodUpdate.md`의 Body 표에 `purpose`(`EXPENSE`\|`INCOME`)를 추가하고, 용도 변경은 그 수단을 참조하는 지출·소득·고정지출이 0건일 때만 허용한다는 규칙을 비고에 적는다(research §13-1) **검증 결과**: 2.1 Body·성공 응답·예시 JSON에 purpose를 넣고, 2.4 Body에 purpose를 추가하며 3005(참조 1건 이상이면 용도 변경 불가)를 배정했다. **에러코드 배정은 T059 범위를 넘는 판단이라 근거를 남긴다** — 3001이 2.6에서 이미 purpose 값 오류로 쓰이고 있어 값 오류와 상태 오류를 한 코드로 묶을 수 없었고, 3005는 기존 명세에서 미사용이라 수단 계열(30xx) 다음 번호로 잡았다. _공통.md 공유 타입 PaymentMethod의 "내부 구분, 필요 시"도 함께 고쳤다 — 2.1이 필수로 받는 값을 공유 타입이 선택적인 것처럼 적어 두면 설명 칸만 보고 의미가 읽히지 않는다.
+- [x] T060 **(완료 — 2026-09-02)** [P] `프로젝트설계/기능명세상세-백엔드/phase1-회원/1.2-MemberSignup.md`의 비고에서 "식비, 교통, 주거 등"을 확정 10종(식비·교통·주거·통신·쇼핑·장보기·의료·교육·문화·기타)으로 바꾸고 30×30 기본 아이콘이 함께 생성된다는 점을 적는다(research §13-2) **검증 결과**: 확정 10종을 나열하고 "등"을 걷어냈다. default_group = true로 들어가 삭제할 수 없다는 점(2.12의 3107), 30×30 아이콘 템플릿 경로와 복사본 이름 규칙({user_id}_{유형이름}.png), DB에는 파일명만 저장한다는 점, 이 10종이 회원마다 생기는 데이터라 덤프 시드에 넣지 않는다는 점을 함께 적었다.
+- [x] T061 **(완료 — 2026-09-02)** [P] `프로젝트설계/기능명세상세-백엔드/_공통.md`의 `tbl_member_session` 절 제목과 `tbl_member.pw` 표기를 `tbl_user_session`·`tbl_user.pw`로 갱신한다(research §13-3) **검증 결과**: tbl_member_session → tbl_user_session, tbl_member.pw → tbl_user.pw로 바꿨다. **여기서 멈추면 문서가 자기모순이 되어** 같은 절의 남은 표기도 맞췄다 — 세션 컬럼 표의 member_id → id_key(소유자는 id_key만 참조한다는 규칙), 토큰 검증 절차의 member_id=sub → id_key=sub, 비밀번호 검증 흐름의 member.pw → tbl_user.pw, 구현 위치 안내의 MemberSession.java·MemberSessionRepository.java → 실재하는 UserSession.java·UserSessionRepository.java. 이제 이 문서에 tbl_member·member_id·member.pw 표기가 하나도 남지 않았다.
+- [x] T062 **(완료 — 2026-09-02)** `sql/schema-moneylogdb.sql`을 재생성한다 — 헌장 원칙 VI의 `pg_dump` 명령을 옵션 그대로 실행. **시드 데이터 덧붙이기는 하지 않는다**(기본 지출유형 10종은 회원마다 생기는 데이터). 재생성 후 `CREATE TABLE` 15건·`INSERT INTO` 0건을 확인하고 **같은 커밋에 포함**한다 **검증 결과**: 헌장 원칙 VI의 pg_dump 명령을 옵션 그대로 실행해 exit=0. CREATE TABLE 15건, CREATE SEQUENCE 1건(seq_installment_group — IDENTITY가 만드는 시퀀스는 CREATE TABLE 안에 인라인이라 따로 세지 않는다), INSERT INTO 0건. 시드 덧붙이기는 하지 않았다.
+- [x] T063 **(완료 — 2026-09-02)** `specs/001-backend-db-schema/quickstart.md` §5 완료 판정 9개 항목을 처음부터 끝까지 실행해 전부 통과하는지 확인한다 **검증 결과**: 9개 항목 전부 통과. quickstart.md §5의 체크박스를 채우고 각 항목이 어느 테스트로 확인되는지 적었다. §3 시나리오 20건은 @DisplayName("#N …") 표시로 1:1 대응하며 빠진 번호가 없다. 최종 :data-mod:test **77건 전부 통과**(--rerun-tasks로 캐시 없이 재실행).
 
 ---
 
@@ -314,7 +316,8 @@ MVP 범위 = T001~T020 (20개 작업).
 - [P] = 다른 파일, 의존 없음
 - `sql/04_constraints.sql`은 5개 스토리가 나눠 채우는 **공유 파일**이다. 각 스토리는 자기 절만 덧붙이고, 최종 멱등성은 T058이 확인한다
 - 모듈별 `build.gradle`이 없다. 의존성은 전부 루트 `build.gradle`의 `project(':...')` 블록에서 고친다
-- Hibernate `ddl-auto: update`는 부분 유니크 인덱스와 CHECK를 만들지 못한다. 그것들이 보조 DDL로 빠진 이유이며, Entity에 `@Table(uniqueConstraints=...)`로 부분 유니크를 흉내 내려 하면 조건 없는 유니크가 만들어져 **이메일 NULL 다건 저장이 깨진다**
+- ~~Hibernate `ddl-auto: update`는 부분 유니크 인덱스와 CHECK를 만들지 못한다.~~ **2026-09-02 개정 — CHECK 부분은 사실이 아니었다.** JPA 3.2 `@Table(check = @CheckConstraint(name, constraint))`가 이름까지 지정해 CHECK을 만든다. 이름 통제가 보조 DDL을 둔 유일한 이유였으므로 CHECK 20건을 Entity로 옮기고 `sql/04_constraints.sql`을 삭제했다. 부분 유니크 2건과 시퀀스만 애너테이션으로 표현할 수 없어 `MoneylogSchemaContributor`(Hibernate `AdditionalMappingContributor` SPI)가 맡는다. 아래 태스크 설명에 남은 `04_constraints.sql` 언급은 **당시 기록**이며 현재 구조가 아니다 — 현재 구조는 `research §8`·`contracts §7`을 본다
+- 부분 유니크를 `@Table(uniqueConstraints=...)`로 흉내 내려 하면 조건 없는 유니크가 만들어져 **이메일 NULL 다건 저장이 깨진다**. `WHERE` 절을 붙일 자리가 애너테이션에 없다
 - 통계 상세 2종의 유형·수단 컬럼에 JPA 연관 매핑을 쓰지 않는다 — FK가 생기면 FR-078a(끊긴 참조 허용) 위반이고 T048이 실패한다
 - 각 작업 또는 논리 묶음 단위로 커밋한다. 스키마가 바뀐 커밋에는 재생성한 덤프를 함께 넣는다(헌장 VI)
 - 어느 Checkpoint에서 멈춰도 그때까지의 스토리는 독립적으로 검증된 상태다

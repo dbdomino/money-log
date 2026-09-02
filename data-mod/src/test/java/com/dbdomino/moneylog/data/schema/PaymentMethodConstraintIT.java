@@ -90,17 +90,6 @@ class PaymentMethodConstraintIT extends AbstractSchemaIT {
                 .hasSize(4);
     }
 
-    private UserPaymentMethod newPaymentMethod(User user) {
-        UserPaymentMethod method = new UserPaymentMethod();
-        method.setUser(user);
-        method.setName("국민카드");
-        method.setType(UserPaymentMethod.TYPE_CARD);
-        method.setPurpose(UserPaymentMethod.PURPOSE_EXPENSE);
-        method.setCardExpiry("2028-12");
-        stampAudit(method, user.getIdKey());
-        return method;
-    }
-
     private UserPaymentMethod named(UserPaymentMethod method, String name) {
         method.setName(name);
         return method;

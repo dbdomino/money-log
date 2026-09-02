@@ -8,28 +8,27 @@
 
 | 항목 | 확인 |
 |------|------|
-| PostgreSQL 18 기동 | `moneylogdb` / 스키마 `moneylog` / 사용자 `moneyloguser` |
-| 초기 스크립트 | `sql/01_create_user.sql` → `02_create_database.sql` → `03_create_schema.sql` 실행 완료 |
+| PostgreSQL 18 기동 | `moneylogdb` / 사용자 `moneyloguser`. **스키마 `moneylog`는 없어도 된다** — 앱이 만든다 |
+| 초기 스크립트 | `sql/01_create_user.sql` → `02_create_database.sql` 실행 완료. `03_create_schema.sql`은 psql로 직접 붙을 때만 필요하다(`search_path` 설정) |
 | JDK 17 | `java -version` |
 | 아이콘 템플릿 | `app-mod/money-backend-app/src/main/resources/seed/expend-group-icons/` 에 10개 PNG (커밋되어 있음) |
 
 ## 1. 스키마 반영
 
-Entity가 `data-mod`에 들어간 뒤 백엔드 앱을 한 번 기동하면 Hibernate가 테이블을 만든다.
+**앱을 한 번 기동하면 끝난다.** 뒤이어 실행할 스크립트가 없다(2026-09-02 개정).
 
 ```bash
 ./gradlew :app-mod:money-backend-app:bootRun
-# 기동 로그에 create table 확인 후 종료
+# 기동 로그에 create schema / create table / comment on table 확인 후 종료
 ```
 
-이어서 Hibernate가 만들지 못하는 제약을 적용한다.
+Hibernate가 만드는 것 — 스키마, 테이블 15개, 컬럼·PK·FK·일반 인덱스·조건 없는 UNIQUE, **CHECK 20건**, **부분 유니크 2건**, **시퀀스 `seq_installment_group`**, **테이블 주석 15건**.
 
-```powershell
-$env:PGPASSWORD='1q2w3e4r'
-& "C:\Program Files\PostgreSQL\18\bin\psql.exe" -h localhost -U moneyloguser -d moneylogdb -f sql\04_constraints.sql
-```
+`ddl-auto`가 `create`라 **기동할 때마다 전 테이블이 drop 후 재생성**된다. 개발 단계 설정이며, 검증 시나리오는 매번 빈 스키마에서 시작한다.
 
-`04_constraints.sql`은 멱등하므로 두 번 실행해도 오류가 나지 않아야 한다 — **이것도 검증 항목이다.**
+기동 로그의 `GenerationTarget encountered exception`을 확인한다 — **이것도 검증 항목이다.** DDL 실패는 WARN으로만 찍히고 앱은 정상 기동하므로, "Started ..." 만 보고 넘어가면 테이블이 하나도 없는 상태를 놓친다.
+
+허용되는 것은 **스키마가 없는 첫 기동의 `drop schema moneylog` 1건뿐**이다. `ddl-auto: create`가 생성 전에 drop을 시도하는데 지울 것이 없어 나는 것이라 무해하고, 두 번째 기동부터는 사라진다. **`create table`·`create index`·`comment on` 단계의 실패는 0건이어야 한다.**
 
 ## 2. 스키마 검증 (SQL)
 
@@ -37,7 +36,7 @@ $env:PGPASSWORD='1q2w3e4r'
 
 ```sql
 SELECT tablename FROM pg_tables
-WHERE schemaname = 'moneylog' AND tablename LIKE 'tbl_user%'
+WHERE schemaname = 'moneylog'
 ORDER BY tablename;
 ```
 
@@ -63,7 +62,7 @@ FROM pg_index i
 JOIN pg_class c ON c.oid = i.indrelid
 JOIN pg_namespace n ON n.oid = c.relnamespace
 JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = ANY(i.indkey)
-WHERE i.indisprimary AND n.nspname = 'moneylog' AND c.relname LIKE 'tbl_user%'
+WHERE i.indisprimary AND n.nspname = 'moneylog'
 ORDER BY 1;
 ```
 
@@ -76,7 +75,7 @@ SELECT table_name, count(*) FILTER (
   WHERE column_name IN ('created_at','updated_at','created_by','updated_by')
 ) AS audit_cols
 FROM information_schema.columns
-WHERE table_schema = 'moneylog' AND table_name LIKE 'tbl_user%'
+WHERE table_schema = 'moneylog'
 GROUP BY table_name HAVING count(*) FILTER (
   WHERE column_name IN ('created_at','updated_at','created_by','updated_by')
 ) <> 4;
@@ -155,12 +154,17 @@ Select-String -Path sql\schema-moneylogdb.sql -Pattern 'INSERT INTO' | Measure-O
 
 ## 5. 완료 판정
 
-- [ ] `tbl_user*` 테이블 15개 + 시퀀스 `seq_installment_group` 생성됨
-- [ ] 레거시 이름 테이블 0건 (§2-2)
-- [ ] PK 규칙 통과 — `tbl_user`만 `id_key` (§2-3)
-- [ ] 15개 전부 감사 컬럼 4종 보유 (§2-4)
-- [ ] 부분 유니크 2건 존재 (§2-5)
-- [ ] 통계 상세의 유형·수단 FK 없음 (§2-6)
-- [ ] `04_constraints.sql` 두 번 실행해도 오류 없음
-- [ ] §3 시나리오 20건 통과
-- [ ] `sql/schema-moneylogdb.sql` 재생성 + 같은 커밋 포함, `INSERT INTO` 0건
+**판정 완료 — 2026-09-02.** 9개 항목 전부 통과했다. §2의 SQL 검증은 손으로 돌리는 대신
+`SchemaStructureIT`·`AuditColumnIT`로 옮겨 `:data-mod:test`가 매번 확인한다 — 손으로만 두면
+규칙이 깨진 순간 아무도 이 문서를 다시 펼치지 않아 검증이 실행되지 않는다.
+
+- [x] `tbl_user*` 테이블 15개 + 시퀀스 `seq_installment_group` 생성됨 — `SchemaStructureIT`
+- [x] 레거시 이름 테이블 0건 (§2-2) — `SchemaStructureIT`
+- [x] PK 규칙 통과 — `tbl_user`만 `id_key` (§2-3) — `SchemaStructureIT`
+- [x] 15개 전부 감사 컬럼 4종 보유 (§2-4) — `AuditColumnIT`. `tbl_user`만 `created_by`·`updated_by`가 NULL 허용인 것도 함께 확인한다
+- [x] 부분 유니크 2건 존재 (§2-5) — `SchemaStructureIT`가 인덱스 정의의 `WHERE` 절까지 본다
+- [x] 통계 상세의 유형·수단 FK 없음 (§2-6) — `SchemaStructureIT`(FK 개수)와 `StatisticsBrokenRefIT`(FK 대상)가 각각 확인한다
+- [x] 기동 로그의 DDL 실패가 첫 기동의 `drop schema` 1건뿐 — 생성 단계는 0건. 보조 DDL 스크립트가 없어졌으므로 이 항목이 종전의 "`04_constraints.sql` 2회 실행" 검증을 대신한다
+- [x] 테이블 주석 15건 존재 — `pg_description`(`objsubid = 0`)
+- [x] §3 시나리오 20건 통과 — 20건이 모두 `@DisplayName("#N …")`으로 표시된 테스트에 대응한다. `:data-mod:test` 77건 전부 통과
+- [x] `sql/schema-moneylogdb.sql` 재생성 + 같은 커밋 포함, `INSERT INTO` 0건 — `CREATE TABLE` 15건, `CREATE SEQUENCE` 1건, `INSERT INTO` 0건

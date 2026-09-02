@@ -1,7 +1,14 @@
--- 스키마 생성 : moneylog (소유자 moneyloguser, moneylogdb로 로그인 후 수행한다.)
+-- 검색 경로 설정 : moneyloguser 가 moneylogdb 에 접속할 때의 기본 search_path.
 -- moneylogdb 에 접속한 상태에서 실행한다.
-CREATE SCHEMA IF NOT EXISTS moneylog AUTHORIZATION moneyloguser;
-
--- moneyloguser 가 moneylogdb 에 접속할 때의 기본 검색 경로.
+--
+-- 스키마 moneylog 자체는 여기서 만들지 않는다. Hibernate 가 만든다 —
+-- data-mod/src/main/resources/application-postgresql.yml 의
+-- hibernate.hbm2ddl.create_namespaces: true 가 그 역할을 한다.
+-- 앱을 한 번 띄우면 스키마·테이블·제약·인덱스·시퀀스·주석이 모두 생성된다.
+--
+-- 그런데 search_path 는 Hibernate 가 대신해 주지 않는다. 앱은 필요 없다 —
+-- default_schema 설정으로 모든 SQL 을 완전 수식하기 때문이다. 하지만 psql 로 직접
+-- 붙어 SELECT * FROM tbl_user 처럼 쓰려면 이 설정이 있어야 한다. 그래서 이 파일이 남는다.
+--
 -- public 은 확장(extension) 객체 참조용으로 뒤에 남겨둔다.
 ALTER ROLE moneyloguser IN DATABASE moneylogdb SET search_path TO moneylog, public;

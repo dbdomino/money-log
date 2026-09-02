@@ -1,5 +1,6 @@
 package com.dbdomino.moneylog.data.entity;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -31,21 +32,28 @@ import org.hibernate.annotations.ColumnDefault;
  * 뒤는 관리 목록에서 삭제 상태인지를 뜻한다. "사용 중인 수단 목록"(2.6)은
  * 용도가 일치하고 두 조건을 모두 만족하는 것만 고른다(FR-032).
  *
- * <p>{@code type}·{@code purpose}를 자바 열거형이 아니라 문자열로 둔다. Hibernate 6은
- * {@code @Enumerated(STRING)} 컬럼에 CHECK 제약을 자동 생성하는데, 이 프로젝트는
- * CHECK을 {@code sql/04_constraints.sql}이 이름까지 정해 관리하기로 했다
- * (contracts/naming-and-constraints.md §7). 두 곳이 같은 제약을 중복해 만들지 않도록
- * 값 검증은 스크립트 한 곳에 둔다.
+ * <p>{@code type}·{@code purpose}를 자바 열거형이 아니라 문자열로 둔다. Hibernate는
+ * {@code @Enumerated(STRING)} 컬럼에 CHECK 제약을 <b>이름 없이</b> 자동 생성하는데,
+ * 이 프로젝트는 CHECK 이름을 contracts/naming-and-constraints.md §5가 정해 두었다.
+ * 열거형을 쓰면 이름 없는 자동 CHECK 과 아래 {@code @Table} 의 이름 있는 CHECK 이
+ * 같은 컬럼에 둘 다 붙는다. 값 검증을 한 곳에 두려고 문자열 + 상수로 둔다.
  *
  * @see <a href="../../../../../../../../specs/001-backend-db-schema/data-model.md">data-model.md §4</a>
  */
 @Entity
 @Table(
         name = "tbl_user_payment_method",
+        comment = "지출·소득 수단. purpose 가 지출용·소득용을 가르며, 삭제해도 행은 남는다(삭제 표시)",
         indexes = @Index(
                 name = "ix_user_payment_method_active",
                 columnList = "id_key, purpose, in_use, deleted"
-        )
+        ),
+        check = {
+                @CheckConstraint(name = "ck_payment_method_type",
+                        constraint = "type in ('CARD', 'ACCOUNT')"),
+                @CheckConstraint(name = "ck_payment_method_purpose",
+                        constraint = "purpose in ('EXPENSE', 'INCOME')")
+        }
 )
 @Getter
 @Setter
@@ -99,8 +107,8 @@ public class UserPaymentMethod extends BaseAuditEntity {
      * <p>타입이 {@code CHAR(7)}인 것은 data-model.md §4가 정한 값이다. 고정 길이라
      * <b>7자보다 짧은 값을 넣으면 읽을 때 공백이 붙어 돌아온다.</b> {@code YYYY-MM}은
      * 항상 정확히 7자라 현재는 문제가 없지만, 형식이 어긋난 값이 들어오면 비교가
-     * 조용히 실패한다. 형식 검증을 붙일 때는 다른 CHECK와 같이
-     * {@code sql/04_constraints.sql}에 이름을 붙여 관리한다.
+     * 조용히 실패한다. 형식 검증을 붙일 때는 다른 CHECK와 같이 아래 {@code @Table} 의
+     * {@code check} 에 이름을 붙여 추가한다.
      */
     @Column(name = "card_expiry", columnDefinition = "char(7)")
     private String cardExpiry;

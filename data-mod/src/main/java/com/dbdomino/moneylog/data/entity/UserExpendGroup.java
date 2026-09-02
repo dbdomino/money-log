@@ -40,6 +40,7 @@ import org.hibernate.annotations.ColumnDefault;
 @Entity
 @Table(
         name = "tbl_user_expend_group",
+        comment = "지출유형. 가입 시 기본 10종이 생성되며, 삭제해도 행은 남는다(삭제 표시)",
         uniqueConstraints = @UniqueConstraint(
                 name = "ux_user_expend_group_name",
                 columnNames = {"id_key", "name"}
