@@ -266,6 +266,7 @@ gradle-app.setting
 
 # Cache of project
 .gradletasknamecache
+.specify\feature.json
 
 # Eclipse Gradle plugin generated files
 # Eclipse Core
