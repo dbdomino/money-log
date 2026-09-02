@@ -9,6 +9,11 @@ import com.dbdomino.moneylog.data.entity.UserExpense;
 import com.dbdomino.moneylog.data.entity.UserFixedExpense;
 import com.dbdomino.moneylog.data.entity.UserFixedExpenseMonthly;
 import com.dbdomino.moneylog.data.entity.UserPaymentMethod;
+import com.dbdomino.moneylog.data.entity.UserStatistics;
+import com.dbdomino.moneylog.data.entity.UserStatisticsExpendGroup;
+import com.dbdomino.moneylog.data.entity.UserStatisticsPaymentMethod;
+import com.dbdomino.moneylog.data.entity.UserStatisticsWeekly;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.YearMonth;
@@ -180,6 +185,77 @@ public abstract class AbstractSchemaIT {
     }
 
     /**
+     * 저장 가능한 월별 통계 스냅샷 1건을 만든다(아직 저장하지 않는다).
+     *
+     * <p>비율 2개는 {@code NUMERIC(5,2)}라 소수점 둘째 자리까지 담긴다. 읽을 때
+     * 자릿수가 맞춰져 돌아오므로 픽스처도 같은 자릿수로 둔다.
+     */
+    protected UserStatistics newStatistics(User user, int year, int month) {
+        UserStatistics statistics = new UserStatistics();
+        statistics.setUser(user);
+        statistics.setYear(year);
+        statistics.setMonth(month);
+        statistics.setSavedAt(OffsetDateTime.now());
+        statistics.setIncomeTotal(3_000_000L);
+        statistics.setExpenseTotal(1_000_000L);
+        statistics.setFixedAmount(400_000L);
+        statistics.setRegularAmount(600_000L);
+        statistics.setFixedPercent(new BigDecimal("40.00"));
+        statistics.setRegularPercent(new BigDecimal("60.00"));
+        stampAudit(statistics, user.getIdKey());
+        return statistics;
+    }
+
+    /** 저장 가능한 통계 주별 지출 1건을 만든다(아직 저장하지 않는다). */
+    protected UserStatisticsWeekly newStatisticsWeekly(UserStatistics statistics, int weekIndex,
+                                                       LocalDate weekStart, LocalDate weekEnd) {
+        UserStatisticsWeekly weekly = new UserStatisticsWeekly();
+        weekly.setUser(statistics.getUser());
+        weekly.setStatistics(statistics);
+        weekly.setWeekIndex(weekIndex);
+        weekly.setWeekStart(weekStart);
+        weekly.setWeekEnd(weekEnd);
+        weekly.setAmount(150_000L);
+        stampAudit(weekly, statistics.getUser().getIdKey());
+        return weekly;
+    }
+
+    /**
+     * 저장 가능한 통계 지출유형별 요약 1건을 만든다(아직 저장하지 않는다).
+     *
+     * <p>{@code expendGroupIdx}를 <b>값으로</b> 받는다 — 이 컬럼에는 FK가 없어서
+     * (FR-078a) 실재하지 않는 대리키도 넣을 수 있고, 그것이 이 설계의 요점이다.
+     */
+    protected UserStatisticsExpendGroup newStatisticsExpendGroup(UserStatistics statistics,
+                                                                 Long expendGroupIdx, String name) {
+        UserStatisticsExpendGroup group = new UserStatisticsExpendGroup();
+        group.setUser(statistics.getUser());
+        group.setStatistics(statistics);
+        group.setExpendGroupIdx(expendGroupIdx);
+        group.setExpendGroupName(name);
+        group.setAmount(250_000L);
+        group.setTargetAmount(300_000L);
+        group.setUsageRate(new BigDecimal("83.33"));
+        group.setStatus(UserStatisticsExpendGroup.STATUS_UNDER);
+        stampAudit(group, statistics.getUser().getIdKey());
+        return group;
+    }
+
+    /** 저장 가능한 통계 수단별 요약 1건을 만든다. {@code paymentMethodIdx}도 값일 뿐이다. */
+    protected UserStatisticsPaymentMethod newStatisticsPaymentMethod(UserStatistics statistics,
+                                                                     Long paymentMethodIdx,
+                                                                     String name) {
+        UserStatisticsPaymentMethod method = new UserStatisticsPaymentMethod();
+        method.setUser(statistics.getUser());
+        method.setStatistics(statistics);
+        method.setPaymentMethodIdx(paymentMethodIdx);
+        method.setPaymentMethodName(name);
+        method.setAmount(250_000L);
+        stampAudit(method, statistics.getUser().getIdKey());
+        return method;
+    }
+
+    /**
      * 할부 그룹 식별자를 시퀀스에서 하나 발급받는다.
      *
      * <p>Entity의 {@code @GeneratedValue}가 아니라 <b>미리 받아 N개 행에 같이 넣는</b>
@@ -304,6 +380,14 @@ public abstract class AbstractSchemaIT {
         // 막히진 않지만, 삭제 순서를 참조 역순으로 유지해 규칙을 한 가지로 둔다.
         deleteByOwner("tbl_user_fixed_expense_monthly");
         deleteByOwner("tbl_user_fixed_expense");
+        // 통계 상세는 스냅샷을 참조한다. 유형·수단 참조는 FK가 없어(FR-078a)
+        // 기준 데이터보다 먼저 지울 필요는 없지만 순서를 한 규칙으로 유지한다.
+        deleteByOwner("tbl_user_statistics_weekly");
+        deleteByOwner("tbl_user_statistics_expend_group");
+        deleteByOwner("tbl_user_statistics_payment_method");
+        deleteByOwner("tbl_user_statistics");
+        deleteByOwner("tbl_user_expend_target_monthly");
+        deleteByOwner("tbl_user_expend_target_default");
         // 기준 데이터는 거래·고정지출·목표·통계가 참조하므로 그것들보다 나중에 지운다.
         deleteByOwner("tbl_user_payment_method");
         deleteByOwner("tbl_user_expend_group");
@@ -323,6 +407,12 @@ public abstract class AbstractSchemaIT {
             "tbl_user_income",
             "tbl_user_fixed_expense_monthly",
             "tbl_user_fixed_expense",
+            "tbl_user_statistics_weekly",
+            "tbl_user_statistics_expend_group",
+            "tbl_user_statistics_payment_method",
+            "tbl_user_statistics",
+            "tbl_user_expend_target_monthly",
+            "tbl_user_expend_target_default",
             "tbl_user_payment_method",
             "tbl_user_expend_group");
 

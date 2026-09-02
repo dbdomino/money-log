@@ -240,10 +240,65 @@ END $$;
 -- ============================================================================
 -- US5 — 목표금액 · 통계 (tasks.md T054)
 -- ============================================================================
--- ck_target_default_amount : 0 ~ 100000000                      — FR-070
--- ck_target_monthly_amount : 0 ~ 100000000                      — FR-071
--- ck_target_monthly_month  : month 1~12                         — FR-071
--- ck_statistics_month      : month 1~12                         — FR-074
--- ck_stat_weekly_index     : week_index >= 1                    — FR-076
--- ck_stat_group_status     : status IN ('UNDER','OK','OVER')    — FR-076
--- (T054 에서 채운다)
+-- 목표금액에만 명세상 상한(1억)이 있다. 지출·소득·고정지출 금액에는 상한을 두지
+-- 않는다(contracts §5). 0 은 유효한 값이다 — "이 유형에는 쓰지 않겠다"는 뜻이라
+-- 행이 없는 것과 다르다. BETWEEN 이 양 끝을 포함하므로 1억 정확히는 통과한다. (FR-070)
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_expend_target_default
+        ADD CONSTRAINT ck_target_default_amount
+        CHECK (target_amount BETWEEN 0 AND 100000000);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 월별 목표금액도 같은 범위다. (FR-071)
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_expend_target_monthly
+        ADD CONSTRAINT ck_target_monthly_amount
+        CHECK (target_amount BETWEEN 0 AND 100000000);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 월은 1~12 다. 유일 제약이 (id_key, year, month, expend_group_idx) 라 월 값이
+-- 범위를 벗어나면 같은 달을 두 칸에 적을 수 있게 된다. (FR-071)
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_expend_target_monthly
+        ADD CONSTRAINT ck_target_monthly_month CHECK (month BETWEEN 1 AND 12);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 통계 스냅샷의 월도 1~12 다. (FR-074, research §6)
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_statistics
+        ADD CONSTRAINT ck_statistics_month CHECK (month BETWEEN 1 AND 12);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 주차는 1부터다. 상한을 두지 않는 이유는 한 달의 주 개수가 첫 주 시작일에 따라
+-- 달라져(1일이 월요일이 아니면 첫 주가 짧다) 고정 상한을 정할 근거가 없어서다. (FR-076)
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_statistics_weekly
+        ADD CONSTRAINT ck_stat_weekly_index CHECK (week_index >= 1);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 목표 대비 상태는 세 값뿐이다 — 90% 미만 UNDER / 90~110% OK / 110% 초과 OVER.
+-- 기준이 나중에 바뀌어도 이미 저장된 행은 다시 계산하지 않으므로, 값 자체가
+-- 어긋나는 것만 막는다. (FR-076)
+DO $$
+BEGIN
+    ALTER TABLE tbl_user_statistics_expend_group
+        ADD CONSTRAINT ck_stat_group_status
+        CHECK (status IN ('UNDER', 'OK', 'OVER'));
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;

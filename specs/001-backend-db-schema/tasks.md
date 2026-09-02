@@ -178,24 +178,25 @@ Controller·Service·DTO는 이 기능에서 만들지 않는다.
 
 ### Tests for User Story 5
 
-- [ ] T045 [P] [US5] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/ExpendTargetIT.java` — 지출유형을 `deleted = true`로 해도 목표금액 행과 참조가 유지되는지(quickstart #8), 같은 `(id_key, expend_group_idx)` 2건은 실패, 같은 `(id_key, year, month, expend_group_idx)` 2건은 실패, `target_amount = 100000001`은 CHECK 위반(#18)
-- [ ] T046 [P] [US5] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/StatisticsUniqueIT.java` — 같은 `(id_key, year, month)` 통계 2건은 실패(#14)
-- [ ] T047 [P] [US5] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/StatisticsCascadeIT.java` — 통계 스냅샷을 DELETE하면 상세 3종이 함께 사라지는지(#16)
-- [ ] T048 [P] [US5] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/StatisticsBrokenRefIT.java` — 통계 상세에 **실재하지 않는** `expend_group_idx`·`payment_method_idx` 값을 넣어도 INSERT가 성공하는지(#15, FR-078a — FK가 없어야 통과한다)
+- [x] T045 **(완료 — 2026-09-02)** [P] [US5] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/ExpendTargetIT.java` — 지출유형을 `deleted = true`로 해도 목표금액 행과 참조가 유지되는지(quickstart #8), 같은 `(id_key, expend_group_idx)` 2건은 실패, 같은 `(id_key, year, month, expend_group_idx)` 2건은 실패, `target_amount = 100000001`은 CHECK 위반(#18)
+- [x] T046 **(완료 — 2026-09-02)** [P] [US5] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/StatisticsUniqueIT.java` — 같은 `(id_key, year, month)` 통계 2건은 실패(#14)
+- [x] T047 **(완료 — 2026-09-02)** [P] [US5] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/StatisticsCascadeIT.java` — 통계 스냅샷을 DELETE하면 상세 3종이 함께 사라지는지(#16)
+- [x] T048 **(완료 — 2026-09-02)** [P] [US5] `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/StatisticsBrokenRefIT.java` — 통계 상세에 **실재하지 않는** `expend_group_idx`·`payment_method_idx` 값을 넣어도 INSERT가 성공하는지(#15, FR-078a — FK가 없어야 통과한다)
 
 ### Implementation for User Story 5
 
-- [ ] T049 [P] [US5] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserExpendTargetDefault.java`에 `tbl_user_expend_target_default` Entity를 만든다 — `expend_group_idx` FK RESTRICT, `target_amount`, UNIQUE `ux_user_target_default`(`id_key, expend_group_idx`). 상세: data-model.md §10
-- [ ] T050 [P] [US5] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserExpendTargetMonthly.java`에 `tbl_user_expend_target_monthly` Entity를 만든다 — `year`, `month`, `expend_group_idx` FK RESTRICT, `target_amount`, UNIQUE `ux_user_target_monthly`(`id_key, year, month, expend_group_idx`). 상세: data-model.md §11
-- [ ] T051 [US5] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserStatistics.java`에 `tbl_user_statistics` Entity를 만든다 — `year`, `month`, `saved_at`, `income_total`, `expense_total`, `fixed_amount`, `regular_amount`, `fixed_percent`/`regular_percent`(NUMERIC(5,2)), UNIQUE `ux_user_statistics`(`id_key, year, month`). 상세: data-model.md §12
-- [ ] T052 [US5] 통계 상세 3종 Entity를 만든다. T051에 의존한다
+- [x] T049 **(완료 — 2026-09-02)** [P] [US5] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserExpendTargetDefault.java`에 `tbl_user_expend_target_default` Entity를 만든다 — `expend_group_idx` FK RESTRICT, `target_amount`, UNIQUE `ux_user_target_default`(`id_key, expend_group_idx`). 상세: data-model.md §10
+- [x] T050 **(완료 — 2026-09-02)** [P] [US5] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserExpendTargetMonthly.java`에 `tbl_user_expend_target_monthly` Entity를 만든다 — `year`, `month`, `expend_group_idx` FK RESTRICT, `target_amount`, UNIQUE `ux_user_target_monthly`(`id_key, year, month, expend_group_idx`). 상세: data-model.md §11
+- [x] T051 **(완료 — 2026-09-02)** [US5] `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/UserStatistics.java`에 `tbl_user_statistics` Entity를 만든다 — `year`, `month`, `saved_at`, `income_total`, `expense_total`, `fixed_amount`, `regular_amount`, `fixed_percent`/`regular_percent`(NUMERIC(5,2)), UNIQUE `ux_user_statistics`(`id_key, year, month`). 상세: data-model.md §12
+- [x] T052 **(완료 — 2026-09-02)** [US5] 통계 상세 3종 Entity를 만든다. T051에 의존한다
   - `data-mod/.../entity/UserStatisticsWeekly.java` — `statistics_idx` FK CASCADE, `week_index`, `week_start`, `week_end`, `amount`, UNIQUE(`statistics_idx, week_index`)
   - `data-mod/.../entity/UserStatisticsExpendGroup.java` — `statistics_idx` FK CASCADE, `expend_group_idx`(**FK 없이 값만**), `expend_group_name`, `amount`, `target_amount`, `usage_rate`(NUMERIC(6,2)), `status`, UNIQUE(`statistics_idx, expend_group_idx`)
   - `data-mod/.../entity/UserStatisticsPaymentMethod.java` — `statistics_idx` FK CASCADE, `payment_method_idx`(**FK 없이 값만**), `payment_method_name`, `amount`, UNIQUE(`statistics_idx, payment_method_idx`)
   - 상세: data-model.md §13~§15. 두 상세의 유형·수단 컬럼에 `@ManyToOne`이나 `@JoinColumn`을 쓰지 않는다 — Hibernate가 FK를 만들어 버린다
-- [ ] T053 [P] [US5] `data-mod/src/main/java/com/dbdomino/moneylog/data/repository/` 에 목표금액 2개·통계 4개 Repository를 만든다 — 목표금액은 upsert 판정용 조회(`findByIdKeyAndExpendGroupIdx`, `findByIdKeyAndYearAndMonthAndExpendGroupIdx`), 통계는 `findByIdKeyAndYearAndMonth`와 상세 일괄 삭제
-- [ ] T054 [US5] `sql/04_constraints.sql`에 목표금액·통계 CHECK를 추가한다 — `ck_target_default_amount`·`ck_target_monthly_amount`(0~100000000), `ck_target_monthly_month`, `ck_statistics_month`, `ck_stat_weekly_index`(`>= 1`), `ck_stat_group_status`(`IN ('UNDER','OK','OVER')`)
-- [ ] T055 [US5] 스키마를 반영하고 T045~T048을 실행해 통과를 확인한다
+- [x] T053 **(완료 — 2026-09-02)** [P] [US5] `data-mod/src/main/java/com/dbdomino/moneylog/data/repository/` 에 목표금액 2개·통계 4개 Repository를 만든다 — 목표금액은 upsert 판정용 조회(`findByIdKeyAndExpendGroupIdx`, `findByIdKeyAndYearAndMonthAndExpendGroupIdx`), 통계는 `findByIdKeyAndYearAndMonth`와 상세 일괄 삭제
+- [x] T054 **(완료 — 2026-09-02)** [US5] `sql/04_constraints.sql`에 목표금액·통계 CHECK를 추가한다 — `ck_target_default_amount`·`ck_target_monthly_amount`(0~100000000), `ck_target_monthly_month`, `ck_statistics_month`, `ck_stat_weekly_index`(`>= 1`), `ck_stat_group_status`(`IN ('UNDER','OK','OVER')`)
+- [x] T055 **(완료 — 2026-09-02)** [US5] 스키마를 반영하고 T045~T048을 실행해 통과를 확인한다 **검증 결과**: `:data-mod:test` 65건 전부 통과(US5 20건 추가 — 목표금액 9, 통계 유일·재저장 4, CASCADE 3, FK 부재 4). 제약 적용 전 실행에서 CHECK 관련 4건이 먼저 실패하는 것을 확인한 뒤 T054를 채웠다. **15개 테이블이 모두 생성됐다.** 전체 집계: CHECK 20건(contracts §5 등록부와 같은 수), UNIQUE 제약 10건(+ 부분 유니크 인덱스 2건 = 등록부 12건), FK 27건, PK 15건. PK 규칙도 확인했다 — `idx`가 아닌 기본키를 가진 테이블은 `tbl_user`(`id_key`) 하나뿐이다. `04_constraints.sql`은 2회 연속 exit=0.
+- **FR-078a 회귀 방지**: `StatisticsBrokenRefIT`가 통계 상세 2종의 FK 대상을 `pg_constraint`로 직접 조회해 `tbl_user`·`tbl_user_statistics` 둘뿐임을 단언한다. 누군가 `expendGroupIdx`·`paymentMethodIdx`에 `@ManyToOne`을 붙이면 Hibernate가 FK를 만들어 이 단언이 깨진다 — 값 INSERT 성공만 보는 검사로는 그 회귀를 놓친다.
 
 **Checkpoint**: 15개 저장 단위가 모두 만들어졌다. 5개 User Story 전부 독립 검증 가능하다
 
