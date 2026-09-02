@@ -155,12 +155,16 @@ Select-String -Path sql\schema-moneylogdb.sql -Pattern 'INSERT INTO' | Measure-O
 
 ## 5. 완료 판정
 
-- [ ] `tbl_user*` 테이블 15개 + 시퀀스 `seq_installment_group` 생성됨
-- [ ] 레거시 이름 테이블 0건 (§2-2)
-- [ ] PK 규칙 통과 — `tbl_user`만 `id_key` (§2-3)
-- [ ] 15개 전부 감사 컬럼 4종 보유 (§2-4)
-- [ ] 부분 유니크 2건 존재 (§2-5)
-- [ ] 통계 상세의 유형·수단 FK 없음 (§2-6)
-- [ ] `04_constraints.sql` 두 번 실행해도 오류 없음
-- [ ] §3 시나리오 20건 통과
-- [ ] `sql/schema-moneylogdb.sql` 재생성 + 같은 커밋 포함, `INSERT INTO` 0건
+**판정 완료 — 2026-09-02.** 9개 항목 전부 통과했다. §2의 SQL 검증은 손으로 돌리는 대신
+`SchemaStructureIT`·`AuditColumnIT`로 옮겨 `:data-mod:test`가 매번 확인한다 — 손으로만 두면
+규칙이 깨진 순간 아무도 이 문서를 다시 펼치지 않아 검증이 실행되지 않는다.
+
+- [x] `tbl_user*` 테이블 15개 + 시퀀스 `seq_installment_group` 생성됨 — `SchemaStructureIT`
+- [x] 레거시 이름 테이블 0건 (§2-2) — `SchemaStructureIT`
+- [x] PK 규칙 통과 — `tbl_user`만 `id_key` (§2-3) — `SchemaStructureIT`
+- [x] 15개 전부 감사 컬럼 4종 보유 (§2-4) — `AuditColumnIT`. `tbl_user`만 `created_by`·`updated_by`가 NULL 허용인 것도 함께 확인한다
+- [x] 부분 유니크 2건 존재 (§2-5) — `SchemaStructureIT`가 인덱스 정의의 `WHERE` 절까지 본다
+- [x] 통계 상세의 유형·수단 FK 없음 (§2-6) — `SchemaStructureIT`(FK 개수)와 `StatisticsBrokenRefIT`(FK 대상)가 각각 확인한다
+- [x] `04_constraints.sql` 두 번 실행해도 오류 없음 — 2회 연속 exit=0
+- [x] §3 시나리오 20건 통과 — 20건이 모두 `@DisplayName("#N …")`으로 표시된 테스트에 대응한다. `:data-mod:test` 77건 전부 통과
+- [x] `sql/schema-moneylogdb.sql` 재생성 + 같은 커밋 포함, `INSERT INTO` 0건 — `CREATE TABLE` 15건, `CREATE SEQUENCE` 1건, `INSERT INTO` 0건
