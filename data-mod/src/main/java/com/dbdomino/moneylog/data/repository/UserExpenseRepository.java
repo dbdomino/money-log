@@ -7,7 +7,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
- * 지출 내역 조회·삭제 — {@code tbl_user_expense}.
+ * 지출 내역 조회·삭제 — {@code tbl_expense}.
  *
  * <p>소유자 조건이 {@code userIdKey}로 나가는 것은 소유자를 {@code @ManyToOne} 연관으로
  * 매핑했기 때문이다 — 컬럼은 규칙대로 {@code id_key} 하나다.
@@ -19,7 +19,7 @@ public interface UserExpenseRepository extends JpaRepository<UserExpense, Long> 
      *
      * <p>연·월이 아니라 날짜 범위로 받는다. 저장 구조가 연·월을 따로 갖지 않고
      * {@code payment_date} 하나만 갖기 때문이다(data-model.md §6). 호출부가 그 달의
-     * 1일~말일을 만들어 넘긴다. {@code ix_user_expense_date}가 이 조합을 덮는다.
+     * 1일~말일을 만들어 넘긴다. {@code ix_expense_date}가 이 조합을 덮는다.
      */
     List<UserExpense> findByUserIdKeyAndPaymentDateBetween(Long idKey, LocalDate from, LocalDate to);
 

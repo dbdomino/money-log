@@ -39,31 +39,37 @@ class SchemaStructureIT extends AbstractSchemaIT {
             "tbl_system_stat");
 
     @Test
-    @DisplayName("§2-1 tbl_user% 테이블이 정확히 15개다")
+    @DisplayName("§2-1 moneylog 스키마에 테이블이 정확히 15개다")
     void schemaHasExactlyFifteenTables() {
         List<String> tables = inTx(() -> jdbc.queryForList("""
                 SELECT tablename FROM pg_tables
-                WHERE schemaname = 'moneylog' AND tablename LIKE 'tbl_user%'
+                WHERE schemaname = 'moneylog'
                 ORDER BY tablename
                 """, String.class));
 
         assertThat(tables).hasSize(EXPECTED_TABLE_COUNT);
-        assertThat(tables).containsExactly(
+        // 순서에 묶이지 않게 확인한다 — 이 시험이 보는 것은 "무엇이 있는가"이지
+        // 정렬 결과가 아니다. 이름을 바꿀 때마다 목록 순서까지 맞추게 되면
+        // 정작 확인하려던 구성 변화가 순서 불일치에 묻힌다.
+        assertThat(tables).containsExactlyInAnyOrder(
+                // tbl_user_ 접두사를 유지하는 5개 — 회원 테이블 자체, FR-009 확정 2건,
+                // 레거시 money-app 이름과 충돌하는 3건(research §1)
                 "tbl_user",
-                "tbl_user_expend_group",
-                "tbl_user_expend_target_default",
-                "tbl_user_expend_target_monthly",
-                "tbl_user_expense",
-                "tbl_user_fixed_expense",
-                "tbl_user_fixed_expense_monthly",
-                "tbl_user_income",
+                "tbl_user_session",
                 "tbl_user_login_history",
                 "tbl_user_payment_method",
-                "tbl_user_session",
-                "tbl_user_statistics",
-                "tbl_user_statistics_expend_group",
-                "tbl_user_statistics_payment_method",
-                "tbl_user_statistics_weekly");
+                "tbl_user_expend_group",
+                // 나머지는 자원명 그대로
+                "tbl_expense",
+                "tbl_income",
+                "tbl_fixed_expense",
+                "tbl_fixed_expense_monthly",
+                "tbl_expend_target_default",
+                "tbl_expend_target_monthly",
+                "tbl_statistics",
+                "tbl_statistics_weekly",
+                "tbl_statistics_expend_group",
+                "tbl_statistics_payment_method");
     }
 
     @Test
@@ -92,7 +98,7 @@ class SchemaStructureIT extends AbstractSchemaIT {
                 JOIN pg_class c ON c.oid = i.indrelid
                 JOIN pg_namespace n ON n.oid = c.relnamespace
                 JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = ANY(i.indkey)
-                WHERE i.indisprimary AND n.nspname = 'moneylog' AND c.relname LIKE 'tbl_user%'
+                WHERE i.indisprimary AND n.nspname = 'moneylog'
                 ORDER BY 1
                 """));
 
@@ -137,18 +143,18 @@ class SchemaStructureIT extends AbstractSchemaIT {
                 WHERE contype = 'f'
                   AND connamespace = 'moneylog'::regnamespace
                   AND conrelid::regclass::text IN (
-                      'tbl_user_statistics_expend_group',
-                      'tbl_user_statistics_payment_method')
+                      'tbl_statistics_expend_group',
+                      'tbl_statistics_payment_method')
                 ORDER BY 1, 2
                 """));
 
         // 유형·수단으로 나가는 FK 가 하나라도 늘면 개수가 2를 넘는다(FR-078a)
         assertThat(foreignKeys).extracting(row -> row.get("conname"))
                 .containsExactlyInAnyOrder(
-                        "fk_user_stat_group_user",
-                        "fk_user_stat_group_statistics",
-                        "fk_user_stat_method_user",
-                        "fk_user_stat_method_statistics");
+                        "fk_stat_group_user",
+                        "fk_stat_group_statistics",
+                        "fk_stat_method_user",
+                        "fk_stat_method_statistics");
     }
 
     @Test

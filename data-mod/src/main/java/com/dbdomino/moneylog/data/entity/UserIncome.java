@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * 월별 수입 내역 — {@code tbl_user_income}.
+ * 월별 수입 내역 — {@code tbl_income}.
  *
  * <p><b>지출과 별도 테이블이다</b>(FR-046). 장소·지출유형·할부 컬럼이 없다 — 수입에는
  * 해당 개념이 없다. 한 테이블에 합치면 그 컬럼들이 전부 nullable이 되고, "지출이면
@@ -29,17 +29,17 @@ import lombok.Setter;
  *
  * <p>{@code content}만 비어 있을 수 있다. 나머지는 전부 필수다.
  *
- * <p>엑셀 일괄 등록은 이 테이블과 {@code tbl_user_expense}에만 행을 만든다. 업로드
+ * <p>엑셀 일괄 등록은 이 테이블과 {@code tbl_expense}에만 행을 만든다. 업로드
  * 이력은 저장하지 않는다(FR-049).
  *
  * @see <a href="../../../../../../../../specs/001-backend-db-schema/data-model.md">data-model.md §7</a>
  */
 @Entity
 @Table(
-        name = "tbl_user_income",
+        name = "tbl_income",
         comment = "월별 수입 내역. 장소·지출유형·할부가 없어 지출과 별도 테이블로 둔다",
         indexes = @Index(
-                name = "ix_user_income_date",
+                name = "ix_income_date",
                 columnList = "id_key, payment_date"
         ),
         check = @CheckConstraint(name = "ck_income_amount", constraint = "amount > 0")
@@ -59,7 +59,7 @@ public class UserIncome extends BaseAuditEntity {
     @JoinColumn(
             name = "id_key",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_income_user")
+            foreignKey = @ForeignKey(name = "fk_income_user")
     )
     private User user;
 
@@ -73,7 +73,7 @@ public class UserIncome extends BaseAuditEntity {
     @JoinColumn(
             name = "payment_method_idx",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_income_payment_method")
+            foreignKey = @ForeignKey(name = "fk_income_payment_method")
     )
     private UserPaymentMethod paymentMethod;
 

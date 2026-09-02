@@ -106,14 +106,14 @@ class StatisticsBrokenRefIT extends AbstractSchemaIT {
                 WHERE contype = 'f'
                   AND connamespace = 'moneylog'::regnamespace
                   AND conrelid::regclass::text IN (
-                      'tbl_user_statistics_expend_group',
-                      'tbl_user_statistics_payment_method')
+                      'tbl_statistics_expend_group',
+                      'tbl_statistics_payment_method')
                 """, String.class));
 
         // 남아 있어야 하는 FK는 회원과 소속 스냅샷뿐이다.
         // tbl_user_expend_group·tbl_user_payment_method 가 끼면 FR-078a 위반이다.
         assertThat(referencedTables)
-                .containsOnly("tbl_user", "tbl_user_statistics")
+                .containsOnly("tbl_user", "tbl_statistics")
                 .doesNotContain("tbl_user_expend_group", "tbl_user_payment_method");
     }
 

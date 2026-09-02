@@ -22,14 +22,14 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 /**
- * 월별 고정지출 내역 — {@code tbl_user_fixed_expense_monthly}.
+ * 월별 고정지출 내역 — {@code tbl_fixed_expense_monthly}.
  *
  * <p>고정지출 설정({@link UserFixedExpense})이 그 달에 실제로 얼마였는지를 담는다.
  * <b>이 행 자체가 그 달의 값이다</b> — 별도의 "월별 예외" 테이블을 두지 않는다.
  * 예외 테이블 방식이면 조회할 때마다 설정과 예외를 합쳐야 하고, 합치는 규칙이
  * 코드 여러 곳에 흩어진다.
  *
- * <p><b>이 테이블은 {@code tbl_user_expense}와 섞이지 않는다</b>(FR-052). 고정지출은
+ * <p><b>이 테이블은 {@code tbl_expense}와 섞이지 않는다</b>(FR-052). 고정지출은
  * 사용자가 매달 입력하는 것이 아니라 설정에서 파생되는 것이라, 같은 테이블에 넣으면
  * "직접 적은 지출"과 "자동 생성분"을 구분하는 조건이 모든 조회에 붙는다.
  *
@@ -38,7 +38,7 @@ import org.hibernate.annotations.OnDeleteAction;
  * <p>그 연·월을 <b>처음 조회할 때</b> 설정에서 복사해 만든다(lazy 생성, FR-054).
  * 월별 내역 조회(4.5)와 월별 가계부 목록(4.8) <b>양쪽</b>이 이 생성을 일으킨다.
  * 두 화면이 동시에 열리면 같은 행을 두 번 만들려 하므로, 유일 제약
- * {@code ux_user_fixed_expense_monthly}와 {@code INSERT ... ON CONFLICT DO NOTHING}을
+ * {@code ux_fixed_expense_monthly}와 {@code INSERT ... ON CONFLICT DO NOTHING}을
  * 함께 써서 행이 늘어나지 않게 한다. 애플리케이션의 "있으면 건너뛴다" 검사만으로는
  * 두 트랜잭션이 동시에 "없음"을 보는 순간을 막을 수 없다.
  *
@@ -58,14 +58,14 @@ import org.hibernate.annotations.OnDeleteAction;
  */
 @Entity
 @Table(
-        name = "tbl_user_fixed_expense_monthly",
+        name = "tbl_fixed_expense_monthly",
         comment = "월별 고정지출 내역. 그 달을 처음 조회할 때 설정에서 복사해 만든다(lazy 생성)",
         uniqueConstraints = @UniqueConstraint(
-                name = "ux_user_fixed_expense_monthly",
+                name = "ux_fixed_expense_monthly",
                 columnNames = {"fixed_expense_idx", "year", "month"}
         ),
         indexes = @Index(
-                name = "ix_user_fixed_monthly_ym",
+                name = "ix_fixed_monthly_ym",
                 columnList = "id_key, year, month"
         ),
         check = {
@@ -89,7 +89,7 @@ public class UserFixedExpenseMonthly extends BaseAuditEntity {
     @JoinColumn(
             name = "id_key",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_fixed_monthly_user")
+            foreignKey = @ForeignKey(name = "fk_fixed_monthly_user")
     )
     private User user;
 
@@ -103,7 +103,7 @@ public class UserFixedExpenseMonthly extends BaseAuditEntity {
     @JoinColumn(
             name = "fixed_expense_idx",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_fixed_monthly_fixed_expense")
+            foreignKey = @ForeignKey(name = "fk_fixed_monthly_fixed_expense")
     )
     @OnDelete(action = OnDeleteAction.CASCADE)
     private UserFixedExpense fixedExpense;
@@ -133,7 +133,7 @@ public class UserFixedExpenseMonthly extends BaseAuditEntity {
     @JoinColumn(
             name = "payment_method_idx",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_fixed_monthly_payment_method")
+            foreignKey = @ForeignKey(name = "fk_fixed_monthly_payment_method")
     )
     private UserPaymentMethod paymentMethod;
 
@@ -142,7 +142,7 @@ public class UserFixedExpenseMonthly extends BaseAuditEntity {
     @JoinColumn(
             name = "expend_group_idx",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_fixed_monthly_expend_group")
+            foreignKey = @ForeignKey(name = "fk_fixed_monthly_expend_group")
     )
     private UserExpendGroup expendGroup;
 

@@ -18,7 +18,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 /**
- * 통계 수단별 요약 — {@code tbl_user_statistics_payment_method}.
+ * 통계 수단별 요약 — {@code tbl_statistics_payment_method}.
  *
  * <p>{@link UserStatisticsExpendGroup}과 같은 규칙이다 — {@code paymentMethodIdx}에
  * <b>FK를 걸지 않고</b> 값으로만 보관한다(FR-078a). 연관으로 매핑하면 Hibernate가 FK를
@@ -33,10 +33,10 @@ import org.hibernate.annotations.OnDeleteAction;
  */
 @Entity
 @Table(
-        name = "tbl_user_statistics_payment_method",
+        name = "tbl_statistics_payment_method",
         comment = "통계 수단별 요약. 수단 참조에 FK 가 없다. 지출 0원인 수단도 행으로 남긴다",
         uniqueConstraints = @UniqueConstraint(
-                name = "ux_user_stat_method",
+                name = "ux_stat_method",
                 columnNames = {"statistics_idx", "payment_method_idx"}
         )
 )
@@ -55,7 +55,7 @@ public class UserStatisticsPaymentMethod extends BaseAuditEntity {
     @JoinColumn(
             name = "id_key",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_stat_method_user")
+            foreignKey = @ForeignKey(name = "fk_stat_method_user")
     )
     private User user;
 
@@ -64,7 +64,7 @@ public class UserStatisticsPaymentMethod extends BaseAuditEntity {
     @JoinColumn(
             name = "statistics_idx",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_stat_method_statistics")
+            foreignKey = @ForeignKey(name = "fk_stat_method_statistics")
     )
     @OnDelete(action = OnDeleteAction.CASCADE)
     private UserStatistics statistics;

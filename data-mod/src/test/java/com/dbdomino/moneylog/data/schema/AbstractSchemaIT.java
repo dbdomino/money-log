@@ -374,20 +374,20 @@ public abstract class AbstractSchemaIT {
         deleteByOwner("tbl_user_session");
         deleteByOwner("tbl_user_login_history");
         // 거래는 수단·지출유형을 참조하므로 기준 데이터보다 먼저 지운다.
-        deleteByOwner("tbl_user_expense");
-        deleteByOwner("tbl_user_income");
+        deleteByOwner("tbl_expense");
+        deleteByOwner("tbl_income");
         // 월별 내역은 관리 행을 참조한다. FK가 CASCADE라 순서가 어긋나도 부모 삭제가
         // 막히진 않지만, 삭제 순서를 참조 역순으로 유지해 규칙을 한 가지로 둔다.
-        deleteByOwner("tbl_user_fixed_expense_monthly");
-        deleteByOwner("tbl_user_fixed_expense");
+        deleteByOwner("tbl_fixed_expense_monthly");
+        deleteByOwner("tbl_fixed_expense");
         // 통계 상세는 스냅샷을 참조한다. 유형·수단 참조는 FK가 없어(FR-078a)
         // 기준 데이터보다 먼저 지울 필요는 없지만 순서를 한 규칙으로 유지한다.
-        deleteByOwner("tbl_user_statistics_weekly");
-        deleteByOwner("tbl_user_statistics_expend_group");
-        deleteByOwner("tbl_user_statistics_payment_method");
-        deleteByOwner("tbl_user_statistics");
-        deleteByOwner("tbl_user_expend_target_monthly");
-        deleteByOwner("tbl_user_expend_target_default");
+        deleteByOwner("tbl_statistics_weekly");
+        deleteByOwner("tbl_statistics_expend_group");
+        deleteByOwner("tbl_statistics_payment_method");
+        deleteByOwner("tbl_statistics");
+        deleteByOwner("tbl_expend_target_monthly");
+        deleteByOwner("tbl_expend_target_default");
         // 기준 데이터는 거래·고정지출·목표·통계가 참조하므로 그것들보다 나중에 지운다.
         deleteByOwner("tbl_user_payment_method");
         deleteByOwner("tbl_user_expend_group");
@@ -403,16 +403,16 @@ public abstract class AbstractSchemaIT {
     private static final Set<String> OWNED_TABLES = Set.of(
             "tbl_user_session",
             "tbl_user_login_history",
-            "tbl_user_expense",
-            "tbl_user_income",
-            "tbl_user_fixed_expense_monthly",
-            "tbl_user_fixed_expense",
-            "tbl_user_statistics_weekly",
-            "tbl_user_statistics_expend_group",
-            "tbl_user_statistics_payment_method",
-            "tbl_user_statistics",
-            "tbl_user_expend_target_monthly",
-            "tbl_user_expend_target_default",
+            "tbl_expense",
+            "tbl_income",
+            "tbl_fixed_expense_monthly",
+            "tbl_fixed_expense",
+            "tbl_statistics_weekly",
+            "tbl_statistics_expend_group",
+            "tbl_statistics_payment_method",
+            "tbl_statistics",
+            "tbl_expend_target_monthly",
+            "tbl_expend_target_default",
             "tbl_user_payment_method",
             "tbl_user_expend_group");
 

@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * 월별 통계 스냅샷(머리) — {@code tbl_user_statistics}.
+ * 월별 통계 스냅샷(머리) — {@code tbl_statistics}.
  *
  * <p><b>저장 시점의 계산 결과를 그대로 보존한다</b>(FR-075). 이후 그 달의 지출을
  * 고치거나 지워도 이 행은 변하지 않는다. 통계는 "그때 이렇게 보였다"는 기록이지
@@ -30,7 +30,7 @@ import lombok.Setter;
  * 다만 저장본이 있으면 {@code savedAt}만 꺼내 응답에 싣는다.
  *
  * <p>재저장은 행을 늘리지 않는다(FR-074). 이 행을 UPDATE하고 {@code savedAt}을
- * 갱신하며, 상세 3종은 지웠다 다시 넣는다. 유일 제약 {@code ux_user_statistics}가
+ * 갱신하며, 상세 3종은 지웠다 다시 넣는다. 유일 제약 {@code ux_statistics}가
  * 그 규칙을 DB에서 강제한다 — 없으면 재저장할 때마다 같은 달 통계가 쌓여 어느
  * 것이 최신인지 판단이 붙는다.
  *
@@ -41,10 +41,10 @@ import lombok.Setter;
  */
 @Entity
 @Table(
-        name = "tbl_user_statistics",
+        name = "tbl_statistics",
         comment = "월별 통계 스냅샷(머리). 저장 시점 계산 결과를 보존하며 재저장해도 행이 늘지 않는다",
         uniqueConstraints = @UniqueConstraint(
-                name = "ux_user_statistics",
+                name = "ux_statistics",
                 columnNames = {"id_key", "year", "month"}
         ),
         check = @CheckConstraint(name = "ck_statistics_month",
@@ -65,7 +65,7 @@ public class UserStatistics extends BaseAuditEntity {
     @JoinColumn(
             name = "id_key",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_statistics_user")
+            foreignKey = @ForeignKey(name = "fk_statistics_user")
     )
     private User user;
 

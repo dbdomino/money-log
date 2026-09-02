@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
- * 통계 수단별 요약 조회·삭제 — {@code tbl_user_statistics_payment_method}.
+ * 통계 수단별 요약 조회·삭제 — {@code tbl_statistics_payment_method}.
  *
  * <p>{@code paymentMethodIdx}도 FK 없는 값이다(FR-078a). 유형별 요약과 달리 지출이
  * 0원인 수단도 행으로 들어 있다(FR-076).

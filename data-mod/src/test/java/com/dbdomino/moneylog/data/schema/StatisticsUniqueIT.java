@@ -43,7 +43,7 @@ class StatisticsUniqueIT extends AbstractSchemaIT {
 
         assertViolatesConstraint(() ->
                 statisticsRepository.saveAndFlush(newStatistics(user, 2026, 12)),
-                "ux_user_statistics");
+                "ux_statistics");
     }
 
     @Test

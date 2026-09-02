@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /**
- * 월별 고정지출 내역 조회·생성 — {@code tbl_user_fixed_expense_monthly}.
+ * 월별 고정지출 내역 조회·생성 — {@code tbl_fixed_expense_monthly}.
  *
  * <p>이 저장 단위는 조회가 <b>쓰기를 일으킨다</b>. 그 연·월을 처음 볼 때 설정에서
  * 복사해 만들기 때문이다(lazy 생성, FR-054). 그래서 여기에 INSERT가 들어 있다.
@@ -19,7 +19,7 @@ import org.springframework.data.repository.query.Param;
 public interface UserFixedExpenseMonthlyRepository
         extends JpaRepository<UserFixedExpenseMonthly, Long> {
 
-    /** 그 달 내역 목록(4.5·4.8). {@code ix_user_fixed_monthly_ym}을 탄다. */
+    /** 그 달 내역 목록(4.5·4.8). {@code ix_fixed_monthly_ym}을 탄다. */
     List<UserFixedExpenseMonthly> findByUserIdKeyAndYearAndMonth(Long idKey, int year, int month);
 
     /** 한 고정지출의 그 달 내역. 이미 만들어졌는지 확인하는 데 쓴다. */
@@ -54,7 +54,7 @@ public interface UserFixedExpenseMonthlyRepository
      */
     @Modifying
     @Query(value = """
-            INSERT INTO tbl_user_fixed_expense_monthly
+            INSERT INTO tbl_fixed_expense_monthly
                 (id_key, fixed_expense_idx, year, month, amount, payment_date, content,
                  payment_method_idx, expend_group_idx, modified,
                  created_at, updated_at, created_by, updated_by)

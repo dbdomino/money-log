@@ -86,7 +86,7 @@ class ExpendTargetIT extends AbstractSchemaIT {
 
         assertViolatesConstraint(() ->
                 targetDefaultRepository.saveAndFlush(newTargetDefault(user, group, 400_000L)),
-                "ux_user_target_default");
+                "ux_target_default");
     }
 
     @Test
@@ -101,7 +101,7 @@ class ExpendTargetIT extends AbstractSchemaIT {
 
         assertViolatesConstraint(() -> targetMonthlyRepository.saveAndFlush(
                 newTargetMonthly(user, group, 2026, 12, 400_000L)),
-                "ux_user_target_monthly");
+                "ux_target_monthly");
     }
 
     @Test

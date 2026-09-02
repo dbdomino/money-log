@@ -20,7 +20,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 /**
- * 통계 주별 지출 — {@code tbl_user_statistics_weekly}.
+ * 통계 주별 지출 — {@code tbl_statistics_weekly}.
  *
  * <p>{@link UserStatistics} 한 건에 딸린 주 단위 합계다. 주 경계를 <b>저장해 둔다</b>
  * ({@code weekStart}·{@code weekEnd}) — 월요일 기준이되 1일이 월요일이 아니면 첫 주는
@@ -34,10 +34,10 @@ import org.hibernate.annotations.OnDeleteAction;
  */
 @Entity
 @Table(
-        name = "tbl_user_statistics_weekly",
+        name = "tbl_statistics_weekly",
         comment = "통계 주별 지출. 주 경계를 저장해 두어 조회할 때 다시 계산하지 않는다",
         uniqueConstraints = @UniqueConstraint(
-                name = "ux_user_stat_weekly",
+                name = "ux_stat_weekly",
                 columnNames = {"statistics_idx", "week_index"}
         ),
         check = @CheckConstraint(name = "ck_stat_weekly_index", constraint = "week_index >= 1")
@@ -57,7 +57,7 @@ public class UserStatisticsWeekly extends BaseAuditEntity {
     @JoinColumn(
             name = "id_key",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_stat_weekly_user")
+            foreignKey = @ForeignKey(name = "fk_stat_weekly_user")
     )
     private User user;
 
@@ -66,7 +66,7 @@ public class UserStatisticsWeekly extends BaseAuditEntity {
     @JoinColumn(
             name = "statistics_idx",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_stat_weekly_statistics")
+            foreignKey = @ForeignKey(name = "fk_stat_weekly_statistics")
     )
     @OnDelete(action = OnDeleteAction.CASCADE)
     private UserStatistics statistics;

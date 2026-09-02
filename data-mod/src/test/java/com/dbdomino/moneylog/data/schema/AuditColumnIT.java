@@ -52,7 +52,7 @@ class AuditColumnIT extends AbstractSchemaIT {
                            WHERE column_name IN ('created_at','updated_at','created_by','updated_by')
                        ) AS audit_cols
                 FROM information_schema.columns
-                WHERE table_schema = 'moneylog' AND table_name LIKE 'tbl_user%'
+                WHERE table_schema = 'moneylog'
                 GROUP BY table_name
                 ORDER BY table_name
                 """));
@@ -72,7 +72,7 @@ class AuditColumnIT extends AbstractSchemaIT {
                 SELECT table_name, column_name
                 FROM information_schema.columns
                 WHERE table_schema = 'moneylog'
-                  AND table_name LIKE 'tbl_user%'
+                  
                   AND table_name <> 'tbl_user'
                   AND column_name IN ('created_at','updated_at','created_by','updated_by')
                   AND is_nullable = 'YES'

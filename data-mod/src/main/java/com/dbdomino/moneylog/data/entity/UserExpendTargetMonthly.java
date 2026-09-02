@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * 월별 목표금액 — {@code tbl_user_expend_target_monthly}.
+ * 월별 목표금액 — {@code tbl_expend_target_monthly}.
  *
  * <p>특정 연·월에만 적용되는 목표다. {@link UserExpendTargetDefault}와 <b>독립</b>이며,
  * 기본값을 여기 복사해 두지도 않는다(FR-072). 복사해 두면 기본값을 고쳤을 때 어느
@@ -36,10 +36,10 @@ import lombok.Setter;
  */
 @Entity
 @Table(
-        name = "tbl_user_expend_target_monthly",
+        name = "tbl_expend_target_monthly",
         comment = "월별 목표금액. 기본 목표와 독립이며, 행이 없는 것과 0원으로 정한 것은 다른 상태다",
         uniqueConstraints = @UniqueConstraint(
-                name = "ux_user_target_monthly",
+                name = "ux_target_monthly",
                 columnNames = {"id_key", "year", "month", "expend_group_idx"}
         ),
         check = {
@@ -64,7 +64,7 @@ public class UserExpendTargetMonthly extends BaseAuditEntity {
     @JoinColumn(
             name = "id_key",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_target_monthly_user")
+            foreignKey = @ForeignKey(name = "fk_target_monthly_user")
     )
     private User user;
 
@@ -81,7 +81,7 @@ public class UserExpendTargetMonthly extends BaseAuditEntity {
     @JoinColumn(
             name = "expend_group_idx",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_target_monthly_expend_group")
+            foreignKey = @ForeignKey(name = "fk_target_monthly_expend_group")
     )
     private UserExpendGroup expendGroup;
 

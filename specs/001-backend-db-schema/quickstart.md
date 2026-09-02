@@ -36,7 +36,7 @@ Hibernate가 만드는 것 — 스키마, 테이블 15개, 컬럼·PK·FK·일�
 
 ```sql
 SELECT tablename FROM pg_tables
-WHERE schemaname = 'moneylog' AND tablename LIKE 'tbl_user%'
+WHERE schemaname = 'moneylog'
 ORDER BY tablename;
 ```
 
@@ -62,7 +62,7 @@ FROM pg_index i
 JOIN pg_class c ON c.oid = i.indrelid
 JOIN pg_namespace n ON n.oid = c.relnamespace
 JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = ANY(i.indkey)
-WHERE i.indisprimary AND n.nspname = 'moneylog' AND c.relname LIKE 'tbl_user%'
+WHERE i.indisprimary AND n.nspname = 'moneylog'
 ORDER BY 1;
 ```
 
@@ -75,7 +75,7 @@ SELECT table_name, count(*) FILTER (
   WHERE column_name IN ('created_at','updated_at','created_by','updated_by')
 ) AS audit_cols
 FROM information_schema.columns
-WHERE table_schema = 'moneylog' AND table_name LIKE 'tbl_user%'
+WHERE table_schema = 'moneylog'
 GROUP BY table_name HAVING count(*) FILTER (
   WHERE column_name IN ('created_at','updated_at','created_by','updated_by')
 ) <> 4;

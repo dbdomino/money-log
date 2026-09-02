@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /**
- * 고정지출 관리 조회 — {@code tbl_user_fixed_expense}.
+ * 고정지출 관리 조회 — {@code tbl_fixed_expense}.
  *
  * <p>주 용도는 "이 연·월에 적용되는 고정지출은 무엇인가"다. 월별 내역을 만들 때
  * (FR-054·056)와 수동 재작성(FR-060)이 같은 질문을 한다.

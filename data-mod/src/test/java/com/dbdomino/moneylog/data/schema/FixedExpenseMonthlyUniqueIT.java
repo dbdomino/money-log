@@ -57,7 +57,7 @@ class FixedExpenseMonthlyUniqueIT extends AbstractSchemaIT {
 
         assertViolatesConstraint(() ->
                 monthlyRepository.saveAndFlush(newFixedExpenseMonthly(fixed, 2026, 12)),
-                "ux_user_fixed_expense_monthly");
+                "ux_fixed_expense_monthly");
     }
 
     @Test

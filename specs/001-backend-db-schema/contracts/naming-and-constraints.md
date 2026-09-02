@@ -8,7 +8,7 @@
 
 | 대상 | 규칙 | 예 |
 |------|------|-----|
-| 테이블 | `tbl_user` + 회원 소유 저장 단위는 `tbl_user_<자원명>` | `tbl_user_expend_group` |
+| 테이블 | **`tbl_<자원명>`**. `tbl_user_` 접두사는 레거시와 충돌하는 3개와 FR-009가 확정한 2개에만 쓴다(research §1) | `tbl_expense`, `tbl_statistics_weekly` / 예외: `tbl_user_expend_group` |
 | 자원명 | 명세의 API 자원 이름을 snake_case로 | `/expend-groups` → `expend_group` |
 | 기본키 | `idx`. **`tbl_user`만 `id_key`** | `idx`, `id_key` |
 | 소유자 | `id_key` | `id_key` |
@@ -19,15 +19,16 @@
 | 날짜 | `_date` 접미사 또는 의미 그대로 | `payment_date`, `week_start` |
 | 금액 | `amount` 또는 `<수식어>_amount` | `amount`, `target_amount`, `fixed_amount` |
 | 시퀀스 | `seq_<용도>` | `seq_installment_group` |
-| 인덱스 | `ix_<테이블>_<컬럼들>` | `ix_user_expense_id_key_payment_date` |
-| 유니크 인덱스 | `ux_<테이블>_<컬럼들>` | `ux_user_session_active` |
-| CHECK | `ck_<테이블>_<컬럼>` | `ck_user_role` |
+| 인덱스 | `ix_<테이블>_<컬럼들>` — `tbl_` 접두사는 뗀다 | `ix_expense_date` |
+| 유니크 인덱스 | `ux_<테이블>_<컬럼들>` — `tbl_` 접두사는 뗀다 | `ux_statistics`, `ux_user_session_active` |
+| FK | `fk_<테이블>_<대상>` — `tbl_` 접두사는 뗀다 | `fk_expense_payment_method` |
+| CHECK | `ck_<테이블>_<컬럼>` | `ck_user_role`, `ck_expense_amount` |
 
 **금지**
 
 - 레거시 테이블 이름 재사용 — [table-inventory.md](./table-inventory.md) 비겹침 표 참조
 - 자식 테이블에 `user_id`(로그인 아이디) 복사 — 소유자는 `id_key`만
-- 컬럼 이름에 테이블 이름 반복 (`tbl_user_expense.expense_amount` ✗ → `amount` ✓)
+- 컬럼 이름에 테이블 이름 반복 (`tbl_expense.expense_amount` ✗ → `amount` ✓)
 - 따옴표가 필요한 식별자(대문자·공백) — PostgreSQL 소문자 접힘 사고의 원인
 
 ## 2. 모든 테이블 공통 컬럼
@@ -69,13 +70,13 @@
 | `ux_user_session_id` | `tbl_user_session` | `(session_id)` | FR-015 |
 | `ux_user_session_active` | `tbl_user_session` | `(id_key) WHERE revoked = false` | FR-017 |
 | `ux_user_expend_group_name` | `tbl_user_expend_group` | `(id_key, name)` | FR-035 |
-| `ux_user_fixed_expense_monthly` | `tbl_user_fixed_expense_monthly` | `(fixed_expense_idx, year, month)` | FR-053 |
-| `ux_user_target_default` | `tbl_user_expend_target_default` | `(id_key, expend_group_idx)` | FR-070 |
-| `ux_user_target_monthly` | `tbl_user_expend_target_monthly` | `(id_key, year, month, expend_group_idx)` | FR-071 |
-| `ux_user_statistics` | `tbl_user_statistics` | `(id_key, year, month)` | FR-074 |
-| `ux_user_stat_weekly` | `tbl_user_statistics_weekly` | `(statistics_idx, week_index)` | FR-077 |
-| `ux_user_stat_group` | `tbl_user_statistics_expend_group` | `(statistics_idx, expend_group_idx)` | FR-077 |
-| `ux_user_stat_method` | `tbl_user_statistics_payment_method` | `(statistics_idx, payment_method_idx)` | FR-077 |
+| `ux_fixed_expense_monthly` | `tbl_fixed_expense_monthly` | `(fixed_expense_idx, year, month)` | FR-053 |
+| `ux_target_default` | `tbl_expend_target_default` | `(id_key, expend_group_idx)` | FR-070 |
+| `ux_target_monthly` | `tbl_expend_target_monthly` | `(id_key, year, month, expend_group_idx)` | FR-071 |
+| `ux_statistics` | `tbl_statistics` | `(id_key, year, month)` | FR-074 |
+| `ux_stat_weekly` | `tbl_statistics_weekly` | `(statistics_idx, week_index)` | FR-077 |
+| `ux_stat_group` | `tbl_statistics_expend_group` | `(statistics_idx, expend_group_idx)` | FR-077 |
+| `ux_stat_method` | `tbl_statistics_payment_method` | `(statistics_idx, payment_method_idx)` | FR-077 |
 
 **부분 유니크 2건**(`ux_user_email`, `ux_user_session_active`)은 Hibernate가 만들지 못한다 → §7 보조 DDL.
 
@@ -88,23 +89,23 @@
 | `ck_user_role` | `tbl_user.role` | `IN (1, 3)` |
 | `ck_payment_method_type` | `tbl_user_payment_method.type` | `IN ('CARD','ACCOUNT')` |
 | `ck_payment_method_purpose` | `tbl_user_payment_method.purpose` | `IN ('EXPENSE','INCOME')` |
-| `ck_expense_amount` | `tbl_user_expense.amount` | `> 0` |
-| `ck_expense_installment_index` | `tbl_user_expense.installment_index` | `IS NULL OR >= 1` |
-| `ck_expense_installment_total` | `tbl_user_expense.installment_total` | `IS NULL OR >= 2` |
-| `ck_income_amount` | `tbl_user_income.amount` | `> 0` |
-| `ck_fixed_expense_amount` | `tbl_user_fixed_expense.amount` | `> 0` |
-| `ck_fixed_expense_day` | `tbl_user_fixed_expense.payment_day_of_month` | `BETWEEN 1 AND 31` |
-| `ck_fixed_expense_start_month` | `tbl_user_fixed_expense.start_month` | `BETWEEN 1 AND 12` |
-| `ck_fixed_expense_end_month` | `tbl_user_fixed_expense.end_month` | `BETWEEN 1 AND 12` |
-| `ck_fixed_expense_period` | `tbl_user_fixed_expense` | `end_year * 12 + end_month >= start_year * 12 + start_month` |
-| `ck_fixed_monthly_amount` | `tbl_user_fixed_expense_monthly.amount` | `> 0` |
-| `ck_fixed_monthly_month` | `tbl_user_fixed_expense_monthly.month` | `BETWEEN 1 AND 12` |
-| `ck_target_default_amount` | `tbl_user_expend_target_default.target_amount` | `BETWEEN 0 AND 100000000` |
-| `ck_target_monthly_amount` | `tbl_user_expend_target_monthly.target_amount` | `BETWEEN 0 AND 100000000` |
-| `ck_target_monthly_month` | `tbl_user_expend_target_monthly.month` | `BETWEEN 1 AND 12` |
-| `ck_statistics_month` | `tbl_user_statistics.month` | `BETWEEN 1 AND 12` |
-| `ck_stat_weekly_index` | `tbl_user_statistics_weekly.week_index` | `>= 1` |
-| `ck_stat_group_status` | `tbl_user_statistics_expend_group.status` | `IN ('UNDER','OK','OVER')` |
+| `ck_expense_amount` | `tbl_expense.amount` | `> 0` |
+| `ck_expense_installment_index` | `tbl_expense.installment_index` | `IS NULL OR >= 1` |
+| `ck_expense_installment_total` | `tbl_expense.installment_total` | `IS NULL OR >= 2` |
+| `ck_income_amount` | `tbl_income.amount` | `> 0` |
+| `ck_fixed_expense_amount` | `tbl_fixed_expense.amount` | `> 0` |
+| `ck_fixed_expense_day` | `tbl_fixed_expense.payment_day_of_month` | `BETWEEN 1 AND 31` |
+| `ck_fixed_expense_start_month` | `tbl_fixed_expense.start_month` | `BETWEEN 1 AND 12` |
+| `ck_fixed_expense_end_month` | `tbl_fixed_expense.end_month` | `BETWEEN 1 AND 12` |
+| `ck_fixed_expense_period` | `tbl_fixed_expense` | `end_year * 12 + end_month >= start_year * 12 + start_month` |
+| `ck_fixed_monthly_amount` | `tbl_fixed_expense_monthly.amount` | `> 0` |
+| `ck_fixed_monthly_month` | `tbl_fixed_expense_monthly.month` | `BETWEEN 1 AND 12` |
+| `ck_target_default_amount` | `tbl_expend_target_default.target_amount` | `BETWEEN 0 AND 100000000` |
+| `ck_target_monthly_amount` | `tbl_expend_target_monthly.target_amount` | `BETWEEN 0 AND 100000000` |
+| `ck_target_monthly_month` | `tbl_expend_target_monthly.month` | `BETWEEN 1 AND 12` |
+| `ck_statistics_month` | `tbl_statistics.month` | `BETWEEN 1 AND 12` |
+| `ck_stat_weekly_index` | `tbl_statistics_weekly.week_index` | `>= 1` |
+| `ck_stat_group_status` | `tbl_statistics_expend_group.status` | `IN ('UNDER','OK','OVER')` |
 
 **금액 상한**: 목표금액에만 명세상 상한(1억)이 있다. 지출·소득·고정지출 금액에는 상한을 두지 않는다(FR·spec Assumptions).
 
@@ -112,11 +113,11 @@
 
 | 이름 | 테이블 | 컬럼 | 쓰이는 API |
 |------|--------|------|-----------|
-| `ix_user_expense_date` | `tbl_user_expense` | `(id_key, payment_date)` | 4.8, 5.5 |
-| `ix_user_expense_installment` | `tbl_user_expense` | `(installment_group_id, payment_date)` | 3.6 |
-| `ix_user_income_date` | `tbl_user_income` | `(id_key, payment_date)` | 4.8, 5.5 |
-| `ix_user_fixed_expense_period` | `tbl_user_fixed_expense` | `(id_key, start_year, start_month, end_year, end_month)` | 4.5, 4.9 |
-| `ix_user_fixed_monthly_ym` | `tbl_user_fixed_expense_monthly` | `(id_key, year, month)` | 4.5, 4.8, 4.9 |
+| `ix_expense_date` | `tbl_expense` | `(id_key, payment_date)` | 4.8, 5.5 |
+| `ix_expense_installment` | `tbl_expense` | `(installment_group_id, payment_date)` | 3.6 |
+| `ix_income_date` | `tbl_income` | `(id_key, payment_date)` | 4.8, 5.5 |
+| `ix_fixed_expense_period` | `tbl_fixed_expense` | `(id_key, start_year, start_month, end_year, end_month)` | 4.5, 4.9 |
+| `ix_fixed_monthly_ym` | `tbl_fixed_expense_monthly` | `(id_key, year, month)` | 4.5, 4.8, 4.9 |
 | `ix_user_payment_method_active` | `tbl_user_payment_method` | `(id_key, purpose, in_use, deleted)` | 2.6 |
 | `ix_user_expend_group_active` | `tbl_user_expend_group` | `(id_key, in_use, deleted)` | 2.13 |
 | `ix_user_login_history_at` | `tbl_user_login_history` | `(id_key, login_at)` | 이력 조회 |

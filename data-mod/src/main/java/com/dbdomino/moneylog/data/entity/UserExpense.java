@@ -18,10 +18,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * 월별 지출 내역 — {@code tbl_user_expense}.
+ * 월별 지출 내역 — {@code tbl_expense}.
  *
  * <p><b>고정지출 행은 여기 들어오지 않는다</b>(FR-052). 고정지출은
- * {@code tbl_user_fixed_expense_monthly}가 따로 담는다. 둘을 한 테이블에 섞으면
+ * {@code tbl_fixed_expense_monthly}가 따로 담는다. 둘을 한 테이블에 섞으면
  * "이번 달 지출"을 셀 때마다 어느 쪽을 빼야 하는지 판단이 붙는다.
  *
  * <p><b>이름 스냅샷 2개를 둔다</b>({@code paymentMethodName}·{@code expendGroupName}).
@@ -46,21 +46,21 @@ import lombok.Setter;
  *
  * <p>중도상환은 {@code installment_group_id}가 같고 결제일이 오늘보다 <b>뒤인</b>
  * 회차만 지우는 물리 삭제다(FR-045). 오늘·과거 회차는 이미 결제된 것이라 남긴다.
- * {@code ix_user_expense_installment}가 이 조건을 그대로 덮는다.
+ * {@code ix_expense_installment}가 이 조건을 그대로 덮는다.
  *
  * @see <a href="../../../../../../../../specs/001-backend-db-schema/data-model.md">data-model.md §6</a>
  */
 @Entity
 @Table(
-        name = "tbl_user_expense",
+        name = "tbl_expense",
         comment = "월별 지출 내역. 등록 당시 수단·유형 이름을 스냅샷으로 보존한다. 고정지출은 여기 들어오지 않는다",
         indexes = {
                 @Index(
-                        name = "ix_user_expense_date",
+                        name = "ix_expense_date",
                         columnList = "id_key, payment_date"
                 ),
                 @Index(
-                        name = "ix_user_expense_installment",
+                        name = "ix_expense_installment",
                         columnList = "installment_group_id, payment_date"
                 )
         },
@@ -96,7 +96,7 @@ public class UserExpense extends BaseAuditEntity {
     @JoinColumn(
             name = "id_key",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_expense_user")
+            foreignKey = @ForeignKey(name = "fk_expense_user")
     )
     private User user;
 
@@ -105,7 +105,7 @@ public class UserExpense extends BaseAuditEntity {
     @JoinColumn(
             name = "payment_method_idx",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_expense_payment_method")
+            foreignKey = @ForeignKey(name = "fk_expense_payment_method")
     )
     private UserPaymentMethod paymentMethod;
 
@@ -134,7 +134,7 @@ public class UserExpense extends BaseAuditEntity {
     @JoinColumn(
             name = "expend_group_idx",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_expense_expend_group")
+            foreignKey = @ForeignKey(name = "fk_expense_expend_group")
     )
     private UserExpendGroup expendGroup;
 

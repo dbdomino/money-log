@@ -115,7 +115,7 @@ class FixedExpenseCascadeIT extends AbstractSchemaIT {
 
     private int countMonthlyRows(UserFixedExpense fixed) {
         return inTx(() -> jdbc.queryForObject(
-                "SELECT count(*) FROM tbl_user_fixed_expense_monthly WHERE fixed_expense_idx = ?",
+                "SELECT count(*) FROM tbl_fixed_expense_monthly WHERE fixed_expense_idx = ?",
                 Integer.class, fixed.getIdx()));
     }
 }

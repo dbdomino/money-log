@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * 기본 목표금액 — {@code tbl_user_expend_target_default}.
+ * 기본 목표금액 — {@code tbl_expend_target_default}.
  *
  * <p>지출유형마다 "평소 이만큼 쓴다"를 정해 두는 값이다. 특정 달에만 다른 값을 쓰고
  * 싶으면 {@link UserExpendTargetMonthly}가 따로 담는다. 두 값은 <b>독립</b>이다 —
@@ -37,10 +37,10 @@ import lombok.Setter;
  */
 @Entity
 @Table(
-        name = "tbl_user_expend_target_default",
+        name = "tbl_expend_target_default",
         comment = "기본 목표금액. 지출유형별 평상시 목표. 월별 목표와 독립이다",
         uniqueConstraints = @UniqueConstraint(
-                name = "ux_user_target_default",
+                name = "ux_target_default",
                 columnNames = {"id_key", "expend_group_idx"}
         ),
         check = @CheckConstraint(name = "ck_target_default_amount",
@@ -61,7 +61,7 @@ public class UserExpendTargetDefault extends BaseAuditEntity {
     @JoinColumn(
             name = "id_key",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_target_default_user")
+            foreignKey = @ForeignKey(name = "fk_target_default_user")
     )
     private User user;
 
@@ -70,7 +70,7 @@ public class UserExpendTargetDefault extends BaseAuditEntity {
     @JoinColumn(
             name = "expend_group_idx",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_target_default_expend_group")
+            foreignKey = @ForeignKey(name = "fk_target_default_expend_group")
     )
     private UserExpendGroup expendGroup;
 

@@ -13,22 +13,22 @@
 | 3 | `tbl_user_login_history` | `idx` | `id_key` | 로그인 이력 | #3 |
 | 4 | `tbl_user_payment_method` | `idx` | `id_key` | 지출·소득 수단 | #4 |
 | 5 | `tbl_user_expend_group` | `idx` | `id_key` | 지출유형 | #5 |
-| 6 | `tbl_user_expense` | `idx` | `id_key` | 월별 지출 내역 | #6 |
-| 7 | `tbl_user_income` | `idx` | `id_key` | 월별 수입 내역 | #7 |
-| 8 | `tbl_user_fixed_expense` | `idx` | `id_key` | 고정지출 관리 | #8 |
-| 9 | `tbl_user_fixed_expense_monthly` | `idx` | `id_key` | 월별 고정지출 내역 | #9 |
-| 10 | `tbl_user_expend_target_default` | `idx` | `id_key` | 기본 목표금액 | #10 |
-| 11 | `tbl_user_expend_target_monthly` | `idx` | `id_key` | 월별 목표금액 | #11 |
-| 12 | `tbl_user_statistics` | `idx` | `id_key` | 월별 통계 스냅샷 | #12 |
-| 13 | `tbl_user_statistics_weekly` | `idx` | `id_key` | 통계 주별 지출 | #13 |
-| 14 | `tbl_user_statistics_expend_group` | `idx` | `id_key` | 통계 지출유형별 요약 | #14 |
-| 15 | `tbl_user_statistics_payment_method` | `idx` | `id_key` | 통계 수단별 요약 | #15 |
+| 6 | `tbl_expense` | `idx` | `id_key` | 월별 지출 내역 | #6 |
+| 7 | `tbl_income` | `idx` | `id_key` | 월별 수입 내역 | #7 |
+| 8 | `tbl_fixed_expense` | `idx` | `id_key` | 고정지출 관리 | #8 |
+| 9 | `tbl_fixed_expense_monthly` | `idx` | `id_key` | 월별 고정지출 내역 | #9 |
+| 10 | `tbl_expend_target_default` | `idx` | `id_key` | 기본 목표금액 | #10 |
+| 11 | `tbl_expend_target_monthly` | `idx` | `id_key` | 월별 목표금액 | #11 |
+| 12 | `tbl_statistics` | `idx` | `id_key` | 월별 통계 스냅샷 | #12 |
+| 13 | `tbl_statistics_weekly` | `idx` | `id_key` | 통계 주별 지출 | #13 |
+| 14 | `tbl_statistics_expend_group` | `idx` | `id_key` | 통계 지출유형별 요약 | #14 |
+| 15 | `tbl_statistics_payment_method` | `idx` | `id_key` | 통계 수단별 요약 | #15 |
 
 ## 시퀀스 1개
 
 | 시퀀스 | 용도 |
 |--------|------|
-| `seq_installment_group` | `tbl_user_expense.installment_group_id` 발급. 한 할부의 N개 행이 같은 값을 공유 |
+| `seq_installment_group` | `tbl_expense.installment_group_id` 발급. 한 할부의 N개 행이 같은 값을 공유 |
 
 각 테이블의 IDENTITY PK가 만드는 시퀀스는 Hibernate/PostgreSQL이 자동 생성하므로 이 목록에 세지 않는다.
 
@@ -42,20 +42,20 @@
 | `tbl_login_history` | `tbl_user_login_history` | 없음 |
 | `tbl_payment_method` (원문 `tbl_payment_Method`) | `tbl_user_payment_method` | 없음 |
 | `tbl_card` | (대응 없음) | 없음 |
-| `tbl_expend` | `tbl_user_expense` | 없음 |
+| `tbl_expend` | `tbl_expense` | 없음 |
 | `tbl_expend_group` | `tbl_user_expend_group` | 없음 |
-| `tbl_expend_fix` | `tbl_user_fixed_expense` | 없음 |
-| `tbl_ammount` (원문 `tbl_Ammount`) | `tbl_user_expend_target_default` | 없음 |
-| `tbl_system_stat` | `tbl_user_statistics` | 없음 |
-| `expend_statistics` / `expend_statistics_detail` (`@Table` 없이 기본 명명) | `tbl_user_statistics*` | 없음 |
+| `tbl_expend_fix` | `tbl_fixed_expense` | 없음 |
+| `tbl_ammount` (원문 `tbl_Ammount`) | `tbl_expend_target_default` | 없음 |
+| `tbl_system_stat` | `tbl_statistics` | 없음 |
+| `expend_statistics` / `expend_statistics_detail` (`@Table` 없이 기본 명명) | `tbl_statistics*` | 없음 |
 
 **검수 방법** — 스키마 반영 후:
 
 ```sql
 SELECT tablename FROM pg_tables
-WHERE schemaname = 'moneylog' AND tablename LIKE 'tbl_user%'
+WHERE schemaname = 'moneylog'
 ORDER BY tablename;
--- 15행이 나와야 한다
+-- 15행이 나와야 한다 (moneylog 스키마의 테이블은 전부 이 기능 것이다)
 ```
 
 ## 이 기능이 만들지 않는 것

@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * 고정지출 관리 — {@code tbl_user_fixed_expense}.
+ * 고정지출 관리 — {@code tbl_fixed_expense}.
  *
  * <p>매달 반복되는 지출의 <b>설정</b>이다. 실제 그 달의 내역은
  * {@link UserFixedExpenseMonthly}가 따로 담는다. 둘을 나눈 이유는 한 달치 금액만
@@ -41,10 +41,10 @@ import lombok.Setter;
  */
 @Entity
 @Table(
-        name = "tbl_user_fixed_expense",
+        name = "tbl_fixed_expense",
         comment = "고정지출 관리(설정). 매달 반복되는 지출의 기준값과 적용 기간. 이름 스냅샷을 두지 않는다",
         indexes = @Index(
-                name = "ix_user_fixed_expense_period",
+                name = "ix_fixed_expense_period",
                 columnList = "id_key, start_year, start_month, end_year, end_month"
         ),
         check = {
@@ -74,7 +74,7 @@ public class UserFixedExpense extends BaseAuditEntity {
     @JoinColumn(
             name = "id_key",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_fixed_expense_user")
+            foreignKey = @ForeignKey(name = "fk_fixed_expense_user")
     )
     private User user;
 
@@ -87,7 +87,7 @@ public class UserFixedExpense extends BaseAuditEntity {
     @JoinColumn(
             name = "payment_method_idx",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_fixed_expense_payment_method")
+            foreignKey = @ForeignKey(name = "fk_fixed_expense_payment_method")
     )
     private UserPaymentMethod paymentMethod;
 
@@ -114,7 +114,7 @@ public class UserFixedExpense extends BaseAuditEntity {
     @JoinColumn(
             name = "expend_group_idx",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_fixed_expense_expend_group")
+            foreignKey = @ForeignKey(name = "fk_fixed_expense_expend_group")
     )
     private UserExpendGroup expendGroup;
 

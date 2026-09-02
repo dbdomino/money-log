@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
- * 통계 지출유형별 요약 조회·삭제 — {@code tbl_user_statistics_expend_group}.
+ * 통계 지출유형별 요약 조회·삭제 — {@code tbl_statistics_expend_group}.
  *
  * <p>{@code expendGroupIdx}는 FK 없는 값이라(FR-078a) 실재하지 않는 유형을 가리킬 수
  * 있다. 이 인터페이스는 그 값으로 원본을 되짚지 않는다 — 화면 복원은 함께 저장된

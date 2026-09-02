@@ -124,15 +124,15 @@ class StatisticsCascadeIT extends AbstractSchemaIT {
     }
 
     private int countWeekly(UserStatistics statistics) {
-        return countBySnapshot("tbl_user_statistics_weekly", statistics);
+        return countBySnapshot("tbl_statistics_weekly", statistics);
     }
 
     private int countExpendGroup(UserStatistics statistics) {
-        return countBySnapshot("tbl_user_statistics_expend_group", statistics);
+        return countBySnapshot("tbl_statistics_expend_group", statistics);
     }
 
     private int countPaymentMethod(UserStatistics statistics) {
-        return countBySnapshot("tbl_user_statistics_payment_method", statistics);
+        return countBySnapshot("tbl_statistics_payment_method", statistics);
     }
 
     /**

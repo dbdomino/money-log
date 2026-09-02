@@ -20,7 +20,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 /**
- * 통계 지출유형별 요약 — {@code tbl_user_statistics_expend_group}.
+ * 통계 지출유형별 요약 — {@code tbl_statistics_expend_group}.
  *
  * <p><b>{@code expendGroupIdx}에 FK를 걸지 않는다</b>(FR-078a). 이것이 이 Entity에서
  * 가장 조심할 점이다. 통계는 저장 시점의 사진이라 원본 유형이 그 뒤에 사라져도 남아야
@@ -49,10 +49,10 @@ import org.hibernate.annotations.OnDeleteAction;
  */
 @Entity
 @Table(
-        name = "tbl_user_statistics_expend_group",
+        name = "tbl_statistics_expend_group",
         comment = "통계 지출유형별 요약. 유형 참조에 FK 가 없다 — 원본이 사라져도 이 기록은 남아야 한다",
         uniqueConstraints = @UniqueConstraint(
-                name = "ux_user_stat_group",
+                name = "ux_stat_group",
                 columnNames = {"statistics_idx", "expend_group_idx"}
         ),
         check = @CheckConstraint(name = "ck_stat_group_status",
@@ -80,7 +80,7 @@ public class UserStatisticsExpendGroup extends BaseAuditEntity {
     @JoinColumn(
             name = "id_key",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_stat_group_user")
+            foreignKey = @ForeignKey(name = "fk_stat_group_user")
     )
     private User user;
 
@@ -89,7 +89,7 @@ public class UserStatisticsExpendGroup extends BaseAuditEntity {
     @JoinColumn(
             name = "statistics_idx",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_user_stat_group_statistics")
+            foreignKey = @ForeignKey(name = "fk_stat_group_statistics")
     )
     @OnDelete(action = OnDeleteAction.CASCADE)
     private UserStatistics statistics;

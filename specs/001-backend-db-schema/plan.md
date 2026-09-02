@@ -98,16 +98,16 @@ data-mod/
     │   ├── UserLoginHistory.java         # tbl_user_login_history
     │   ├── UserPaymentMethod.java        # tbl_user_payment_method
     │   ├── UserExpendGroup.java          # tbl_user_expend_group
-    │   ├── UserExpense.java              # tbl_user_expense
-    │   ├── UserIncome.java               # tbl_user_income
-    │   ├── UserFixedExpense.java         # tbl_user_fixed_expense
-    │   ├── UserFixedExpenseMonthly.java  # tbl_user_fixed_expense_monthly
-    │   ├── UserExpendTargetDefault.java  # tbl_user_expend_target_default
-    │   ├── UserExpendTargetMonthly.java  # tbl_user_expend_target_monthly
-    │   ├── UserStatistics.java           # tbl_user_statistics
-    │   ├── UserStatisticsWeekly.java     # tbl_user_statistics_weekly
-    │   ├── UserStatisticsExpendGroup.java     # tbl_user_statistics_expend_group
-    │   └── UserStatisticsPaymentMethod.java   # tbl_user_statistics_payment_method
+    │   ├── UserExpense.java              # tbl_expense
+    │   ├── UserIncome.java               # tbl_income
+    │   ├── UserFixedExpense.java         # tbl_fixed_expense
+    │   ├── UserFixedExpenseMonthly.java  # tbl_fixed_expense_monthly
+    │   ├── UserExpendTargetDefault.java  # tbl_expend_target_default
+    │   ├── UserExpendTargetMonthly.java  # tbl_expend_target_monthly
+    │   ├── UserStatistics.java           # tbl_statistics
+    │   ├── UserStatisticsWeekly.java     # tbl_statistics_weekly
+    │   ├── UserStatisticsExpendGroup.java     # tbl_statistics_expend_group
+    │   └── UserStatisticsPaymentMethod.java   # tbl_statistics_payment_method
     ├── repository/                        # Spring Data JPA Repository 15개
     ├── config/
     │   └── JpaAuditingConfig.java         # @EnableJpaAuditing + AuditorAware<Long>
