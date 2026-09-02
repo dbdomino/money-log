@@ -2,6 +2,7 @@ package com.dbdomino.moneylog.data.entity;
 
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -24,17 +25,20 @@ import org.hibernate.annotations.ColumnDefault;
  * <p>API가 주고받는 {@code memberId}는 여기 {@code user_id} 값이다. 인증 필터가
  * 토큰의 {@code sub}를 {@code id_key}로 환산해 넘기는 것을 전제한다.
  *
- * <p>이메일 유일성은 "값이 있을 때만"이라 부분 유니크 인덱스가 필요하다. Hibernate가
- * {@code WHERE} 절 인덱스를 만들지 못하므로 {@code sql/04_constraints.sql}에서
- * {@code ux_user_email}로 건다. {@code role} 값 제한({@code 1} 또는 {@code 3})도
- * 같은 파일의 {@code ck_user_role}이 맡는다.
+ * <p>이메일 유일성은 "값이 있을 때만"이라 <b>부분</b> 유니크 인덱스가 필요한데,
+ * {@code @Table(uniqueConstraints = ...)}에는 {@code WHERE} 절을 붙일 자리가 없다.
+ * 그래서 {@code ux_user_email}만 {@link com.dbdomino.moneylog.data.config.MoneylogSchemaContributor}
+ * 가 만든다. {@code role} 값 제한({@code 1} 또는 {@code 3})은 아래 {@code @Table} 의
+ * {@code ck_user_role} 이 맡는다.
  *
  * @see <a href="../../../../../../../../specs/001-backend-db-schema/data-model.md">data-model.md §1</a>
  */
 @Entity
 @Table(
         name = "tbl_user",
-        uniqueConstraints = @UniqueConstraint(name = "ux_user_user_id", columnNames = "user_id")
+        comment = "회원. 로그인 계정과 프로필. 나머지 14개 테이블이 id_key 로 이 행을 참조한다",
+        uniqueConstraints = @UniqueConstraint(name = "ux_user_user_id", columnNames = "user_id"),
+        check = @CheckConstraint(name = "ck_user_role", constraint = "role in (1, 3)")
 )
 // 회원가입은 자기 자신을 만드는 행위라 INSERT 시점에 id_key가 없다. created_by 뿐
 // 아니라 updated_by도 같은 이유로 채울 값이 없으므로 둘 다 nullable로 둔다.

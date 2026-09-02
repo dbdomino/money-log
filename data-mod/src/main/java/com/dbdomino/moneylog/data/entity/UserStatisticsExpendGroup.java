@@ -1,5 +1,6 @@
 package com.dbdomino.moneylog.data.entity;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -49,10 +50,13 @@ import org.hibernate.annotations.OnDeleteAction;
 @Entity
 @Table(
         name = "tbl_user_statistics_expend_group",
+        comment = "통계 지출유형별 요약. 유형 참조에 FK 가 없다 — 원본이 사라져도 이 기록은 남아야 한다",
         uniqueConstraints = @UniqueConstraint(
                 name = "ux_user_stat_group",
                 columnNames = {"statistics_idx", "expend_group_idx"}
-        )
+        ),
+        check = @CheckConstraint(name = "ck_stat_group_status",
+                constraint = "status in ('UNDER', 'OK', 'OVER')")
 )
 @Getter
 @Setter

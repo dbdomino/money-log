@@ -105,7 +105,14 @@ Spring Boot 멀티모듈 가계부. 프론트(Thymeleaf)와 백엔드 API가 분
 
 **`./gradlew test`(전체)는 실패한다.** `money-app`의 레거시 테스트 3건이 깨져 있다 — `app-mod/money-app/src/test/resources/application.yml`이 메인 설정을 덮어쓰는데 `profiles.active`도 없고 H2 datasource 줄이 전부 주석 처리돼 있어 datasource가 없다(`Failed to determine a suitable driver class`). `init` 커밋부터 그런 상태다. 모듈별로 나눠 돌린다.
 
-**스키마 반영은 두 단계다.** Hibernate `ddl-auto: update`가 테이블·컬럼·FK·일반 인덱스를 만들고, **부분 유니크 인덱스와 CHECK는 만들지 못한다.** 그것들은 `sql/04_constraints.sql`이 맡는다. 앱을 한 번 띄운 뒤 스크립트를 실행해야 하며, 스크립트는 **멱등**해야 한다(반복 실행됨).
+**스키마 반영은 앱 기동 한 번이다.** 스키마·테이블·컬럼·FK·인덱스·CHECK·부분 유니크·시퀀스·테이블 주석을 전부 Hibernate가 만든다. 실행할 보조 DDL 스크립트가 없다(`sql/04_constraints.sql`은 2026-09-02에 삭제).
+
+- CHECK과 주석은 **JPA 3.2 표준**으로 적는다 — `@Table(comment = "...", check = @CheckConstraint(name = "...", constraint = "..."))`. Hibernate의 `@Check`·`@Comment`는 Hibernate 7에서 deprecated다.
+- 애너테이션으로 표현 못 하는 **부분 유니크 2건과 시퀀스 1건**만 `MoneylogSchemaContributor`(Hibernate `AdditionalMappingContributor` SPI, `META-INF/services` 등록)가 만든다. 여기 SQL은 스키마를 **`${schema}` 자리표시자**로 적어야 한다 — 이름을 직접 읽으면 기여 시점엔 비어 있어 SQL이 스키마 없이 나가고, 접속의 `search_path`를 타고 엉뚱한 스키마에 만들어진다.
+- 스키마 생성은 `hibernate.hbm2ddl.create_namespaces: true`가 한다. 이게 없으면 스키마가 없을 때 CREATE TABLE 15건이 전부 실패하는데, **그 실패가 WARN으로만 찍히고 앱은 정상 기동한다** — "기동 성공 + 테이블 0개"가 된다.
+- `sql/03_create_schema.sql`에는 `ALTER ROLE ... SET search_path` 한 줄만 남아 있다. 앱은 필요 없고 psql로 직접 붙을 때 쓴다.
+
+**`ddl-auto`가 `create`다.** 개발 단계 설정이라 **기동할 때마다 전 테이블이 drop 후 재생성**된다. `update`로 두면 이미 있는 테이블에 주석이 붙지 않아서다(`comment on table`은 `create table`과 함께만 나간다). 개발용 데이터를 남겨야 하면 `update`로 되돌린다.
 
 **테스트에서 `JdbcTemplate` 갱신은 트랜잭션 안에서 한다.** datasource가 `auto-commit: false`라 트랜잭션 밖 갱신은 **커밋되지 않고 조용히 사라진다.** 정리(cleanup) 코드가 아무 일도 안 하는 것처럼 보이면 이걸 의심한다.
 

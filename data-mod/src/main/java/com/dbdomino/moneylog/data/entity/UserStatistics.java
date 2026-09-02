@@ -1,5 +1,6 @@
 package com.dbdomino.moneylog.data.entity;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -41,10 +42,13 @@ import lombok.Setter;
 @Entity
 @Table(
         name = "tbl_user_statistics",
+        comment = "월별 통계 스냅샷(머리). 저장 시점 계산 결과를 보존하며 재저장해도 행이 늘지 않는다",
         uniqueConstraints = @UniqueConstraint(
                 name = "ux_user_statistics",
                 columnNames = {"id_key", "year", "month"}
-        )
+        ),
+        check = @CheckConstraint(name = "ck_statistics_month",
+                constraint = "month between 1 and 12")
 )
 @Getter
 @Setter

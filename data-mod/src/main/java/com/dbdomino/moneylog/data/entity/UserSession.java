@@ -30,7 +30,8 @@ import org.hibernate.annotations.ColumnDefault;
  * 구분할 수 있다. 폐기 행은 무기한 보존한다(FR-019a).
  *
  * <p>회원당 폐기되지 않은 세션은 <b>동시에 1건뿐</b>이다(FR-017). 조건이 붙은
- * 유일성이라 Hibernate가 만들지 못하므로 {@code sql/04_constraints.sql}의 부분
+ * 유일성이라 애너테이션으로 표현할 수 없으므로
+ * {@link com.dbdomino.moneylog.data.config.MoneylogSchemaContributor} 의 부분
  * 유니크 인덱스 {@code ux_user_session_active}가 강제한다. 애플리케이션 검사만으로는
  * 동시 로그인 레이스를 막을 수 없다.
  *
@@ -39,6 +40,7 @@ import org.hibernate.annotations.ColumnDefault;
 @Entity
 @Table(
         name = "tbl_user_session",
+        comment = "회원 세션. 회원당 폐기되지 않은 세션은 1건뿐이며, 폐기해도 행은 남는다",
         uniqueConstraints = @UniqueConstraint(name = "ux_user_session_id", columnNames = "session_id")
 )
 @Getter

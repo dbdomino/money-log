@@ -1,5 +1,6 @@
 package com.dbdomino.moneylog.data.entity;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -41,10 +42,22 @@ import lombok.Setter;
 @Entity
 @Table(
         name = "tbl_user_fixed_expense",
+        comment = "고정지출 관리(설정). 매달 반복되는 지출의 기준값과 적용 기간. 이름 스냅샷을 두지 않는다",
         indexes = @Index(
                 name = "ix_user_fixed_expense_period",
                 columnList = "id_key, start_year, start_month, end_year, end_month"
-        )
+        ),
+        check = {
+                @CheckConstraint(name = "ck_fixed_expense_amount", constraint = "amount > 0"),
+                @CheckConstraint(name = "ck_fixed_expense_day",
+                        constraint = "payment_day_of_month between 1 and 31"),
+                @CheckConstraint(name = "ck_fixed_expense_start_month",
+                        constraint = "start_month between 1 and 12"),
+                @CheckConstraint(name = "ck_fixed_expense_end_month",
+                        constraint = "end_month between 1 and 12"),
+                @CheckConstraint(name = "ck_fixed_expense_period",
+                        constraint = "end_year * 12 + end_month >= start_year * 12 + start_month")
+        }
 )
 @Getter
 @Setter

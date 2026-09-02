@@ -34,6 +34,7 @@ import org.hibernate.annotations.OnDeleteAction;
 @Entity
 @Table(
         name = "tbl_user_statistics_payment_method",
+        comment = "통계 수단별 요약. 수단 참조에 FK 가 없다. 지출 0원인 수단도 행으로 남긴다",
         uniqueConstraints = @UniqueConstraint(
                 name = "ux_user_stat_method",
                 columnNames = {"statistics_idx", "payment_method_idx"}

@@ -1,5 +1,6 @@
 package com.dbdomino.moneylog.data.entity;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -37,10 +38,13 @@ import lombok.Setter;
 @Entity
 @Table(
         name = "tbl_user_expend_target_default",
+        comment = "기본 목표금액. 지출유형별 평상시 목표. 월별 목표와 독립이다",
         uniqueConstraints = @UniqueConstraint(
                 name = "ux_user_target_default",
                 columnNames = {"id_key", "expend_group_idx"}
-        )
+        ),
+        check = @CheckConstraint(name = "ck_target_default_amount",
+                constraint = "target_amount between 0 and 100000000")
 )
 @Getter
 @Setter

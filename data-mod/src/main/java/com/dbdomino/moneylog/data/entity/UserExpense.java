@@ -1,5 +1,6 @@
 package com.dbdomino.moneylog.data.entity;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -52,6 +53,7 @@ import lombok.Setter;
 @Entity
 @Table(
         name = "tbl_user_expense",
+        comment = "월별 지출 내역. 등록 당시 수단·유형 이름을 스냅샷으로 보존한다. 고정지출은 여기 들어오지 않는다",
         indexes = {
                 @Index(
                         name = "ix_user_expense_date",
@@ -61,6 +63,13 @@ import lombok.Setter;
                         name = "ix_user_expense_installment",
                         columnList = "installment_group_id, payment_date"
                 )
+        },
+        check = {
+                @CheckConstraint(name = "ck_expense_amount", constraint = "amount > 0"),
+                @CheckConstraint(name = "ck_expense_installment_index",
+                        constraint = "installment_index is null or installment_index >= 1"),
+                @CheckConstraint(name = "ck_expense_installment_total",
+                        constraint = "installment_total is null or installment_total >= 2")
         }
 )
 @Getter
@@ -68,7 +77,13 @@ import lombok.Setter;
 @NoArgsConstructor
 public class UserExpense extends BaseAuditEntity {
 
-    /** 할부 그룹 식별자를 발급하는 시퀀스 이름. 보조 DDL {@code sql/04_constraints.sql}이 만든다. */
+    /**
+     * 할부 그룹 식별자를 발급하는 시퀀스 이름.
+     *
+     * <p>{@link com.dbdomino.moneylog.data.config.MoneylogSchemaContributor} 가 만든다 —
+     * 어느 Entity 의 식별자 생성기도 아니라 {@code @SequenceGenerator} 로는 DDL 에
+     * 나오지 않기 때문이다.
+     */
     public static final String INSTALLMENT_GROUP_SEQUENCE = "seq_installment_group";
 
     @Id

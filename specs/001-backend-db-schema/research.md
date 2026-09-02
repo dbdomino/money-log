@@ -166,14 +166,28 @@ API가 주고받는 `memberId`는 `user_id` 값이므로, 인증 필터가 토�
 
 ## 8. 스키마 반영 수단
 
-**Decision**: JPA `ddl-auto: update`로 테이블·컬럼·기본 인덱스를 만들고, Hibernate가 표현하지 못하는 것만 **보조 DDL 스크립트** `sql/04_constraints.sql`로 적용한다.
+**Decision (2026-09-02 개정)**: **스키마 객체를 전부 Hibernate가 만든다.** 앱 기동 한 번으로 끝나며 뒤이어 실행할 보조 DDL 스크립트가 없다. `sql/04_constraints.sql`은 삭제했다.
 
-보조 스크립트가 맡는 것:
-- 부분 유니크 인덱스 3건 — 이메일, 활성 세션(§5)
-- `CHECK` 제약 — `month` 1~12, `payment_day_of_month` 1~31, `role IN (1,3)`, `amount > 0`, 목표금액 0~100000000, `week_index >= 1`, `installment_index >= 1`
-- 할부 그룹 시퀀스 `seq_installment_group`
+| 수단 | 만드는 것 |
+|------|-----------|
+| `hibernate.hbm2ddl.create_namespaces: true` | 스키마 `moneylog` |
+| Entity 애너테이션 (JPA 3.2 `@Table`) | 테이블·컬럼·PK·FK·일반 인덱스·조건 없는 UNIQUE·**CHECK 20건**·**테이블 주석 15건** |
+| `AdditionalMappingContributor` (`MoneylogSchemaContributor`) | **부분 유니크 2건**·**시퀀스 `seq_installment_group`** |
 
-**Rationale**: 헌장 원칙 VI와 현재 `application-postgresql.yml`이 `ddl-auto: update`를 전제한다. Flyway 도입은 이 기능의 범위를 넘고, 순수 수동 DDL만 쓰면 Entity와 이중 관리가 된다. 보조 스크립트는 **멱등**하게 작성한다(`CREATE ... IF NOT EXISTS`, `DO $$ ... EXCEPTION WHEN duplicate_object`) — `ddl-auto: update`가 반복 실행되는 환경이라 재실행이 잦다.
+**이전 판이 틀렸던 지점**: "Hibernate가 CHECK을 만들지 못한다"는 전제가 사실이 아니었다. Hibernate에는 `@Check(name, constraints)`가 있었고, Hibernate 7에서는 그것이 deprecated되고 **JPA 3.2 표준** `@Table(check = @CheckConstraint(name, constraint))`로 대체됐다 — 둘 다 **제약 이름을 지정할 수 있다.** 이름 통제가 스크립트를 둔 유일한 이유였으므로 근거가 사라졌다. 주석도 `@Table(comment = ...)`로 표준화되어 있다.
+
+애너테이션으로 <b>정말</b> 표현할 수 없는 것은 둘뿐이다:
+
+- **부분 유니크 인덱스** — `@Table(uniqueConstraints)`·`@Index`에 `WHERE` 절을 붙일 자리가 없다. JPA에도 Hibernate 애너테이션에도 부분 인덱스 개념이 없다
+- **독립 시퀀스** — `@SequenceGenerator`는 어떤 Entity의 식별자 생성기로 쓰일 때만 DDL에 나온다. `seq_installment_group`은 N개 행이 공유하는 값이라 어느 PK의 생성기도 아니다(§9)
+
+이 둘은 Hibernate의 `AdditionalMappingContributor` SPI(`META-INF/services`로 등록)가 보조 데이터베이스 객체로 낸다. **스크립트가 아니라 Hibernate의 스키마 관리 안에서** 실행되므로 별도 단계가 생기지 않는다. SQL은 `CREATE ... IF NOT EXISTS`로 멱등하게 두고, 스키마는 `${schema}` 자리표시자로 적는다 — 기여 시점에는 기본 네임스페이스가 확정되지 않아 이름을 직접 읽으면 빈 문자열이 되고, SQL이 스키마 없이 나가 접속의 `search_path`를 타고 엉뚱한 스키마에 만들어진다(실측 확인).
+
+**Rationale**: 반영 단계가 둘에서 하나로 준다. 종전에는 앱을 띄운 뒤 스크립트를 잊지 않고 실행해야 했고, 잊으면 CHECK·부분 유니크가 없는 채로 조용히 동작했다 — 제약 위반이 잡히지 않는 상태라 발견이 늦다. 이제 기동만으로 완결된다. Flyway 도입은 여전히 이 기능의 범위 밖이다.
+
+**동등성 검증**: 빈 스키마에 Hibernate만으로 만든 결과와 종전 방식으로 만든 스키마를 대조해 제약 72건·인덱스 35건·전 컬럼의 정의 차이가 **0건**임을 확인했다(주석 15건만 추가).
+
+**`ddl-auto`**: 개발 단계라 `create`를 쓴다. `update`는 **이미 있는 테이블에 주석을 붙이지 않는다** — `comment on table`이 `create table`과 함께만 나가기 때문이다. 데이터를 남겨야 하는 시점이 오면 `update`로 되돌리고 주석 변경분은 스키마 재생성으로 반영한다.
 
 반영 후 `pg_dump`로 `sql/schema-moneylogdb.sql`을 재생성한다(헌장 VI·FR-007). 이때 시드 데이터는 없다 — 기본 지출유형 10종은 마스터가 아니라 **회원마다 생기는 데이터**라 덤프에 넣지 않는다.
 

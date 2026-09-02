@@ -16,12 +16,30 @@ spring:
       leak-detection-threshold: 2000
   jpa:
     hibernate:
-      ddl-auto: update
+      # 개발 단계 설정. 기동할 때마다 전 테이블을 drop 후 재생성한다.
+      #
+      # create 인 이유: update 는 "이미 있는 테이블"에 COMMENT 를 붙이지 않는다.
+      # comment on table 은 create table 과 함께만 나가므로, update 로는 Entity 에
+      # 적은 주석이 기존 스키마에 영원히 반영되지 않는다(2026-09-02 확인).
+      #
+      # 대가: 기동할 때마다 데이터가 사라진다. 개발용 데이터를 남겨야 하는 시점이
+      # 오면 update 로 되돌린다 — 그때는 주석 변경분만 손으로 반영하거나 스키마를
+      # 한 번 재생성한다.
+      #
+      # 운영 DB 를 가리킨 채로 이 값이 create 이면 데이터가 전부 사라진다.
+      ddl-auto: create
     properties:
       hibernate:
         default_schema: moneylog
         show_sql: true
         format_sql: true
+        # 스키마(네임스페이스)까지 Hibernate 가 만든다.
+        # 이 값이 false(기본)면 default_schema 는 "이 스키마를 쓴다"는 뜻일 뿐이라,
+        # 스키마가 없으면 15개 CREATE TABLE 이 전부 실패한다. 그런데 그 실패가
+        # WARN 으로만 찍히고 기동은 성공해서, 새 DB 에서는 "정상 기동 + 테이블 0개"가
+        # 된다. 실측으로 확인했다(2026-09-02).
+        hbm2ddl:
+          create_namespaces: true
     open-in-view: false
   sql:
     init:

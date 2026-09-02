@@ -125,14 +125,27 @@
 
 ## 7. 스키마 반영 경계
 
+**스키마 객체는 전부 Hibernate가 만든다.** 앱을 한 번 띄우면 끝난다 — 뒤이어 실행할 보조 DDL 스크립트가 없다(2026-09-02 개정).
+
 | 만드는 주체 | 대상 |
 |-------------|------|
-| **Hibernate `ddl-auto: update`** | 테이블, 컬럼, 타입, NOT NULL, PK, FK, 일반 인덱스, 조건 없는 UNIQUE |
-| **보조 DDL `sql/04_constraints.sql`** | 부분 유니크 2건, CHECK 20건, 시퀀스 `seq_installment_group` |
+| **Hibernate — 스키마 생성 설정** (`hibernate.hbm2ddl.create_namespaces: true`) | 스키마(네임스페이스) `moneylog` |
+| **Hibernate — Entity 애너테이션** | 테이블, 컬럼, 타입, NOT NULL, PK, FK, 일반 인덱스, 조건 없는 UNIQUE, **CHECK 20건**, **테이블 주석 15건** |
+| **Hibernate — `AdditionalMappingContributor`** (`MoneylogSchemaContributor`) | **부분 유니크 2건**, **시퀀스 `seq_installment_group`** |
+| `sql/03_create_schema.sql` | `search_path` 설정(`ALTER ROLE`)만. psql로 직접 접속할 때 쓴다 — 앱은 필요 없다 |
 
-보조 DDL은 **멱등**해야 한다 — `CREATE UNIQUE INDEX IF NOT EXISTS`, `CREATE SEQUENCE IF NOT EXISTS`, CHECK는 존재 확인 후 `ALTER TABLE ... ADD CONSTRAINT`. `ddl-auto: update` 환경에서 반복 실행되기 때문이다.
+CHECK과 주석은 JPA 3.2 표준 애너테이션으로 적는다 — `@Table(comment = "...", check = @CheckConstraint(name = "...", constraint = "..."))`. Hibernate의 `@Check`·`@Comment`는 **Hibernate 7에서 deprecated**이므로 쓰지 않는다.
 
-반영 순서: 앱 기동(Hibernate) → `04_constraints.sql` 실행 → `pg_dump` 재생성.
+부분 유니크 인덱스와 시퀀스만 애너테이션으로 표현할 수 없어 SPI를 쓴다:
+
+- `@Table(uniqueConstraints = ...)`·`@Index`에 **`WHERE` 절을 붙일 자리가 없다.** JPA에도 Hibernate 애너테이션에도 부분 인덱스 개념이 없다
+- `@SequenceGenerator`는 **어떤 Entity의 식별자 생성기로 쓰일 때만** DDL에 나온다. `seq_installment_group`은 한 할부의 N개 행이 공유하는 값이라 어느 Entity의 PK 생성기도 아니다
+
+SPI가 내는 SQL은 스키마를 `${schema}` 자리표시자로 적는다. 기여 시점에는 기본 네임스페이스가 확정되지 않아 이름을 직접 읽으면 빈 문자열이 되고, 그러면 SQL이 스키마 없이 나가 접속의 `search_path`를 타고 **엉뚱한 스키마에** 만들어진다.
+
+**동등성 검증(2026-09-02)** — 빈 스키마에 Hibernate만으로 만든 결과와, 종전 방식(스크립트 병행)으로 만든 기존 스키마를 대조했다. 제약 72건·인덱스 35건·전 컬럼의 정의 차이가 **0건**이고, Hibernate 쪽에만 테이블 주석 15건이 더 있다.
+
+반영 순서: 앱 기동(Hibernate) → `pg_dump` 재생성.
 
 ## 8. 덤프 규칙 (헌장 VI)
 

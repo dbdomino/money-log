@@ -1,5 +1,6 @@
 package com.dbdomino.moneylog.data.entity;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -34,10 +35,12 @@ import org.hibernate.annotations.OnDeleteAction;
 @Entity
 @Table(
         name = "tbl_user_statistics_weekly",
+        comment = "통계 주별 지출. 주 경계를 저장해 두어 조회할 때 다시 계산하지 않는다",
         uniqueConstraints = @UniqueConstraint(
                 name = "ux_user_stat_weekly",
                 columnNames = {"statistics_idx", "week_index"}
-        )
+        ),
+        check = @CheckConstraint(name = "ck_stat_weekly_index", constraint = "week_index >= 1")
 )
 @Getter
 @Setter

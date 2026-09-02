@@ -316,7 +316,8 @@ MVP 범위 = T001~T020 (20개 작업).
 - [P] = 다른 파일, 의존 없음
 - `sql/04_constraints.sql`은 5개 스토리가 나눠 채우는 **공유 파일**이다. 각 스토리는 자기 절만 덧붙이고, 최종 멱등성은 T058이 확인한다
 - 모듈별 `build.gradle`이 없다. 의존성은 전부 루트 `build.gradle`의 `project(':...')` 블록에서 고친다
-- Hibernate `ddl-auto: update`는 부분 유니크 인덱스와 CHECK를 만들지 못한다. 그것들이 보조 DDL로 빠진 이유이며, Entity에 `@Table(uniqueConstraints=...)`로 부분 유니크를 흉내 내려 하면 조건 없는 유니크가 만들어져 **이메일 NULL 다건 저장이 깨진다**
+- ~~Hibernate `ddl-auto: update`는 부분 유니크 인덱스와 CHECK를 만들지 못한다.~~ **2026-09-02 개정 — CHECK 부분은 사실이 아니었다.** JPA 3.2 `@Table(check = @CheckConstraint(name, constraint))`가 이름까지 지정해 CHECK을 만든다. 이름 통제가 보조 DDL을 둔 유일한 이유였으므로 CHECK 20건을 Entity로 옮기고 `sql/04_constraints.sql`을 삭제했다. 부분 유니크 2건과 시퀀스만 애너테이션으로 표현할 수 없어 `MoneylogSchemaContributor`(Hibernate `AdditionalMappingContributor` SPI)가 맡는다. 아래 태스크 설명에 남은 `04_constraints.sql` 언급은 **당시 기록**이며 현재 구조가 아니다 — 현재 구조는 `research §8`·`contracts §7`을 본다
+- 부분 유니크를 `@Table(uniqueConstraints=...)`로 흉내 내려 하면 조건 없는 유니크가 만들어져 **이메일 NULL 다건 저장이 깨진다**. `WHERE` 절을 붙일 자리가 애너테이션에 없다
 - 통계 상세 2종의 유형·수단 컬럼에 JPA 연관 매핑을 쓰지 않는다 — FK가 생기면 FR-078a(끊긴 참조 허용) 위반이고 T048이 실패한다
 - 각 작업 또는 논리 묶음 단위로 커밋한다. 스키마가 바뀐 커밋에는 재생성한 덤프를 함께 넣는다(헌장 VI)
 - 어느 Checkpoint에서 멈춰도 그때까지의 스토리는 독립적으로 검증된 상태다

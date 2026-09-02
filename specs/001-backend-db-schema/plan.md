@@ -8,7 +8,7 @@
 
 백엔드 56개 API(Phase 1~5)가 읽고 쓸 **15종 저장 단위**를 PostgreSQL `moneylog` 스키마에 물리 테이블로 확정·반영한다. JPA Entity·Repository는 `data-mod`에 두고, API Controller·Service 구현은 범위 밖이다.
 
-기술 접근: Spring Data JPA Entity(`ddl-auto: update`)로 테이블·FK·일반 인덱스를 만들고, Hibernate가 표현하지 못하는 **부분 유니크 인덱스 2건과 CHECK 20건, 할부 시퀀스**만 멱등 보조 DDL(`sql/04_constraints.sql`)로 적용한다. 감사 4컬럼은 `@MappedSuperclass` + `AuditingEntityListener`로 15개 Entity에 상속시킨다. 반영 후 `sql/schema-moneylogdb.sql`을 재생성한다.
+기술 접근: **스키마 객체를 전부 Hibernate가 만든다**(2026-09-02 개정). Spring Data JPA Entity가 테이블·FK·일반 인덱스와 함께 **CHECK 20건·테이블 주석 15건**을 JPA 3.2 표준 애너테이션(`@Table(comment=, check=@CheckConstraint)`)으로 표현하고, 애너테이션으로 표현할 수 없는 **부분 유니크 2건과 할부 시퀀스**만 `AdditionalMappingContributor` SPI(`MoneylogSchemaContributor`)가 낸다. 스키마 생성은 `hibernate.hbm2ddl.create_namespaces: true`가 맡는다. 감사 4컬럼은 `@MappedSuperclass` + `AuditingEntityListener`로 15개 Entity에 상속시킨다. 반영은 **앱 기동 한 번**이며 보조 DDL 스크립트가 없다. 반영 후 `sql/schema-moneylogdb.sql`을 재생성한다.
 
 **2026-08-31 전면 개정** — spec 재작성과 clarification 4건을 반영해 이전 판 설계를 다음과 같이 바꾼다.
 
@@ -115,8 +115,13 @@ data-mod/
 
 data-mod/src/test/java/.../             # 스키마 검증 통합 테스트 (quickstart §3)
 
+data-mod/src/main/java/.../config/MoneylogSchemaContributor.java
+                                        # 부분 유니크 2건·시퀀스 (Hibernate SPI)
+data-mod/src/main/resources/META-INF/services/
+    org.hibernate.boot.spi.AdditionalMappingContributor   # 위 클래스 등록
+
 sql/
-├── 04_constraints.sql                  # 신규 — 부분 유니크·CHECK·시퀀스 (멱등)
+├── 03_create_schema.sql                # search_path 설정만 (스키마는 Hibernate 가 만든다)
 └── schema-moneylogdb.sql               # 반영 후 재생성
 
 app-mod/money-backend-app/
@@ -141,7 +146,7 @@ app-mod/money-app/.../entity/           # 레거시 — 손대지 않음
 6. **목표금액** — `UserExpendTargetDefault`, `UserExpendTargetMonthly`
 7. **통계** — `UserStatistics` → 상세 3종(CASCADE)
 8. **Repository 15개**
-9. **보조 DDL** `sql/04_constraints.sql` 작성·적용(멱등 확인)
+9. **스키마 SPI** `MoneylogSchemaContributor` — 부분 유니크 2건·시퀀스
 10. **검증 테스트** — quickstart §3 시나리오 20건
 11. **덤프 재생성** — `sql/schema-moneylogdb.sql`, 같은 커밋에 포함
 

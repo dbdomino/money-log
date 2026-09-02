@@ -116,7 +116,7 @@ Spring Boot 기반 **멀티 모듈** 가계부 웹 애플리케이션이다.
 |---|---|---|
 | 1 | `sql/01_create_user.sql` | `moneyloguser` 생성 |
 | 2 | `sql/02_create_database.sql` | `moneylogdb` 생성 (OWNER `moneyloguser`) |
-| 3 | `sql/03_create_schema.sql` | `moneylog` 스키마 생성 + `search_path` 설정 (`moneylogdb` 접속 후 실행) |
+| 3 | `sql/03_create_schema.sql` | `search_path` 설정 (`moneylogdb` 접속 후 실행). **스키마 `moneylog` 자체와 테이블·제약·인덱스·시퀀스·주석은 앱이 만든다** — 백엔드를 한 번 기동하면 끝난다. 이 스크립트는 psql로 직접 붙어 조회할 때만 필요하다 |
 
 현재 스키마 스냅샷: [sql/schema-moneylogdb.sql](./sql/schema-moneylogdb.sql) — `pg_dump` 산출물로,
 테이블 구조·인덱스·제약·시드 데이터를 담는다. DB 영향도 확인은 이 파일을 기준으로 하고, 스키마가

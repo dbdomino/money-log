@@ -1,5 +1,6 @@
 package com.dbdomino.moneylog.data.entity;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -36,10 +37,12 @@ import lombok.Setter;
 @Entity
 @Table(
         name = "tbl_user_income",
+        comment = "월별 수입 내역. 장소·지출유형·할부가 없어 지출과 별도 테이블로 둔다",
         indexes = @Index(
                 name = "ix_user_income_date",
                 columnList = "id_key, payment_date"
-        )
+        ),
+        check = @CheckConstraint(name = "ck_income_amount", constraint = "amount > 0")
 )
 @Getter
 @Setter

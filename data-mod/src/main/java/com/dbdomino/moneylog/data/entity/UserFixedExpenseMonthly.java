@@ -1,5 +1,6 @@
 package com.dbdomino.moneylog.data.entity;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -58,6 +59,7 @@ import org.hibernate.annotations.OnDeleteAction;
 @Entity
 @Table(
         name = "tbl_user_fixed_expense_monthly",
+        comment = "월별 고정지출 내역. 그 달을 처음 조회할 때 설정에서 복사해 만든다(lazy 생성)",
         uniqueConstraints = @UniqueConstraint(
                 name = "ux_user_fixed_expense_monthly",
                 columnNames = {"fixed_expense_idx", "year", "month"}
@@ -65,7 +67,12 @@ import org.hibernate.annotations.OnDeleteAction;
         indexes = @Index(
                 name = "ix_user_fixed_monthly_ym",
                 columnList = "id_key, year, month"
-        )
+        ),
+        check = {
+                @CheckConstraint(name = "ck_fixed_monthly_amount", constraint = "amount > 0"),
+                @CheckConstraint(name = "ck_fixed_monthly_month",
+                        constraint = "month between 1 and 12")
+        }
 )
 @Getter
 @Setter
