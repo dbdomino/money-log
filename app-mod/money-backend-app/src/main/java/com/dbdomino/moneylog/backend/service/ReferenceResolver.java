@@ -153,6 +153,50 @@ public class ReferenceResolver {
         return method;
     }
 
+    // ── 006 이 쓰는 갈래: 소유(3103)와 사용 여부(3601)를 나눈다 ──────────────
+
+    /**
+     * 소유 여부<b>까지만</b> 보는 지출유형 조회. 실패는 {@code 3103} 이다.
+     *
+     * <p>{@link #requireUsableExpendGroup} 와 나뉘는 지점이 <b>사용 여부를 여기서
+     * 보느냐</b>다. 004·005 는 "없음·타인·사용 안 함" 셋을 {@code 3103} 하나로 묶었지만
+     * 006 은 사용 안 함을 {@code 3601} 로 따로 낸다 — 사용자가 취할 조치가 다르기
+     * 때문이다("다른 유형을 고른다"가 아니라 "그 유형을 다시 사용 중으로 돌린다").
+     *
+     * <p>그래서 <b>둘을 나눠 두고 순서를 호출자가 정한다</b>. 소유({@code 3103})가
+     * 사용 여부({@code 3601})보다 <b>먼저</b>여야 한다 — 남의 유형 ID 로 접근했는데 그게
+     * 마침 {@code in_use=false} 라면 {@code 3601} 을 내는 순간 <b>그 ID 가 실재한다는
+     * 사실이 코드 차이로 새어 나간다</b>(quickstart #14).
+     *
+     * <p><b>{@code deleted} 는 보지 않는다.</b> 목표금액에서 삭제 표시는 조건이 아니다
+     * (target-amount.md §5) — 삭제 표시된 유형의 목표 행은 유지되어야 하고(FR-511)
+     * 그 행을 읽으려면 유형을 찾을 수 있어야 한다.
+     *
+     * <p><b>004·005 의 메서드는 손대지 않는다.</b> 그쪽 시그니처를 바꾸면 여섯 경로의
+     * 실패 코드가 함께 움직인다.
+     *
+     * @see #requireInUse(UserExpendGroup, ErrorCode)
+     */
+    public UserExpendGroup requireOwnedExpendGroup(AuthPrincipal principal, Long expendGroupId) {
+        return expendGroupRepository.findByIdxAndUserIdKey(expendGroupId, principal.idKey())
+                .orElseThrow(() -> new BusinessException(ErrorCode.EXPEND_GROUP_NOT_FOUND));
+    }
+
+    /**
+     * 그 유형이 사용 중인가. 아니면 <b>호출자가 정한 코드</b>로 거절한다.
+     *
+     * <p>{@link #requireOwnedExpendGroup} 와 짝으로 쓴다. 006 은 {@code 3601} 을 넘긴다.
+     *
+     * <p><b>{@code deleted} 를 함께 보지 않는다.</b> 조건은 {@code in_use} 뿐이다
+     * (target-amount.md §5).
+     */
+    public UserExpendGroup requireInUse(UserExpendGroup group, ErrorCode errorCode) {
+        if (!Boolean.TRUE.equals(group.getInUse())) {
+            throw new BusinessException(errorCode, "사용하지 않는 지출유형입니다.");
+        }
+        return group;
+    }
+
     // ── 규칙 1: 엑셀(3.12)은 ID 가 아니라 이름으로 찾는다 ──────────────────
 
     /**

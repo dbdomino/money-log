@@ -1,6 +1,8 @@
 package com.dbdomino.moneylog.backend.target;
 
 import com.dbdomino.moneylog.backend.AbstractApiIT;
+import java.util.ArrayList;
+import java.util.List;
 import tools.jackson.databind.JsonNode;
 
 /**
@@ -74,5 +76,24 @@ abstract class AbstractTargetIT extends AbstractApiIT {
                  where u.user_id = ?
                 """, Integer.class, member.memberId());
         return count == null ? 0 : count;
+    }
+
+    /** 5.1 응답에서 그 유형의 줄. 없으면 {@code null} 이다. */
+    protected JsonNode rowOf(JsonNode response, long expendGroupId) {
+        for (JsonNode item : response.get("data").get("list")) {
+            if (item.get("expendGroupId").asLong() == expendGroupId) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /** 5.1 응답의 유형 PK 목록. 순서와 포함 여부를 함께 본다. */
+    protected List<Long> groupIdsOf(JsonNode response) {
+        List<Long> ids = new ArrayList<>();
+        for (JsonNode item : response.get("data").get("list")) {
+            ids.add(item.get("expendGroupId").asLong());
+        }
+        return ids;
     }
 }

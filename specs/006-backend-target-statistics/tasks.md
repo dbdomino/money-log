@@ -76,24 +76,24 @@ Spring Boot 멀티모듈이다. 저장소 루트 기준 경로를 쓴다.
 
 ### 테스트 (구현보다 먼저 쓰고 실패를 확인한다)
 
-- [ ] T015 [P] [US1] `.../backend/target/TargetUpsertIT.java` — quickstart #1·#2·#10. 목표가 없던 유형에 저장하면 새로 만들어지고(upsert), 다시 저장하면 **같은 행이 갱신되어 행이 늘지 않는다**. **0원 저장은 성공**이다 — 유효한 값이다
-- [ ] T016 [P] [US1] `.../backend/target/TargetTwoLayerIT.java` — quickstart #3·#4 (SC-502). **두 층이 독립임을 건다**: 기본을 바꿔도 저장된 월별 값이 그대로이고, 월별을 저장해도 기본이 바뀌지 않는다. 기본을 월별로 복사해 두지 않는다는 것이 요점이다(FR-505)
-- [ ] T017 [P] [US1] `.../backend/target/TargetNullVsZeroIT.java` — quickstart #5·#6·#7·#8 (SC-503). **네 개가 한 묶음이다.** 월별을 저장한 적 없으면 `monthlyTargetAmount` 가 **`null`**, 0원으로 저장했으면 **`0`**, 기본을 저장한 적 없으면 `defaultTargetAmount` 가 **`0`**(`null` 이 아니다). **#8 이 가장 놓치기 쉽다** — `monthlyTargetAmount` 필드가 **생략되지 않고 `null` 로 와야** 한다. Jackson 이 `null` 필드를 빼면 프론트가 "없음"과 "필드 자체가 없음"을 구분할 수 없다
-- [ ] T018 [P] [US1] `.../backend/target/TargetRangeIT.java` — quickstart #9 (SC-504). 1억 초과는 `3602` 다. 경계값 **정확히 1억은 성공**, 음수는 거절. 범위가 `0 ~ 100,000,000` 이다(FR-504)
-- [ ] T019 [P] [US1] `.../backend/target/TargetGroupStateIT.java` — quickstart #11·#12·#13·#14. `in_use=false` 유형의 단건 조회·변경은 `3601`(FR-510), 목록에서는 **제외**(FR-509), 삭제 표시된 유형의 목표 행은 **유지**(FR-511). **#14 가 판정 순서를 검증한다** — 남의 유형 ID 는 그것이 `in_use=false` 여도 **`3103`** 이다(`3601` 이 아니다). 순서가 뒤집히면 남의 유형이 실재함이 코드 차이로 새어 나간다
-- [ ] T020 [P] [US1] `.../backend/target/TargetListIT.java` — quickstart #15·#16. `offset` 이 `limit` 의 배수가 아니면 `9001`, `totalCount` 는 **사용 중 유형만** 센다(FR-526). 연·월이 **필수**인 이유는 기본만 보는 화면도 조회 연·월을 넘겨 응답 형태를 하나로 유지하기 때문이다
+- [X] T015 [P] [US1] `.../backend/target/TargetUpsertIT.java` — quickstart #1·#2·#10. 목표가 없던 유형에 저장하면 새로 만들어지고(upsert), 다시 저장하면 **같은 행이 갱신되어 행이 늘지 않는다**. **0원 저장은 성공**이다 — 유효한 값이다
+- [X] T016 [P] [US1] `.../backend/target/TargetTwoLayerIT.java` — quickstart #3·#4 (SC-502). **두 층이 독립임을 건다**: 기본을 바꿔도 저장된 월별 값이 그대로이고, 월별을 저장해도 기본이 바뀌지 않는다. 기본을 월별로 복사해 두지 않는다는 것이 요점이다(FR-505)
+- [X] T017 [P] [US1] `.../backend/target/TargetNullVsZeroIT.java` — quickstart #5·#6·#7·#8 (SC-503). **네 개가 한 묶음이다.** 월별을 저장한 적 없으면 `monthlyTargetAmount` 가 **`null`**, 0원으로 저장했으면 **`0`**, 기본을 저장한 적 없으면 `defaultTargetAmount` 가 **`0`**(`null` 이 아니다). **#8 이 가장 놓치기 쉽다** — `monthlyTargetAmount` 필드가 **생략되지 않고 `null` 로 와야** 한다. Jackson 이 `null` 필드를 빼면 프론트가 "없음"과 "필드 자체가 없음"을 구분할 수 없다
+- [X] T018 [P] [US1] `.../backend/target/TargetRangeIT.java` — quickstart #9 (SC-504). 1억 초과는 `3602` 다. 경계값 **정확히 1억은 성공**, 음수는 거절. 범위가 `0 ~ 100,000,000` 이다(FR-504)
+- [X] T019 [P] [US1] `.../backend/target/TargetGroupStateIT.java` — quickstart #11·#12·#13·#14. `in_use=false` 유형의 단건 조회·변경은 `3601`(FR-510), 목록에서는 **제외**(FR-509), 삭제 표시된 유형의 목표 행은 **유지**(FR-511). **#14 가 판정 순서를 검증한다** — 남의 유형 ID 는 그것이 `in_use=false` 여도 **`3103`** 이다(`3601` 이 아니다). 순서가 뒤집히면 남의 유형이 실재함이 코드 차이로 새어 나간다
+- [X] T020 [P] [US1] `.../backend/target/TargetListIT.java` — quickstart #15·#16. `offset` 이 `limit` 의 배수가 아니면 `9001`, `totalCount` 는 **사용 중 유형만** 센다(FR-526). 연·월이 **필수**인 이유는 기본만 보는 화면도 조회 연·월을 넘겨 응답 형태를 하나로 유지하기 때문이다
 
 ### 구현
 
-- [ ] T021 [P] [US1] `.../backend/dto/request/ExpendTargetListQuery.java` — 5.1 의 `year`·`month`·`offset`·`limit` **전부 필수**. 연·월 오류는 `3603`, 페이징 오류는 `9001` 이다. 두 코드가 다른 것에 주의한다
-- [ ] T022 [P] [US1] `.../backend/dto/request/ExpendTargetUpsertRequest.java` — 5.3·5.4 가 함께 쓴다. `targetAmount` 하나이며 `0 ~ 100,000,000` 검증은 서비스가 `3602` 로 한다
-- [ ] T023 [P] [US1] `.../backend/dto/response/ExpendTargetResponse.java` — `expendGroupId` · `expendGroupName`(**현재** 이름) · `defaultTargetAmount`(항상 숫자) · `monthlyTargetAmount`(**`null` 가능**) · `appliedTargetAmount`. **`monthlyTargetAmount` 를 `Long` 으로 둔다** — `long` 이면 `null` 을 표현할 수 없어 "없음"이 `0` 으로 뭉개진다
-- [ ] T024 [P] [US1] `.../backend/dto/response/ExpendTargetListResponse.java` — `list` + `year` · `month` · `offset` · `limit` · `totalCount` 를 **형제 필드**로 둔다(FR-526)
-- [ ] T025 [US1] `.../backend/mapper/ExpendTargetMapper.java` — Entity ↔ DTO. **이름은 연관에서 읽는 현재 이름이다**(target-amount.md §8) — 목표금액은 "지금 유효한 설정"이라 005 의 고정지출과 같은 규칙이고 004 의 스냅샷과 반대다
-- [ ] T026 [US1] `.../backend/service/ExpendTargetService.java` — 5.1 목록 · 5.2 단건. 목록은 **사용 중 유형만**이고 T007 의 `TargetResolver` 로 적용 금액을 낸다
-- [ ] T027 [US1] `.../backend/service/ExpendTargetService.java` 에 5.3·5.4 upsert 를 더한다 — **판정 순서는 `3103` → `3601` → `3602`** 다(api-contract §7). 소유자 판정이 가장 먼저이고, 그다음 사용 여부, 마지막이 금액 범위다. 순서가 뒤집히면 남의 유형에 잘못된 금액을 보냈을 때 `3103` 이 아니라 `3602` 가 나가 그 ID 가 실재함이 드러난다
-- [ ] T028 [US1] T027 의 upsert 를 **동시 요청에 안전하게** 한다 — 유니크 제약이 **`ux_target_default (id_key, expend_group_idx)`** · **`ux_target_monthly (id_key, year, month, expend_group_idx)`** 다(덤프 확인. 이름에 `expend_` 가 없다 — 테이블 이름과 달라 찾을 때 헷갈린다). "조회해서 없으면 INSERT" 만 두면 두 요청이 같은 순간 "없음"을 보고 하나가 유니크 위반으로 실패한다. 005 의 `insertIfAbsent` 와 같은 처방을 쓰거나 위반을 갱신으로 흡수한다(target-amount.md §4)
-- [ ] T029 [US1] `.../backend/controller/ExpendTargetController.java` — 5.1 `GET /api/v1/expend-targets` · 5.2 `GET /{year}/{month}/{expendGroupId}` · 5.3 `PATCH /default/{expendGroupId}` · 5.4 `PATCH /monthly/{year}/{month}/{expendGroupId}`. **Repository 를 직접 부르지 않는다**(헌장 원칙 II)
+- [X] T021 [P] [US1] `.../backend/dto/request/ExpendTargetListQuery.java` — 5.1 의 `year`·`month`·`offset`·`limit` **전부 필수**. 연·월 오류는 `3603`, 페이징 오류는 `9001` 이다. 두 코드가 다른 것에 주의한다
+- [X] T022 [P] [US1] `.../backend/dto/request/ExpendTargetDefaultUpsertRequest.java` · `ExpendTargetMonthlyUpsertRequest.java` — **둘로 나눈다**. 5.3 의 몸통 필드는 `defaultTargetAmount`, 5.4 는 `monthlyTargetAmount` 라 이름이 다르다(각 설계 명세의 Body 표). 두 층이 독립이라 요청에서도 어느 층을 건드리는지가 이름으로 드러나야 하고, 하나로 합치면 URL 만으로 층을 구분해야 해 프론트가 경로를 잘못 짚어도 몸통이 그대로 통과한다. `0 ~ 100,000,000` 검증은 `ExpendTargetFieldRules` 가 `3602` 로 하며 **누락도 같은 코드**다(필드가 하나뿐이라 둘을 가르는 정보 이득이 없다)
+- [X] T023 [P] [US1] `.../backend/dto/response/ExpendTargetResponse.java` — `expendGroupId` · `expendGroupName`(**현재** 이름) · `defaultTargetAmount`(항상 숫자) · `monthlyTargetAmount`(**`null` 가능**) 넷이다 — **적용 금액 필드는 넣지 않는다**(5.1·5.2 필드 표 · FR-507 이 두 값만 정했다. 화면이 `monthly ?? default` 로 낸다). **`monthlyTargetAmount` 를 `Long` 으로 둔다** — `long` 이면 `null` 을 표현할 수 없어 "없음"이 `0` 으로 뭉개진다
+- [X] T024 [P] [US1] `.../backend/dto/response/ExpendTargetListResponse.java` — `list` + `year` · `month` · `offset` · `limit` · `totalCount` 를 **형제 필드**로 둔다(FR-526)
+- [X] T025 [US1] `.../backend/mapper/ExpendTargetMapper.java` — Entity ↔ DTO. **이름은 연관에서 읽는 현재 이름이다**(target-amount.md §8) — 목표금액은 "지금 유효한 설정"이라 005 의 고정지출과 같은 규칙이고 004 의 스냅샷과 반대다
+- [X] T026 [US1] `.../backend/service/ExpendTargetService.java` — 5.1 목록 · 5.2 단건. 목록은 **사용 중 유형만**이고, 월별 목표는 그 달 행을 한 번에 읽어 유형 PK 로 맞춘다(유형마다 단건 조회하면 N+1 이 된다). **`TargetResolver` 는 여기서 쓰지 않는다** — 적용 금액 필드가 응답에 없어 5.5·5.6 전용이다
+- [X] T027 [US1] `.../backend/service/ExpendTargetService.java` 에 5.3·5.4 upsert 를 더한다 — **판정 순서는 `3103` → `3601` → `3602`** 다(api-contract §7). 소유자 판정이 가장 먼저이고, 그다음 사용 여부, 마지막이 금액 범위다. 순서가 뒤집히면 남의 유형에 잘못된 금액을 보냈을 때 `3103` 이 아니라 `3602` 가 나가 그 ID 가 실재함이 드러난다
+- [X] T028 [US1] T027 의 upsert 를 **동시 요청에 안전하게** 한다 — 유니크 제약이 **`ux_target_default (id_key, expend_group_idx)`** · **`ux_target_monthly (id_key, year, month, expend_group_idx)`** 다(덤프 확인. 이름에 `expend_` 가 없다 — 테이블 이름과 달라 찾을 때 헷갈린다). "조회해서 없으면 INSERT" 만 두면 두 요청이 같은 순간 "없음"을 보고 하나가 유니크 위반으로 실패한다. 005 의 `insertIfAbsent` 와 같은 처방을 쓰거나 위반을 갱신으로 흡수한다(target-amount.md §4)
+- [X] T029 [US1] `.../backend/controller/ExpendTargetController.java` — 5.1 `GET /api/v1/expend-targets` · 5.2 `GET /{year}/{month}/{expendGroupId}` · 5.3 `PATCH /default/{expendGroupId}` · 5.4 `PATCH /monthly/{year}/{month}/{expendGroupId}`. **Repository 를 직접 부르지 않는다**(헌장 원칙 II)
 
 **Checkpoint**: 목표금액 두 층이 독립적으로 동작한다. **여기까지가 MVP** 다
 
@@ -166,7 +166,7 @@ Spring Boot 멀티모듈이다. 저장소 루트 기준 경로를 쓴다.
 - [ ] T055 [P] `.../backend/statistics/StatisticsStructureIT.java` — quickstart #51·#52·#54 (SC-509). **통계 상세 2종에 지출유형·수단으로 나가는 FK 가 0건**임을 `jdbc` 로 직접 확인한다(API 로는 볼 수 없다). 상세의 이름 컬럼이 **NOT NULL 로 채워져** 있고, 5.5 의 배열 3종이 `data.list` 규칙의 대상이 **아님**을 본다. **구현자가 "FK 가 빠진 실수"로 오해해 추가하면 이 시험이 잡는다**
 - [ ] T056 [P] AOP 요청~응답 로깅이 006 의 컨트롤러 둘에 걸리는지 확인한다 — 포인트컷이 `within(@RestController *)` 라 자동으로 걸린다. **제외 대상이 없다**(api-contract §10) — 바이너리 응답이 없다
 - [ ] T057 [P] `specs/006-backend-target-statistics/plan.md` § Source Code 의 파일 목록을 실제 구현과 맞춘다 — 특히 **`YearMonthValue` 를 "005 것 재사용"으로만 적어 둔 부분**은 T005 의 연 범위 확장을 반영해야 한다. 응답 DTO 이름도 `*Dto` 가 아니라 `*Response` 다(005 에서 같은 드리프트를 겪었다)
-- [ ] T058 `app-mod/money-backend-app/openapi.yaml` 과 `docs/API-문서.md` 에 006 의 6건을 더한다 — 50 → **56개 오퍼레이션**. `OpenApiDocumentIT` 의 양방향 대조가 빠뜨리면 먼저 깨진다. `REPRESENTATIVE_PATHS` 에 목표금액·통계를 하나씩 더하고 상태표의 006 행을 ✅ 로 바꾼다
+- [ ] T058 `app-mod/money-backend-app/openapi.yaml` 과 `docs/API-문서.md` 에 006 의 6건을 더한다 — 50 → **56개 오퍼레이션**. `OpenApiDocumentIT` 의 양방향 대조가 빠뜨리면 먼저 깨지므로 **각 Phase 안에서 그 Phase 가 연 API 를 함께 적는다** — 목표금액 4건은 Phase 3 에서 이미 들어가 54 가 됐고, 여기서는 통계 2건을 더해 56 을 채운다. `REPRESENTATIVE_PATHS` 에 목표금액·통계를 하나씩 더하고 상태표의 006 행을 ✅ 로 바꾼다
 - [ ] T059 `git diff --stat sql/schema-moneylogdb.sql` 이 **비어 있는지** 확인한다(헌장 원칙 VI). 덤프가 바뀌었다면 원인을 찾는다 — 특히 **통계 상세에 FK 를 추가하려는 시도**나 **`usage_rate` 정밀도를 늘리려는 시도**가 있었는지 본다. 둘 다 001 의 결정을 번복하는 변경이며, 후자는 T012 의 상한 처리를 빠뜨렸을 때 나오는 반응이다
 - [ ] T060 `./gradlew :data-mod:test` 를 돌려 **80건**이 그대로 통과하는지 확인한다 — 006 은 `data-mod` 의 Entity·제약·시험을 바꾸지 않는다. 기준 수치는 005 까지의 결과다
 - [ ] T061 `./gradlew :app-mod:money-backend-app:test` 를 돌려 **002~005 기존과 006 신규가 모두** 통과하는지 확인한다. **`./gradlew test`(전체)는 쓰지 않는다** — `money-app` 의 레거시 시험 3건이 `init` 커밋부터 깨져 있다

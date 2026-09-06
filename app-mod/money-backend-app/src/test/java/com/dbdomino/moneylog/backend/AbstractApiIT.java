@@ -431,21 +431,45 @@ public abstract class AbstractApiIT {
 
     // ── 006(목표금액·통계)이 쓰는 헬퍼 ─────────────────────────────────────
 
-    /** 5.3 기본 목표 upsert. */
+    /**
+     * 5.3 기본 목표 upsert.
+     *
+     * <p><b>Body 필드 이름이 5.4 와 다르다</b> — 5.3 은 {@code defaultTargetAmount},
+     * 5.4 는 {@code monthlyTargetAmount} 다(각 설계 명세의 Body 표). 두 층이 독립이라
+     * 요청에서도 어느 층을 건드리는지가 이름으로 드러난다.
+     */
     protected JsonNode putDefaultTarget(String token, long expendGroupId, long amount)
             throws Exception {
         return patchJson("/api/v1/expend-targets/default/" + expendGroupId, token, """
-                {"targetAmount":%d}
+                {"defaultTargetAmount":%d}
                 """.formatted(amount));
     }
 
-    /** 5.4 월별 목표 upsert. */
+    /** 5.4 월별 목표 upsert. @see #putDefaultTarget */
     protected JsonNode putMonthlyTarget(String token, int year, int month, long expendGroupId,
                                         long amount) throws Exception {
         return patchJson("/api/v1/expend-targets/monthly/" + year + "/" + month + "/"
                 + expendGroupId, token, """
-                {"targetAmount":%d}
+                {"monthlyTargetAmount":%d}
                 """.formatted(amount));
+    }
+
+    /** 003 의 2.11 로 지출유형의 사용 여부를 바꾼다. {@code 3601} 시험이 쓴다. */
+    protected void setExpendGroupInUse(String token, long expendGroupId, boolean inUse)
+            throws Exception {
+        var request = MockMvcRequestBuilders.multipart("/api/v1/expend-groups/" + expendGroupId);
+        request.with(servletRequest -> {
+            servletRequest.setMethod("PATCH");
+            return servletRequest;
+        });
+        request.header(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        request.part(new MockPart("inUse",
+                String.valueOf(inUse).getBytes(StandardCharsets.UTF_8)));
+        JsonNode response = objectMapper.readTree(mockMvc.perform(request)
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+        if (resCode(response) != 200) {
+            throw new IllegalStateException("지출유형 사용 여부 변경 실패: " + response);
+        }
     }
 
     /** 그 회원의 그 연·월 통계 행 수. <b>재저장해도 1건</b>인지 보는 데 쓴다(FR-516). */
