@@ -4,10 +4,15 @@ import com.dbdomino.moneylog.backend.service.FixedExpenseMonthlyFactory.MonthlyV
 import com.dbdomino.moneylog.backend.support.YearMonthValue;
 import com.dbdomino.moneylog.data.entity.UserFixedExpense;
 import com.dbdomino.moneylog.data.entity.UserFixedExpenseMonthly;
+import com.dbdomino.moneylog.backend.security.AuthPrincipal;
 import com.dbdomino.moneylog.data.repository.UserExpendGroupRepository;
 import com.dbdomino.moneylog.data.repository.UserFixedExpenseMonthlyRepository;
+import com.dbdomino.moneylog.data.repository.UserFixedExpenseRepository;
 import com.dbdomino.moneylog.data.repository.UserPaymentMethodRepository;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,15 +49,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class FixedExpenseSyncService {
 
     private final UserFixedExpenseMonthlyRepository monthlyRepository;
+    private final UserFixedExpenseRepository fixedExpenseRepository;
     private final UserPaymentMethodRepository paymentMethodRepository;
     private final UserExpendGroupRepository expendGroupRepository;
     private final FixedExpenseMonthlyFactory monthlyFactory;
 
     public FixedExpenseSyncService(UserFixedExpenseMonthlyRepository monthlyRepository,
+                                   UserFixedExpenseRepository fixedExpenseRepository,
                                    UserPaymentMethodRepository paymentMethodRepository,
                                    UserExpendGroupRepository expendGroupRepository,
                                    FixedExpenseMonthlyFactory monthlyFactory) {
         this.monthlyRepository = monthlyRepository;
+        this.fixedExpenseRepository = fixedExpenseRepository;
         this.paymentMethodRepository = paymentMethodRepository;
         this.expendGroupRepository = expendGroupRepository;
         this.monthlyFactory = monthlyFactory;
@@ -114,6 +122,104 @@ public class FixedExpenseSyncService {
             monthlyRepository.saveAll(targets);
         }
         return updated;
+    }
+
+    /**
+     * 4.9 재작성 — <b>네 처리를 한 트랜잭션에서</b> 한다(FR-414).
+     *
+     * <pre>{@code
+     * ① 생성  기간에 걸리는데 그 연·월 행이 없다        → createdCount
+     * ② 갱신  행이 있고 modified=false                → updatedCount
+     * ③ 보존  행이 있고 modified=true                 → keptCount
+     * ④ 삭제  행이 있는데 기간이 그 연·월을 더는 포함하지 않는다 → deletedCount
+     * }</pre>
+     *
+     * <h2>④가 필요한 이유</h2>
+     *
+     * <p>설정의 적용 기간을 줄이면(예: 종료를 2027-02 → 2026-12) 이미 만들어진 2027-01·02
+     * 행이 기간 밖이 된다. <b>자동 반영(FR-412)은 값 갱신만 하고 삭제하지 않으므로</b>
+     * 그 정리를 재작성이 맡는다. 자동과 수동의 경계가 여기다.
+     *
+     * <h2>지난 달에도 쓸 수 있다 (FR-413)</h2>
+     *
+     * <p>자동 반영이 미래 달만 건드리는 것과 다르다. "지난 달을 새 설정값으로 맞추고 싶다"는
+     * 요구에 답하는 <b>명시적 경로</b>이며, 그래서 사용자가 버튼으로 부른다.
+     *
+     * <h2>{@code overwriteModified}</h2>
+     *
+     * <p>참이면 ③이 ②로 넘어가고 {@code modified} 표시가 내려간다(SC-406). 파괴적이라
+     * 기본은 거짓이며 화면에서 확인을 받는 것을 전제한다.
+     *
+     * @return 네 건수와 재작성 <b>후</b>의 목록. 호출 후 재조회가 필요 없다(FR-415)
+     */
+    @Transactional
+    public SyncResult rewrite(AuthPrincipal principal, YearMonthValue yearMonth,
+                              boolean overwriteModified) {
+        // 그 달에 기간이 걸리는 설정들. ①의 대상이자 ④의 판단 기준이다.
+        List<UserFixedExpense> applicable =
+                fixedExpenseRepository.findApplicableTo(principal.idKey(), yearMonth.value());
+        Map<Long, UserFixedExpense> applicableByIdx = applicable.stream()
+                .collect(Collectors.toMap(UserFixedExpense::getIdx, setting -> setting));
+
+        // 그 달에 이미 있는 행 전부. ②③④의 대상이다.
+        List<UserFixedExpenseMonthly> existing = monthlyRepository
+                .findByUserIdKeyAndYearAndMonth(
+                        principal.idKey(), yearMonth.year(), yearMonth.month());
+
+        int updated = 0;
+        int kept = 0;
+        List<Long> toDelete = new ArrayList<>();
+
+        for (UserFixedExpenseMonthly row : existing) {
+            Long settingIdx = row.getFixedExpense().getIdx();
+            UserFixedExpense setting = applicableByIdx.get(settingIdx);
+            if (setting == null) {
+                // ④ 기간이 이 연·월을 더는 포함하지 않는다.
+                toDelete.add(settingIdx);
+                continue;
+            }
+            if (Boolean.TRUE.equals(row.getModified()) && !overwriteModified) {
+                // ③ 사용자가 직접 손댄 달이다. 그대로 둔다.
+                kept++;
+                continue;
+            }
+            // ② 관리 값으로 갱신한다. overwriteModified 면 표시도 내린다.
+            apply(row, setting, yearMonth);
+            if (Boolean.TRUE.equals(row.getModified())) {
+                row.setModified(false);
+            }
+            updated++;
+        }
+
+        if (!toDelete.isEmpty()) {
+            monthlyRepository.deleteByFixedExpenseIdxInAndYearAndMonth(
+                    toDelete, yearMonth.year(), yearMonth.month());
+        }
+        if (updated > 0) {
+            monthlyRepository.saveAll(existing);
+        }
+
+        // ① 없는 것만 만든다. 이미 있으면 0행이라 위에서 처리한 행과 겹치지 않는다.
+        int created = 0;
+        for (UserFixedExpense setting : applicable) {
+            MonthlyValues values = monthlyFactory.from(setting, yearMonth);
+            created += monthlyRepository.insertIfAbsent(
+                    principal.idKey(), setting.getIdx(), yearMonth.year(), yearMonth.month(),
+                    values.amount(), values.paymentDate(), values.content(),
+                    values.paymentMethodIdx(), values.expendGroupIdx(), principal.idKey());
+        }
+
+        return new SyncResult(created, updated, kept, toDelete.size());
+    }
+
+    /**
+     * 재작성의 네 건수.
+     *
+     * <p>목록과 합계는 호출자({@code FixedExpenseMonthlyService})가 재작성 <b>후</b>
+     * 상태를 다시 읽어 만든다 — 이 클래스는 "설정을 내역에 반영한다"만 하고 조회 응답을
+     * 조립하지 않는다.
+     */
+    public record SyncResult(int created, int updated, int kept, int deleted) {
     }
 
     /**

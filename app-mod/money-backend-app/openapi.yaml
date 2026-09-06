@@ -12,16 +12,15 @@ openapi: 3.1.0
 # 둘이 갈리면 어느 쪽이 낡았는지 판단한다. 자동 비교는 하지 않는다 — 설명·예시는
 # 다른 것이 정상이기 때문이다.
 #
-# 대상 범위: 002 회원·인증 / 003 수단·지출유형 / 004 지출·소득·할부·엑셀 / 005 고정지출 설정.
-# 005(고정지출·가계부)는 **재작성(4.9)을 뺀 8건이 구현**되어 담았다.
-# 재작성(4.9) 1건은 아직이며 구현되면 함께 늘린다.
+# 대상 범위: 002 회원·인증 / 003 수단·지출유형 / 004 지출·소득·할부·엑셀 / 005 고정지출·가계부.
+# **005 의 9건이 전부 구현되어 담겼다.** 006(목표금액·통계)이 붙으면 함께 늘린다.
 # =============================================================================
 
 info:
   title: money-log 백엔드 API
   version: v1
   description: |
-    가계부 백엔드 REST API. 49개 오퍼레이션 / 33개 경로.
+    가계부 백엔드 REST API. 50개 오퍼레이션 / 34개 경로.
 
     ## 응답 규격 — 실패도 HTTP 200 이다
 
@@ -1445,6 +1444,61 @@ paths:
                   - properties:
                       data: { $ref: "#/components/schemas/FixedExpenseMonthlyResponse" }
 
+  /api/v1/fixed-expenses/monthly/sync:
+    post:
+      tags: [고정지출]
+      summary: "4.9 월별 고정지출 내역 재작성"
+      description: |
+        그 달을 **설정대로 다시 맞춘다.** 사용자가 버튼으로 부르는 **수동 경로**이며
+        자동 반영(4.4)과 짝을 이룬다.
+
+        ### 연·월을 Body 로 받는다 (FR-421)
+
+        Path 나 Query 를 쓰지 않는다 — 이 저장소의 POST 는 필요한 값을 전부 Body 로 받는다.
+        Query 로 보내면 Body 가 비어 **`3403`** 이 된다. 조용히 Query 를 읽어 주면 두 입력
+        경로가 생기고, 둘이 다른 값을 담았을 때 어느 쪽을 따르는지가 구현에 숨는다.
+
+        ### 네 처리를 한 트랜잭션에서 한다 (FR-414)
+
+        | 처리 | 조건 | 건수 |
+        |---|---|---|
+        | ① 생성 | 기간에 걸리는데 그 연·월 행이 없음(**신규 등록분 포함**) | `createdCount` |
+        | ② 갱신 | 행이 있고 `modified=false` | `updatedCount` |
+        | ③ 보존 | 행이 있고 `modified=true` | `keptCount` |
+        | ④ 삭제 | 행이 있는데 적용 기간이 그 연·월을 더는 포함하지 않음 | `deletedCount` |
+
+        **④가 이 API 가 필요한 이유다.** 설정의 적용 기간을 줄이면(종료를 2027-02 →
+        2026-12) 이미 만들어진 2027-01·02 행이 기간 밖이 되는데, 자동 반영(FR-412)은
+        **값 갱신만 하고 삭제하지 않는다.** 그 정리를 여기서 한다 — 자동과 수동의 경계다.
+
+        ### 지난 달에도 쓸 수 있다 (FR-413)
+
+        자동 반영이 미래 달만 건드리는 것과 다르다. "지난 달을 새 설정값으로 맞추고
+        싶다"에 답하는 명시적 경로다.
+
+        ### 결과 목록을 함께 돌려준다 (FR-415)
+
+        호출 후 **재조회가 필요 없어야** 화면이 한 번의 왕복으로 끝난다. 구조는 4.5 의
+        `list[]` 와 같다.
+
+        **④로 사라진 행은 목록에 없다** — 재작성 *후*의 상태이므로 `list` 의 길이는
+        `createdCount + updatedCount + keptCount` 이며 네 건수의 합과 다르다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FixedExpenseMonthlySyncRequest" }
+      responses:
+        "200":
+          description: "실패: `3403` 연·월 누락·범위 오류 · `9001` Body 없음·메서드 불일치 · `1001` 미인증"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/FixedExpenseMonthlySyncResponse" }
+
   # ===========================================================================
   # 005 월별 가계부 통합 목록
   # ===========================================================================
@@ -2169,6 +2223,48 @@ components:
           description: |
             그 달 수단. 본인 소유의 **사용 중**이고 `purpose=EXPENSE` 여야 한다.
             없음·타인·사용 불가는 `3003`, 용도 불일치는 `3401`
+
+    FixedExpenseMonthlySyncRequest:
+      type: object
+      required: [year, month]
+      description: "**연·월을 Body 로 받는다**(FR-421). Path·Query 를 쓰지 않는다"
+      properties:
+        year: { type: integer, description: "재작성할 연도. 누락·범위 오류는 `3403`" }
+        month: { type: integer, minimum: 1, maximum: 12 }
+        overwriteModified:
+          type: boolean
+          default: false
+          description: |
+            사용자가 직접 고친 행(`modified=true`)까지 관리 값으로 되돌릴지.
+
+            **기본은 `false`(보존)** — 되돌리기가 파괴적이라 사용자가 일부러 넣은 값이
+            사라지므로 명시적으로 요청할 때만 한다. 화면에서 확인을 받는 것을 전제한다.
+
+            `true` 면 ③보존이 ②갱신으로 넘어가고 `modified` 표시가 내려간다. 표시가
+            내려가야 이후 설정 수정의 자동 반영이 이 달에 다시 닿는다
+
+    FixedExpenseMonthlySyncResponse:
+      type: object
+      description: |
+        네 처리의 건수와 **재작성 후**의 목록.
+
+        건수를 넷으로 나누는 것은 합쳐서 "N건 처리"로 주면 무엇이 일어났는지 알 수 없기
+        때문이다 — 특히 `keptCount` 와 `deletedCount` 는 "왜 내가 고친 값이 그대로인가",
+        "왜 행이 사라졌는가"에 직접 답한다.
+      properties:
+        list:
+          type: array
+          items: { $ref: "#/components/schemas/FixedExpenseMonthlyResponse" }
+          description: |
+            재작성 **후** 그 달의 목록. 4.5 의 `list[]` 와 같은 구조다.
+            ④로 사라진 행은 여기 없으므로 길이는 `created + updated + kept` 다
+        year: { type: integer }
+        month: { type: integer }
+        createdCount: { type: integer, description: "① 새로 만든 내역 수(신규 등록분 포함)" }
+        updatedCount: { type: integer, description: "② 관리 값으로 갱신한 내역 수" }
+        keptCount: { type: integer, description: "③ 직접 수정 행이라 손대지 않은 수" }
+        deletedCount: { type: integer, description: "④ 기간 밖이 되어 없앤 내역 수" }
+        total: { type: integer, format: int64, description: 재작성 후 그 달 고정지출 합계 }
 
     LedgerItemResponse:
       type: object

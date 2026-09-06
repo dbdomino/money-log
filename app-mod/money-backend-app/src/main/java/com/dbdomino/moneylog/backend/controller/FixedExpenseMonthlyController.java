@@ -1,8 +1,10 @@
 package com.dbdomino.moneylog.backend.controller;
 
 import com.dbdomino.moneylog.backend.dto.request.FixedExpenseMonthlyListQuery;
+import com.dbdomino.moneylog.backend.dto.request.FixedExpenseMonthlySyncRequest;
 import com.dbdomino.moneylog.backend.dto.response.FixedExpenseMonthlyListResponse;
 import com.dbdomino.moneylog.backend.dto.response.FixedExpenseMonthlyResponse;
+import com.dbdomino.moneylog.backend.dto.response.FixedExpenseMonthlySyncResponse;
 import com.dbdomino.moneylog.backend.security.AuthPrincipal;
 import com.dbdomino.moneylog.backend.service.FixedExpenseMonthlyService;
 import com.dbdomino.moneylog.common.api.RestResponseDto;
@@ -12,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -93,5 +96,54 @@ public class FixedExpenseMonthlyController {
             @RequestBody Map<String, Object> body) {
         return RestResponseDto.ok(
                 monthlyService.update(principal, fixedExpenseId, year, month, body));
+    }
+
+    /**
+     * 4.9 월별 내역 재작성 — 그 달을 설정대로 다시 맞춘다.
+     *
+     * <p><b>연·월을 Body 로 받는다</b>(FR-421). Path 나 Query 를 쓰지 않는다 — 이 저장소의
+     * POST 는 필요한 값을 전부 Body 로 받는다.
+     *
+     * <p>네 처리를 <b>한 트랜잭션</b>에서 하고 각 건수를 돌려준다(FR-414).
+     *
+     * <pre>{@code
+     * ① 생성  기간에 걸리는데 행이 없다(신규 등록분 포함)
+     * ② 갱신  행이 있고 modified=false
+     * ③ 보존  행이 있고 modified=true
+     * ④ 삭제  기간이 그 연·월을 더는 포함하지 않는다
+     * }</pre>
+     *
+     * <p><b>④가 이 API 가 필요한 이유다.</b> 설정의 적용 기간을 줄이면 기간 밖이 된 행이
+     * 남는데, 자동 반영(FR-412)은 값 갱신만 하고 삭제하지 않는다. 그 정리를 여기서 한다.
+     *
+     * <p><b>지난 달에도 쓸 수 있다</b>(FR-413). 자동 반영이 미래 달만 건드리는 것과
+     * 다르며, "지난 달을 새 설정값으로 맞추고 싶다"에 답하는 명시적 경로다.
+     *
+     * <p><b>결과 목록을 함께 돌려준다</b>(FR-415) — 호출 후 재조회가 필요 없어야 화면이
+     * 한 번의 왕복으로 끝난다.
+     */
+    @PostMapping(value = "/sync", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public RestResponseDto<FixedExpenseMonthlySyncResponse> sync(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @RequestBody FixedExpenseMonthlySyncBody body) {
+        return RestResponseDto.ok(monthlyService.sync(principal,
+                FixedExpenseMonthlySyncRequest.of(
+                        body.year(), body.month(), body.overwriteModified())));
+    }
+
+    /**
+     * 4.9 의 요청 Body.
+     *
+     * <p>세 값을 {@code Integer}·{@code Boolean} 으로 받는다 — 원시 타입으로 받으면
+     * Jackson 이 {@code 0}·{@code false} 를 채워 <b>"보내지 않았다"를 가릴 수 없다.</b>
+     * 연·월 누락은 {@code 3403} 이어야 하는데 {@code 0} 이 채워지면 "월 0" 이라는 다른
+     * 오류가 된다.
+     *
+     * @param year              재작성할 연도
+     * @param month             재작성할 월(1~12)
+     * @param overwriteModified 직접 수정분까지 되돌릴지. 생략하면 {@code false}(보존)
+     */
+    public record FixedExpenseMonthlySyncBody(Integer year, Integer month,
+                                              Boolean overwriteModified) {
     }
 }

@@ -195,19 +195,19 @@ spec.md 의 스토리 순서(US1~US5)가 아니라 **우선순위 순서**(P1 �
 
 ### 테스트
 
-- [ ] T063 [P] [US4] `.../backend/sync/PropagationRangeIT.java` — quickstart #30·#31·#32·#33 (SC-405). **T029 가 만든 자동 반영의 네 갈래를 전부 건다**: 미래 달 `modified=false` 는 **따라가고**(#30), 미래 달 `modified=true` 는 **안 바뀌고**(#31), **지난 달**은 안 바뀌고(#32), **이번 달**도 안 바뀐다(#33). **#33 이 판단이 필요했던 지점**이다 — 포함하면 월세를 올렸을 때 이번 달 금액이 소급해 바뀐다
-- [ ] T064 [P] [US4] `.../backend/sync/SyncRewriteIT.java` — quickstart #34·#36·#37. 지난 달을 재작성하면 관리 값으로 갱신되고(#34, FR-413), 응답에 **건수 4개 + 결과 목록**이 함께 오며(#36, FR-415), 적용 기간을 줄인 뒤 기간 밖 달을 재작성하면 그 행이 **삭제되고 `deletedCount` 에 잡힌다**(#37). **#37 이 ④를 검증한다** — 자동 반영은 값 갱신만 하고 삭제하지 않으므로 재작성이 그 정리를 맡는다
-- [ ] T065 [P] [US4] `.../backend/sync/SyncOverwriteIT.java` — quickstart #35 (SC-406). `overwriteModified=true` 면 직접 수정분이 **관리 값으로 되돌아가고 `modified=false`** 가 된다. ③보존이 ②갱신으로 넘어가는 갈래다
-- [ ] T066 [P] [US4] `.../backend/sync/SyncMethodIT.java` — quickstart #38. 4.9 는 연·월을 **Body 로만** 받는다. Query·Path 로 보내면 받지 않는다(FR-421)
+- [X] T063 [P] [US4] `.../backend/sync/PropagationRangeIT.java` — quickstart #30·#31·#32·#33 (SC-405). **T029 가 만든 자동 반영의 네 갈래를 전부 건다**: 미래 달 `modified=false` 는 **따라가고**(#30), 미래 달 `modified=true` 는 **안 바뀌고**(#31), **지난 달**은 안 바뀌고(#32), **이번 달**도 안 바뀐다(#33). **#33 이 판단이 필요했던 지점**이다 — 포함하면 월세를 올렸을 때 이번 달 금액이 소급해 바뀐다
+- [X] T064 [P] [US4] `.../backend/sync/SyncRewriteIT.java` — quickstart #34·#36·#37. 지난 달을 재작성하면 관리 값으로 갱신되고(#34, FR-413), 응답에 **건수 4개 + 결과 목록**이 함께 오며(#36, FR-415), 적용 기간을 줄인 뒤 기간 밖 달을 재작성하면 그 행이 **삭제되고 `deletedCount` 에 잡힌다**(#37). **#37 이 ④를 검증한다** — 자동 반영은 값 갱신만 하고 삭제하지 않으므로 재작성이 그 정리를 맡는다
+- [X] T065 [P] [US4] `.../backend/sync/SyncOverwriteIT.java` — quickstart #35 (SC-406). `overwriteModified=true` 면 직접 수정분이 **관리 값으로 되돌아가고 `modified=false`** 가 된다. ③보존이 ②갱신으로 넘어가는 갈래다
+- [X] T066 [P] [US4] `.../backend/sync/SyncMethodIT.java` — quickstart #38. 4.9 는 연·월을 **Body 로만** 받는다. Query·Path 로 보내면 받지 않는다(FR-421)
 
 ### 구현
 
-- [ ] T067 [P] [US4] `.../backend/dto/request/FixedExpenseMonthlySyncRequest.java` — `year` · `month` · `overwriteModified`(기본 `false`). **연·월을 Body 에 둔다**(FR-421). 범위 오류는 **`3403`**
-- [ ] T068 [P] [US4] `.../backend/dto/response/FixedExpenseMonthlySyncResponse.java` — `list` + `year` · `month` · `createdCount` · `updatedCount` · `keptCount` · `deletedCount` 를 **형제 필드**로 둔다
-- [ ] T069 [US4] `.../backend/service/FixedExpenseSyncService.java` 에 재작성의 **①생성 ②갱신**을 넣는다 — ① 기간에 걸리는데 그 연·월 행이 없으면 T010 의 팩토리로 만들고, ② 행이 있고 `modified=false` 면 관리 값으로 갱신한다(FR-414)
-- [ ] T070 [US4] `.../backend/service/FixedExpenseSyncService.java` 에 **③보존 ④삭제**와 `overwriteModified` 를 더한다 — ③ 행이 있고 `modified=true` 면 그대로 두되 `overwriteModified=true` 면 ②로 넘기고 `modified` 표시를 내린다, ④ 행이 있는데 적용 기간이 그 연·월을 더는 포함하지 않으면 삭제한다
-- [ ] T071 [US4] `.../backend/service/FixedExpenseSyncService.java` 의 재작성을 **한 트랜잭션**으로 묶고 결과 목록을 함께 돌려준다(FR-415) — 호출 후 재조회가 필요 없어야 화면이 한 번의 왕복으로 끝난다
-- [ ] T072 [US4] `.../backend/controller/FixedExpenseMonthlyController.java` 에 4.9 를 더한다 — `POST /api/v1/fixed-expenses/monthly/sync`
+- [X] T067 [P] [US4] `.../backend/dto/request/FixedExpenseMonthlySyncRequest.java` — `year` · `month` · `overwriteModified`(기본 `false`). **연·월을 Body 에 둔다**(FR-421). 범위 오류는 **`3403`**
+- [X] T068 [P] [US4] `.../backend/dto/response/FixedExpenseMonthlySyncResponse.java` — `list` + `year` · `month` · `createdCount` · `updatedCount` · `keptCount` · `deletedCount` 를 **형제 필드**로 둔다
+- [X] T069 [US4] `.../backend/service/FixedExpenseSyncService.java` 에 재작성의 **①생성 ②갱신**을 넣는다 — ① 기간에 걸리는데 그 연·월 행이 없으면 T010 의 팩토리로 만들고, ② 행이 있고 `modified=false` 면 관리 값으로 갱신한다(FR-414)
+- [X] T070 [US4] `.../backend/service/FixedExpenseSyncService.java` 에 **③보존 ④삭제**와 `overwriteModified` 를 더한다 — ③ 행이 있고 `modified=true` 면 그대로 두되 `overwriteModified=true` 면 ②로 넘기고 `modified` 표시를 내린다, ④ 행이 있는데 적용 기간이 그 연·월을 더는 포함하지 않으면 삭제한다
+- [X] T071 [US4] `.../backend/service/FixedExpenseSyncService.java` 의 재작성을 **한 트랜잭션**으로 묶고 결과 목록을 함께 돌려준다(FR-415) — 호출 후 재조회가 필요 없어야 화면이 한 번의 왕복으로 끝난다
+- [X] T072 [US4] `.../backend/controller/FixedExpenseMonthlyController.java` 에 4.9 를 더한다 — `POST /api/v1/fixed-expenses/monthly/sync`
 
 **Checkpoint**: 자동과 수동의 경계가 서고, 지난 달도 설정대로 다시 맞출 수 있다
 

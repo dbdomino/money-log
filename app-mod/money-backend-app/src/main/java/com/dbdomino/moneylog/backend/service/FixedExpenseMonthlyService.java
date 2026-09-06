@@ -1,9 +1,11 @@
 package com.dbdomino.moneylog.backend.service;
 
 import com.dbdomino.moneylog.backend.dto.request.FixedExpenseMonthlyListQuery;
+import com.dbdomino.moneylog.backend.dto.request.FixedExpenseMonthlySyncRequest;
 import com.dbdomino.moneylog.backend.dto.request.FixedExpenseMonthlyUpdateRequest;
 import com.dbdomino.moneylog.backend.dto.request.PatchFields;
 import com.dbdomino.moneylog.backend.dto.response.FixedExpenseMonthlyListResponse;
+import com.dbdomino.moneylog.backend.dto.response.FixedExpenseMonthlySyncResponse;
 import com.dbdomino.moneylog.backend.dto.response.FixedExpenseMonthlyResponse;
 import com.dbdomino.moneylog.backend.mapper.FixedExpenseMonthlyMapper;
 import com.dbdomino.moneylog.backend.security.AuthPrincipal;
@@ -54,17 +56,20 @@ public class FixedExpenseMonthlyService {
     private final FixedExpenseMonthlyFactory monthlyFactory;
     private final FixedExpenseMonthlyMapper monthlyMapper;
     private final ReferenceResolver referenceResolver;
+    private final FixedExpenseSyncService syncService;
 
     public FixedExpenseMonthlyService(UserFixedExpenseRepository fixedExpenseRepository,
                                       UserFixedExpenseMonthlyRepository monthlyRepository,
                                       FixedExpenseMonthlyFactory monthlyFactory,
                                       FixedExpenseMonthlyMapper monthlyMapper,
-                                      ReferenceResolver referenceResolver) {
+                                      ReferenceResolver referenceResolver,
+                                      FixedExpenseSyncService syncService) {
         this.fixedExpenseRepository = fixedExpenseRepository;
         this.monthlyRepository = monthlyRepository;
         this.monthlyFactory = monthlyFactory;
         this.monthlyMapper = monthlyMapper;
         this.referenceResolver = referenceResolver;
+        this.syncService = syncService;
     }
 
     /**
@@ -141,6 +146,39 @@ public class FixedExpenseMonthlyService {
                     principal.idKey());
         }
         return created;
+    }
+
+    /**
+     * 4.9 재작성 — 네 처리를 하고 <b>재작성 후의 목록·합계를 함께</b> 돌려준다(FR-415).
+     *
+     * <p>네 처리 자체는 {@link FixedExpenseSyncService#rewrite} 가 하고 여기서는 그 결과를
+     * 조회 응답으로 조립한다. 두 일을 나눈 것은 <b>성격이 다르기 때문</b>이다 — 반영은
+     * "설정을 내역에 옮겨 담는다"이고 조립은 "그 달의 지금 상태를 보여준다"다.
+     *
+     * <p><b>목록은 재작성 후 상태다.</b> ④삭제로 사라진 행은 목록에 없으므로
+     * {@code list} 의 길이는 {@code created + updated + kept} 이며 네 건수의 합과 다르다.
+     *
+     * <p><b>한 트랜잭션이다.</b> 재작성과 재조회가 함께 커밋되거나 함께 되돌아간다 —
+     * 중간 상태가 응답으로 나가는 일이 없다.
+     */
+    @Transactional
+    public FixedExpenseMonthlySyncResponse sync(AuthPrincipal principal,
+                                                FixedExpenseMonthlySyncRequest request) {
+        YearMonthValue yearMonth = request.yearMonth();
+        FixedExpenseSyncService.SyncResult result =
+                syncService.rewrite(principal, yearMonth, request.overwriteModified());
+
+        List<UserFixedExpenseMonthly> rows = monthlyRepository.findByUserIdKeyAndYearAndMonth(
+                principal.idKey(), yearMonth.year(), yearMonth.month());
+        long total = rows.stream().mapToLong(UserFixedExpenseMonthly::getAmount).sum();
+        List<FixedExpenseMonthlyResponse> items = rows.stream()
+                .sorted(Comparator.comparing(UserFixedExpenseMonthly::getPaymentDate)
+                        .thenComparing(row -> row.getFixedExpense().getIdx()))
+                .map(monthlyMapper::toResponse)
+                .toList();
+
+        return new FixedExpenseMonthlySyncResponse(items, yearMonth.year(), yearMonth.month(),
+                result.created(), result.updated(), result.kept(), result.deleted(), total);
     }
 
     /**

@@ -138,13 +138,12 @@ PostgreSQL(`moneylogdb`, 스키마 `moneylog`)이 떠 있어야 한다.
 | 002 회원·인증 | ✅ 구현됨 | 16건 |
 | 003 수단·지출유형 | ✅ 구현됨 | 13건 |
 | 004 지출·소득·할부·엑셀 | ✅ 구현됨 | 12건 |
-| **005 고정지출·가계부** | ✅ 구현됨 | 8건 (4.1~4.8) |
-| **005 재작성** | ⏳ **구현 중** | 1건 (4.9) — 아직 없다 |
+| **005 고정지출·가계부** | ✅ 구현됨 | 9건 (4.1~4.9) |
 | 006 목표금액·통계 | ⏳ 미착수 | — |
 
-합계 **49개 오퍼레이션 / 33개 경로**(헬스체크 포함).
+합계 **50개 오퍼레이션 / 34개 경로**(헬스체크 포함).
 
-005 의 남은 1건이 붙으면 `openapi.yaml` 과 `OpenApiDocumentIT.REPRESENTATIVE_PATHS` 를 함께 늘린다. `openapi.yaml` 을 잊으면 `OpenApiDocumentIT` 가 먼저 깨진다.
+006 이 붙으면 `openapi.yaml` 과 `OpenApiDocumentIT.REPRESENTATIVE_PATHS` 를 함께 늘린다. `openapi.yaml` 을 잊으면 `OpenApiDocumentIT` 가 먼저 깨진다.
 
 ---
 
