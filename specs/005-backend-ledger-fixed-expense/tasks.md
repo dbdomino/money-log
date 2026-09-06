@@ -225,6 +225,10 @@ spec.md 의 스토리 순서(US1~US5)가 아니라 **우선순위 순서**(P1 �
 - [X] T078 `./gradlew :app-mod:money-backend-app:test` 를 돌려 **002~004 기존 시험과 005 신규 시험이 모두** 통과하는지 확인한다. **`./gradlew test`(전체)는 쓰지 않는다** — `money-app` 의 레거시 시험 3건이 `init` 커밋부터 깨져 있다
 - [X] T079 quickstart.md §4 완료 판정 표의 전 항목과 plan.md § Constitution Check 의 헌장 게이트 6개를 훑는다 — 시나리오 1~55 와 22-1·22-2(**57건**), SC-401~409, 동시성(#15 의 뒷부분), 말일 보정(#18·#19 윤년), SC-409 의 세 다리(#9·**#22-1**·#44), 참조 사후 무효화(**#22-2**), 자동 반영 4갈래(#30~#33), 재작성 4처리(#34·#35·#37), 두 이름 규칙 공존(#44). **Complexity Tracking 에 적을 위반이 없다** — 005 에는 래퍼 예외도 로깅 제외도 없다
 
+- [X] T080 구현 검토(커밋 기준)에서 찾은 **실질 결함 1건**을 고친다 — `FixedExpenseSyncService.rewrite` 가 ④삭제 뒤에 조회 목록 전체를 `saveAll` 에 넘겨, 한 달에 **④삭제와 ②갱신이 함께** 일어나면 `ObjectDeletedException: deleted instance passed to merge` 로 **`9000`** 이 나갔다. Spring Data 의 파생 삭제는 벌크 DELETE 가 아니라 "조회 후 `em.remove`" 라 그 행이 `removed` 상태가 되기 때문이다. **값을 실제로 바꾼 행만** 저장 대상에 담도록 고치고 `propagate` 도 같은 형태로 정리했다. `deletedCount` 는 설정 개수 대신 리포지토리가 돌려주는 실제 삭제 행 수를 쓴다
+- [X] T081 그 결함이 여덟 단계 내내 드러나지 않은 이유는 **처리를 하나씩만 거는 시험**뿐이었기 때문이다. `sync/SyncBoundaryIT` 를 더해 조합을 건다 — 네 처리가 한 호출에 전부 섞이는 경우, 삭제+보존, 삭제+overwrite, 빈 달, 두 번 재작성(멱등), 말일 보정 재적용, **남의 행이 함께 지워지지 않는지**(삭제 쿼리에 소유자 조건이 없다). `SyncRewriteIT` 에도 삭제+갱신 조합 1건을 더했다
+- [X] T082 낡은 서술을 고친다 — `FixedExpenseSyncService` 클래스 javadoc 의 "재작성은 US4 에서 만든다. 지금은 자동 반영만 있다"와 `FixedExpenseMonthlyController` 의 "지금은 4.5 뿐이고 4.6 은 US3, 4.9 는 US4 에서 붙는다". 둘 다 구현이 끝난 뒤 남은 문장이라 읽는 사람을 틀린 그림으로 이끈다
+- [X] T083 `contracts/monthly-lifecycle.md` §4 에 "넷이 한 호출에 섞인다" 절을, `quickstart.md` 에 시나리오 **37-1·37-2** 를 더한다 — 006 이후에도 같은 구조를 쓸 사람이 이 함정을 다시 밟지 않도록 근거를 남긴다
 ---
 
 ## Dependencies & Execution Order

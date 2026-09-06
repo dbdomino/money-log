@@ -151,6 +151,36 @@ class SyncRewriteIT extends AbstractSyncIT {
     }
 
     @Test
+    @DisplayName("#37 한 달에서 삭제와 갱신이 함께 일어나도 안전하다")
+    void deleteAndUpdateInTheSameMonth() throws Exception {
+        Fixture fixture = prepare();
+        // 두 번째 고정지출. 기간이 넓어 계속 살아남는다.
+        long survivor = createFixedExpense(fixture.token(), "통신비", fixture.paymentMethodId(),
+                defaultGroupId(fixture.member(), "통신"), 60000L, 10, wideStart(), wideEnd());
+        YearMonth target = futureMonth(6);
+        openMonth(fixture, target);
+        assertThat(countMonthly(fixture.member(), target.getYear(),
+                target.getMonthValue())).isEqualTo(2);
+
+        // 첫 번째만 기간을 줄여 target 밖으로 밀어낸다. 이제 그 달에서
+        // ④삭제(월세)와 ②갱신(통신비)이 함께 일어난다.
+        shrinkPeriodTo(fixture, futureMonth(2));
+
+        JsonNode response = sync(fixture, target);
+
+        // 삭제된 Entity 를 저장 대상에 함께 넘기면 여기서 터진다.
+        assertThat(resCode(response)).isEqualTo(200);
+        JsonNode data = response.get("data");
+        assertThat(data.get("deletedCount").asInt()).isEqualTo(1);
+        assertThat(data.get("updatedCount").asInt()).isEqualTo(1);
+        assertThat(data.get("list")).hasSize(1);
+        assertThat(data.get("list").get(0).get("fixedExpenseId").asLong()).isEqualTo(survivor);
+        // 지운 행이 되살아나지 않았는지 DB 로 확인한다.
+        assertThat(countMonthly(fixture.member(), target.getYear(),
+                target.getMonthValue())).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("#37 자동 반영은 그 행을 지우지 않는다 — 그래서 4.9 가 필요하다")
     void propagationLeavesOutOfRangeRowsBehind() throws Exception {
         Fixture fixture = prepare();

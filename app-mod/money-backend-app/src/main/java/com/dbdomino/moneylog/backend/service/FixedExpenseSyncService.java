@@ -41,7 +41,18 @@ import org.springframework.transaction.annotation.Transactional;
  * (예: 종료를 2027-02 → 2026-12) 이미 만들어진 2027-01·02 행이 기간 밖으로 남는다.
  * 그 정리는 4.9 의 ④가 맡는다 — 사용자가 명시적으로 부르는 경로다.
  *
- * <p><b>재작성(4.9)은 US4 에서 만든다.</b> 지금은 자동 반영만 있다.
+ * <h2>손댄 행만 저장한다</h2>
+ *
+ * <p>두 메서드 다 <b>실제로 값을 바꾼 행만</b> 모아 {@code saveAll} 에 넘긴다. 조회한
+ * 목록을 통째로 넘기지 않는 이유가 있다 — {@link #rewrite} 는 같은 트랜잭션에서
+ * <b>삭제도</b> 하는데, Spring Data 의 파생 삭제 쿼리({@code deleteBy...})는 벌크
+ * DELETE 가 아니라 "조회 후 {@code em.remove}" 라 그 행이 영속성 컨텍스트에서
+ * {@code removed} 상태가 된다. 그 인스턴스가 {@code save} 로 들어가면 Hibernate 가
+ * {@code ObjectDeletedException: deleted instance passed to merge} 를 던지고
+ * 사용자에게는 {@code 9000} 이 나간다.
+ *
+ * <p>한 달에 <b>④삭제와 ②갱신이 함께</b> 일어날 때만 터지므로 둘 중 하나만 있는 시험으로는
+ * 드러나지 않는다({@code SyncRewriteIT#deleteAndUpdateInTheSameMonth} 가 그 조합을 건다).
  *
  * @see <a href="../../../../../../../../specs/005-backend-ledger-fixed-expense/contracts/monthly-lifecycle.md">monthly-lifecycle.md §3</a>
  */
@@ -107,7 +118,9 @@ public class FixedExpenseSyncService {
         YearMonthValue start = YearMonthValue.of(setting.getStartYear(), setting.getStartMonth());
         YearMonthValue end = YearMonthValue.of(setting.getEndYear(), setting.getEndMonth());
 
-        int updated = 0;
+        // **손댄 행만 담는다.** 건너뛴 행까지 저장 대상에 넣으면 "무엇을 바꿨는가"가
+        // 코드에서 사라지고, 뒤에 삭제가 끼는 순간 rewrite 가 겪은 것과 같은 사고가 난다.
+        List<UserFixedExpenseMonthly> applied = new ArrayList<>();
         for (UserFixedExpenseMonthly row : targets) {
             YearMonthValue rowMonth = YearMonthValue.of(row.getYear(), row.getMonth());
             if (!rowMonth.isWithin(start, end)) {
@@ -116,12 +129,12 @@ public class FixedExpenseSyncService {
                 continue;
             }
             apply(row, setting, rowMonth);
-            updated++;
+            applied.add(row);
         }
-        if (updated > 0) {
-            monthlyRepository.saveAll(targets);
+        if (!applied.isEmpty()) {
+            monthlyRepository.saveAll(applied);
         }
-        return updated;
+        return applied.size();
     }
 
     /**
@@ -166,9 +179,10 @@ public class FixedExpenseSyncService {
                 .findByUserIdKeyAndYearAndMonth(
                         principal.idKey(), yearMonth.year(), yearMonth.month());
 
-        int updated = 0;
         int kept = 0;
         List<Long> toDelete = new ArrayList<>();
+        // ②의 대상만 담는다. existing 을 통째로 저장하면 안 된다 — 아래 참고.
+        List<UserFixedExpenseMonthly> toUpdate = new ArrayList<>();
 
         for (UserFixedExpenseMonthly row : existing) {
             Long settingIdx = row.getFixedExpense().getIdx();
@@ -188,16 +202,31 @@ public class FixedExpenseSyncService {
             if (Boolean.TRUE.equals(row.getModified())) {
                 row.setModified(false);
             }
-            updated++;
+            toUpdate.add(row);
         }
 
+        // 지운 행 수를 리포지토리가 돌려주는 값으로 센다. toDelete 의 크기는 "설정 개수"라
+        // 유니크 제약 덕에 지금은 같지만, 세는 대상이 다르면 언젠가 갈린다.
+        //
+        // 소유자 조건이 이 삭제에는 없다. toDelete 가 principal 로 좁힌 existing 에서 나온
+        // 값이라 안전하며, fixed_expense_idx 는 회원 하나에만 속한다.
+        long deleted = 0;
         if (!toDelete.isEmpty()) {
-            monthlyRepository.deleteByFixedExpenseIdxInAndYearAndMonth(
+            deleted = monthlyRepository.deleteByFixedExpenseIdxInAndYearAndMonth(
                     toDelete, yearMonth.year(), yearMonth.month());
         }
-        if (updated > 0) {
-            monthlyRepository.saveAll(existing);
+        // **삭제된 Entity 를 여기 넘기면 안 된다.** Spring Data 의 파생 삭제 쿼리는
+        // 벌크 DELETE 가 아니라 "조회 후 em.remove"라, ④로 지운 행이 영속성 컨텍스트에서
+        // removed 상태가 된다. 그 인스턴스가 save 로 들어가면 Hibernate 가
+        // `ObjectDeletedException: deleted instance passed to merge` 를 던지고
+        // 사용자에게는 9000 이 나간다.
+        //
+        // 한 달에 ④삭제와 ②갱신이 **함께** 일어날 때만 터지므로, 둘 중 하나만 있는
+        // 시험으로는 드러나지 않는다.
+        if (!toUpdate.isEmpty()) {
+            monthlyRepository.saveAll(toUpdate);
         }
+        int updated = toUpdate.size();
 
         // ① 없는 것만 만든다. 이미 있으면 0행이라 위에서 처리한 행과 겹치지 않는다.
         int created = 0;
@@ -209,7 +238,7 @@ public class FixedExpenseSyncService {
                     values.paymentMethodIdx(), values.expendGroupIdx(), principal.idKey());
         }
 
-        return new SyncResult(created, updated, kept, toDelete.size());
+        return new SyncResult(created, updated, kept, Math.toIntExact(deleted));
     }
 
     /**
