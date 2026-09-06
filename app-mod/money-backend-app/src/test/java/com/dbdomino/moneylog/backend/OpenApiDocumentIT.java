@@ -41,7 +41,11 @@ class OpenApiDocumentIT extends AbstractApiIT {
             "/api/v1/expend-groups",                   // 003 지출유형
             "/api/v1/expenses",                        // 004 지출
             "/api/v1/incomes",                         // 004 소득
-            "/api/v1/expense-incomes/excel/upload");   // 004 엑셀
+            "/api/v1/expense-incomes/excel/upload",    // 004 엑셀
+            "/api/v1/fixed-expenses",                  // 005 고정지출
+            "/api/v1/ledger/monthly",                  // 005 가계부
+            "/api/v1/expend-targets",                  // 006 목표금액
+            "/api/v1/statistics/monthly/save");        // 006 통계
 
     private JsonNode fetchDocument() throws Exception {
         String body = mockMvc.perform(MockMvcRequestBuilders.get(DOCS_URL))
@@ -67,9 +71,10 @@ class OpenApiDocumentIT extends AbstractApiIT {
         paths.propertyNames().forEach(documented::add);
 
         assertThat(documented).containsAll(REPRESENTATIVE_PATHS);
-        // 004 까지 37개다. 005 가 9건을 더하면 이 하한도 함께 올린다.
+        // 006 까지 40개 경로 · 56개 오퍼레이션이다. 002~006 이 백엔드의 전부이므로
+        // 이 하한은 더 오르지 않는다 — 줄어들면 스캔 범위나 컨트롤러 등록을 의심한다.
         assertThat(documented).as("경로 수가 갑자기 줄었다면 스캔 범위를 의심한다")
-                .hasSizeGreaterThanOrEqualTo(20);
+                .hasSizeGreaterThanOrEqualTo(40);
     }
 
     @Test

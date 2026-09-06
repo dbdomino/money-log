@@ -162,16 +162,16 @@ Spring Boot 멀티모듈이다. 저장소 루트 기준 경로를 쓴다.
 
 **Purpose**: 규격·구조·문서의 최종 정합. **006 이 마지막 기능이므로 백엔드 전체를 여기서 닫는다**
 
-- [ ] T054 [P] `.../backend/TargetStatisticsResponseContractIT.java` — quickstart #53 (SC-501). **6건 전부가 `{ resCode, data }` 이고 래퍼 예외가 없다.** 005 와 같이 파일을 돌려주는 API 도, 본문 없는 응답도 없다. 005 의 `LedgerFixedExpenseResponseContractIT` 를 본떠 만들되 "예외를 인정하는 시험"은 두지 않는다. 미인증 6건이 전부 `1001` 이고 그것도 래퍼임을 함께 단언한다
-- [ ] T055 [P] `.../backend/statistics/StatisticsStructureIT.java` — quickstart #51·#52·#54 (SC-509). **통계 상세 2종에 지출유형·수단으로 나가는 FK 가 0건**임을 `jdbc` 로 직접 확인한다(API 로는 볼 수 없다). 상세의 이름 컬럼이 **NOT NULL 로 채워져** 있고, 5.5 의 배열 3종이 `data.list` 규칙의 대상이 **아님**을 본다. **구현자가 "FK 가 빠진 실수"로 오해해 추가하면 이 시험이 잡는다**
-- [ ] T056 [P] AOP 요청~응답 로깅이 006 의 컨트롤러 둘에 걸리는지 확인한다 — 포인트컷이 `within(@RestController *)` 라 자동으로 걸린다. **제외 대상이 없다**(api-contract §10) — 바이너리 응답이 없다
-- [ ] T057 [P] `specs/006-backend-target-statistics/plan.md` § Source Code 의 파일 목록을 실제 구현과 맞춘다 — 특히 **`YearMonthValue` 를 "005 것 재사용"으로만 적어 둔 부분**은 T005 의 연 범위 확장을 반영해야 한다. 응답 DTO 이름도 `*Dto` 가 아니라 `*Response` 다(005 에서 같은 드리프트를 겪었다)
-- [ ] T058 `app-mod/money-backend-app/openapi.yaml` 과 `docs/API-문서.md` 에 006 의 6건을 더한다 — 50 → **56개 오퍼레이션**. `OpenApiDocumentIT` 의 양방향 대조가 빠뜨리면 먼저 깨지므로 **각 Phase 안에서 그 Phase 가 연 API 를 함께 적는다** — 목표금액 4건은 Phase 3 에서 이미 들어가 54 가 됐고, 여기서는 통계 2건을 더해 56 을 채운다. `REPRESENTATIVE_PATHS` 에 목표금액·통계를 하나씩 더하고 상태표의 006 행을 ✅ 로 바꾼다
-- [ ] T059 `git diff --stat sql/schema-moneylogdb.sql` 이 **비어 있는지** 확인한다(헌장 원칙 VI). 덤프가 바뀌었다면 원인을 찾는다 — 특히 **통계 상세에 FK 를 추가하려는 시도**나 **`usage_rate` 정밀도를 늘리려는 시도**가 있었는지 본다. 둘 다 001 의 결정을 번복하는 변경이며, 후자는 T012 의 상한 처리를 빠뜨렸을 때 나오는 반응이다
-- [ ] T060 `./gradlew :data-mod:test` 를 돌려 **80건**이 그대로 통과하는지 확인한다 — 006 은 `data-mod` 의 Entity·제약·시험을 바꾸지 않는다. 기준 수치는 005 까지의 결과다
-- [ ] T061 `./gradlew :app-mod:money-backend-app:test` 를 돌려 **002~005 기존과 006 신규가 모두** 통과하는지 확인한다. **`./gradlew test`(전체)는 쓰지 않는다** — `money-app` 의 레거시 시험 3건이 `init` 커밋부터 깨져 있다
-- [ ] T062 quickstart.md §4 완료 판정 표의 전 항목과 plan.md § Constitution Check 의 헌장 게이트 6개를 훑는다 — 시나리오 1~54, SC-501~511, `null` vs `0` 비대칭(#5·6·7·8), 수단별 모집단 두 집합(#27·28·29), 저장본 불변 3갈래(#39·43·44), 사용률 상한(#31), FK 0건(#51), 005 와의 경계(#36)
-- [ ] T063 **백엔드 Phase 완료를 기록한다** — quickstart.md §5 가 이 지점을 가리킨다. 002~006 의 API 56건이 전부 섰고 `sql/schema-moneylogdb.sql` 은 001 이후 한 번도 바뀌지 않았다. `docs/API-문서.md` 의 상태표에서 006 을 ✅ 로 바꾸고 "006 이 붙으면…" 안내 문장을 마무리 문장으로 고친다
+- [X] T054 [P] `.../backend/TargetStatisticsResponseContractIT.java` — quickstart #53 (SC-501). **6건 전부가 `{ resCode, data }` 이고 래퍼 예외가 없다.** 005 와 같이 파일을 돌려주는 API 도, 본문 없는 응답도 없다. 005 의 `LedgerFixedExpenseResponseContractIT` 를 본떠 만들되 "예외를 인정하는 시험"은 두지 않는다. 미인증 6건이 전부 `1001` 이고 그것도 래퍼임을 함께 단언한다
+- [X] T055 [P] `.../backend/statistics/StatisticsStructureIT.java` — quickstart #51·#52·#54 (SC-509). **통계 상세 2종에 지출유형·수단으로 나가는 FK 가 0건**임을 `jdbc` 로 직접 확인한다(API 로는 볼 수 없다). 상세의 이름 컬럼이 **NOT NULL 로 채워져** 있고, 5.5 의 배열 3종이 `data.list` 규칙의 대상이 **아님**을 본다. **구현자가 "FK 가 빠진 실수"로 오해해 추가하면 이 시험이 잡는다**
+- [X] T056 [P] AOP 요청~응답 로깅이 006 의 컨트롤러 둘에 걸리는지 확인한다 — 포인트컷이 `within(@RestController *)` 라 자동으로 걸린다. **제외 대상이 없다**(api-contract §10) — 바이너리 응답이 없다
+- [X] T057 [P] `specs/006-backend-target-statistics/plan.md` § Source Code 의 파일 목록을 실제 구현과 맞춘다 — 특히 **`YearMonthValue` 를 "005 것 재사용"으로만 적어 둔 부분**은 T005 의 연 범위 확장을 반영해야 한다. 응답 DTO 이름도 `*Dto` 가 아니라 `*Response` 다(005 에서 같은 드리프트를 겪었다)
+- [X] T058 `app-mod/money-backend-app/openapi.yaml` 과 `docs/API-문서.md` 에 006 의 6건을 더한다 — 50 → **56개 오퍼레이션**. `OpenApiDocumentIT` 의 양방향 대조가 빠뜨리면 먼저 깨지므로 **각 Phase 안에서 그 Phase 가 연 API 를 함께 적는다** — 목표금액 4건은 Phase 3 에서 이미 들어가 54 가 됐고, 여기서는 통계 2건을 더해 56 을 채운다. `REPRESENTATIVE_PATHS` 에 목표금액·통계를 하나씩 더하고 상태표의 006 행을 ✅ 로 바꾼다
+- [X] T059 `git diff --stat sql/schema-moneylogdb.sql` 이 **비어 있는지** 확인한다(헌장 원칙 VI). 덤프가 바뀌었다면 원인을 찾는다 — 특히 **통계 상세에 FK 를 추가하려는 시도**나 **`usage_rate` 정밀도를 늘리려는 시도**가 있었는지 본다. 둘 다 001 의 결정을 번복하는 변경이며, 후자는 T012 의 상한 처리를 빠뜨렸을 때 나오는 반응이다
+- [X] T060 `./gradlew :data-mod:test` 를 돌려 **80건**이 그대로 통과하는지 확인한다 — 006 은 `data-mod` 의 Entity·제약·시험을 바꾸지 않는다. 기준 수치는 005 까지의 결과다
+- [X] T061 `./gradlew :app-mod:money-backend-app:test` 를 돌려 **002~005 기존과 006 신규가 모두** 통과하는지 확인한다. **`./gradlew test`(전체)는 쓰지 않는다** — `money-app` 의 레거시 시험 3건이 `init` 커밋부터 깨져 있다
+- [X] T062 quickstart.md §4 완료 판정 표의 전 항목과 plan.md § Constitution Check 의 헌장 게이트 6개를 훑는다 — 시나리오 1~54, SC-501~511, `null` vs `0` 비대칭(#5·6·7·8), 수단별 모집단 두 집합(#27·28·29), 저장본 불변 3갈래(#39·43·44), 사용률 상한(#31), FK 0건(#51), 005 와의 경계(#36)
+- [X] T063 **백엔드 Phase 완료를 기록한다** — quickstart.md §5 가 이 지점을 가리킨다. 002~006 의 API 56건이 전부 섰다. `sql/schema-moneylogdb.sql` 의 마지막 변경은 002 가 로그인 이력에 컬럼 하나를 더한 `1edf308`(2026-09-02)이고 **그 뒤 002~006 의 구현 커밋은 덤프를 한 번도 바꾸지 않았다** — "001 이후 무변경"이 아니라 "구현 단계 무변경"이 정확한 표현이다. `docs/API-문서.md` 의 상태표에서 006 을 ✅ 로 바꾸고 "006 이 붙으면…" 안내 문장을 마무리 문장으로 고친다
 
 ---
 

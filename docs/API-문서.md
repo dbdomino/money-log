@@ -139,11 +139,19 @@ PostgreSQL(`moneylogdb`, 스키마 `moneylog`)이 떠 있어야 한다.
 | 003 수단·지출유형 | ✅ 구현됨 | 13건 |
 | 004 지출·소득·할부·엑셀 | ✅ 구현됨 | 12건 |
 | **005 고정지출·가계부** | ✅ 구현됨 | 9건 (4.1~4.9) |
-| 006 목표금액·통계 | ⏳ 미착수 | — |
+| **006 목표금액·통계** | ✅ 구현됨 | 6건 (5.1~5.6) |
 
-합계 **50개 오퍼레이션 / 34개 경로**(헬스체크 포함).
+합계 **56개 오퍼레이션 / 40개 경로**(헬스체크 포함).
 
-006 이 붙으면 `openapi.yaml` 과 `OpenApiDocumentIT.REPRESENTATIVE_PATHS` 를 함께 늘린다. `openapi.yaml` 을 잊으면 `OpenApiDocumentIT` 가 먼저 깨진다.
+**백엔드 Phase 가 여기서 닫힌다.** 002~006 이 계획한 API 를 전부 세웠다.
+
+`sql/schema-moneylogdb.sql` 의 마지막 변경은 002 가 로그인 이력에 컬럼 하나를 더한
+`1edf308`(2026-09-02)이고, **그 뒤 002~006 의 구현 커밋은 스키마를 한 번도 바꾸지
+않았다.** 001 이 잡아 둔 15개 테이블 위에 API 56건이 그대로 올라갔다는 뜻이다.
+
+앞으로 API 를 더한다면 `openapi.yaml` 과 `OpenApiDocumentIT.REPRESENTATIVE_PATHS` 를
+함께 늘린다. `openapi.yaml` 을 잊으면 `OpenApiDocumentIT` 의 양방향 대조가 먼저 깨진다 —
+005·006 을 만드는 동안 실제로 여러 번 그 순서로 잡혔다.
 
 ---
 
