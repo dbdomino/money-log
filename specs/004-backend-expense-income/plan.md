@@ -147,7 +147,8 @@ specs/004-backend-expense-income/
 build.gradle                                     ~ money-backend-app 에 poi-ooxml 추가
 
 common-mod/src/main/java/com/dbdomino/moneylog/common/
-└── error/ErrorCode.java                         ~ 32xx·33xx·35xx 코드 13개 추가
+├── error/ErrorCode.java                           32xx·33xx·35xx 코드 13개가 이미 있다 — 확인만 한다
+└── error/GlobalExceptionHandler.java            ~ 업로드 크기 초과 매핑 정리 · `3502` 의 `errors[]` 를 실을 상세 실패 분기
 
 app-mod/money-backend-app/src/main/
 ├── java/com/dbdomino/moneylog/backend/
@@ -168,15 +169,17 @@ app-mod/money-backend-app/src/main/
 │   │   └── ExcelRowReader.java                  + POI 로 .xlsx 파싱
 │   ├── dto/
 │   │   ├── request/                             + 등록·수정 Request DTO
-│   │   └── response/                            + ExpenseDto·IncomeDto·ExcelImportResultDto
+│   │   └── response/                            + ExpenseResponse·IncomeResponse·ExcelImportResponse·ExcelRowError
 │   └── mapper/
 │       ├── ExpenseMapper.java                   + Entity ↔ DTO
 │       └── IncomeMapper.java                    + Entity ↔ DTO
 └── resources/application.yml                    ~ multipart max-file-size (엑셀)
 
 data-mod/src/main/java/com/dbdomino/moneylog/data/repository/
-├── UserExpenseRepository.java                   ~ 소유자 조회·할부 그룹 조회·중도상환 삭제
-└── UserIncomeRepository.java                    ~ 소유자 조회
+├── UserExpenseRepository.java                   ~ 할부 그룹 소유자 조회·미래 회차 카운트·시퀀스 채번
+├── UserPaymentMethodRepository.java             ~ 사용 중 전체 조회(3.11)·이름 조회(3.12)
+├── UserExpendGroupRepository.java               ~ 이름 조회(3.12)
+└── UserIncomeRepository.java                      소유자 조회가 이미 있다 — 수정할 것이 없다
 
 app-mod/money-backend-app/src/test/java/com/dbdomino/moneylog/backend/
 ├── expense/       + 일시불 지출 (US1)

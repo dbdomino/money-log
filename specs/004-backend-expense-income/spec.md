@@ -215,6 +215,6 @@
 - 저장 구조는 `001-backend-db-schema`에서 만들어졌다. 할부 시퀀스·CHECK·인덱스가 이미 DB에 있다
 - 인증은 `002-backend-member-auth`, 수단·지출유형은 `003-backend-payment-expend-group`이 제공한다
 - 소득 수단은 `purpose=INCOME`인 수단이어야 한다. 이 판정은 애플리케이션이 한다 — DB CHECK으로는 다른 테이블 값을 볼 수 없다
-- 엑셀 처리 라이브러리 선택은 구현 단계에서 정한다
+- 엑셀 처리는 Apache POI(`poi-ooxml`)를 쓴다. `.xlsx` 를 읽고 쓰는 것이 둘 다 필요하고, 양식에 데이터 유효성 목록(드롭다운)을 넣어야 하기 때문이다(research.md §1)
 - 월별 목록 조회는 이 기능이 아니라 `005-backend-ledger-fixed-expense`의 `LedgerMonthlyList`가 담당한다
 - 엑셀 업로드는 동기 처리다. 비동기 잡·진행률 표시는 범위 밖이다
