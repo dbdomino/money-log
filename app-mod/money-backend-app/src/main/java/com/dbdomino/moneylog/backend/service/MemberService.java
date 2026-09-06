@@ -80,6 +80,11 @@ public class MemberService {
         }
         if (fields.has("email")) {
             String email = fields.string("email");
+            // PATCH 는 Map 으로 받아 Bean Validation 이 돌지 않는다. 가입과 같은 형식
+            // 검사를 여기서 직접 한다 — 없으면 수정 경로로만 깨진 주소가 들어간다.
+            if (!MemberFieldRules.isValidEmail(email)) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "이메일 형식이 올바르지 않습니다.");
+            }
             // 자기 자신이 이미 쓰고 있는 값이면 중복이 아니다.
             if (email != null && !email.equalsIgnoreCase(user.getEmail())
                     && userRepository.existsByEmail(email)) {

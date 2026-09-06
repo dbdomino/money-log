@@ -80,4 +80,22 @@ public final class MemberFieldRules {
     public static boolean isValidPhone(String phone) {
         return phone == null || phone.matches(PHONE_REGEX);
     }
+
+    /**
+     * 이메일 형식 검사. {@code null} 은 허용된다 — 선택 항목이고 PATCH 에서는 "값 지움"이다.
+     *
+     * <p>가입은 {@code @Email} 애너테이션이 걸러 주지만 <b>PATCH 는 {@code Map} 으로
+     * 받아 Bean Validation 이 돌지 않는다.</b> 이 검사가 없으면 수정 경로로만 형식이
+     * 어긋난 값이 들어가, 나중에 그 이메일로 아이디를 찾는 사람이 영영 실패한다.
+     *
+     * <p>RFC 를 완전히 따르는 정규식은 쓰지 않는다 — 길고 느리며, 통과시켜야 할 주소를
+     * 막는 쪽이 더 흔한 사고다. {@code @Email} 과 같은 수준으로 "@ 앞뒤가 있고 공백이
+     * 없다"만 본다.
+     */
+    public static boolean isValidEmail(String email) {
+        return email == null || email.matches(EMAIL_REGEX);
+    }
+
+    /** 이메일 — {@code @} 앞뒤에 공백 없는 문자가 있고 점 있는 도메인을 갖는다. */
+    public static final String EMAIL_REGEX = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$";
 }

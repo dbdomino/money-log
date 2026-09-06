@@ -92,6 +92,24 @@ class ApiLoggingMaskingIT extends AbstractApiIT {
         });
     }
 
+    @Test
+    @DisplayName("#34 비밀번호 재설정의 newPasswordConfirm 도 가려진다 — 이름 완전 일치 방식의 구멍이었다")
+    void resetPasswordConfirmIsMaskedToo() throws Exception {
+        User user = createMember();
+        String newPassword = "Reset1234!";
+
+        postJson("/api/v1/auth/reset-password", """
+                {"memberId":"%s","nickname":"%s","newPassword":"%s","newPasswordConfirm":"%s"}
+                """.formatted(user.getUserId(), user.getNickname(), newPassword, newPassword));
+
+        String logged = String.join("\n", messages());
+        assertThat(logged).contains("/api/v1/auth/reset-password");
+        // 목록에 이름을 하나씩 적는 방식이면 이런 변형이 계속 새어 나간다.
+        assertThat(logged).doesNotContain(newPassword);
+        assertThat(logged).contains("newPassword=***");
+        assertThat(logged).contains("newPasswordConfirm=***");
+    }
+
     private List<String> messages() {
         return appender.list.stream().map(ILoggingEvent::getFormattedMessage).toList();
     }

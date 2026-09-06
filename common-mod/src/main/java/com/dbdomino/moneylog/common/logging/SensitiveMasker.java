@@ -27,15 +27,31 @@ public final class SensitiveMasker {
     public static final String MASK = "***";
 
     /**
-     * 가릴 이름. 소문자로 비교하며 {@code _}·{@code -}는 지우고 맞춘다
-     * ({@code new_password}·{@code New-Password}도 같은 것으로 본다).
+     * 이름에 이 조각이 들어 있으면 가린다. <b>완전 일치가 아니라 부분 일치다.</b>
+     *
+     * <p>완전 일치로 두면 목록에 없는 변형이 그대로 새어 나간다 — 실제로
+     * {@code newPasswordConfirm}(1.11 의 필드)이 목록에 없어 평문으로 로그에 찍혔다.
+     * 필드가 늘 때마다 목록을 고치는 방식은 빠뜨리는 쪽이 기본값이 되므로, "비밀번호·토큰·
+     * 비밀"이라는 <b>종류</b>로 막는다.
+     */
+    private static final Set<String> SENSITIVE_PARTS = Set.of(
+            "password", "token", "secret", "credential", "authorization");
+
+    /**
+     * 부분 일치의 예외. 값이 비밀이 아니고 로그에서 쓸모가 있는 이름이다.
+     *
+     * <p>{@code tokenType}은 항상 {@code Bearer} 라 가릴 것이 없다. 이런 예외는
+     * <b>가리지 않을 이유가 분명할 때만</b> 늘린다 — 예외가 늘수록 규칙이 무력해진다.
+     */
+    private static final Set<String> NOT_SENSITIVE = Set.of("tokentype");
+
+    /**
+     * 완전 일치로 가리는 이름. 위 조각으로는 걸리지 않는 짧은 이름들이다.
      *
      * <p>{@code pw}는 Entity 필드명이다. DTO 경계를 넘지 않으므로 로그에 나올 일이
-     * 없지만, 나중에 누가 Entity 를 그대로 찍어도 걸리도록 목록에 둔다.
+     * 없지만, 나중에 누가 Entity 를 그대로 찍어도 걸리도록 둔다.
      */
-    private static final Set<String> SENSITIVE_NAMES = Set.of(
-            "password", "passwordconfirm", "newpassword", "currentpassword", "oldpassword",
-            "accesstoken", "refreshtoken", "token", "authorization", "pw", "secret");
+    private static final Set<String> SENSITIVE_NAMES = Set.of("pw");
 
     /** 재귀 깊이 상한. 순환 참조와 거대한 객체 그래프를 로그가 따라가지 않게 한다. */
     private static final int MAX_DEPTH = 3;
@@ -49,7 +65,13 @@ public final class SensitiveMasker {
             return false;
         }
         String normalized = name.toLowerCase(Locale.ROOT).replace("_", "").replace("-", "");
-        return SENSITIVE_NAMES.contains(normalized);
+        if (NOT_SENSITIVE.contains(normalized)) {
+            return false;
+        }
+        if (SENSITIVE_NAMES.contains(normalized)) {
+            return true;
+        }
+        return SENSITIVE_PARTS.stream().anyMatch(normalized::contains);
     }
 
     /** 이름이 가릴 대상이면 {@code ***}, 아니면 값을 그대로 돌려준다. */

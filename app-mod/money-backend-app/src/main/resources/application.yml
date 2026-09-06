@@ -54,8 +54,9 @@ logging:
   level:
     org:
       hibernate:
+        # SQL 문만 남긴다. 바인딩 값 로깅(org.hibernate.orm.jdbc.bind)은 켜지 않는다 —
+        # 켜면 bcrypt 해시와 토큰 해시가 그대로 로그 파일에 쌓인다(SC-111).
         SQL: debug
-        type: trace
       springframework:
         jdbc: info
     com:

@@ -118,20 +118,11 @@ public class AuthService {
         } catch (DataIntegrityViolationException e) {
             // 선검사를 통과한 뒤 다른 요청이 먼저 커밋한 경우다. 어느 제약이 걸렸는지는
             // 메시지로 가른다 — 사용자에게는 "중복"이라는 같은 사실이므로 코드도 같다.
-            throw new BusinessException(duplicateCodeOf(e));
+            throw new BusinessException(MemberDuplicationRules.codeOf(e));
         }
 
         defaultExpendGroupService.createDefaults(saved);
         return memberMapper.toSignupResponse(saved);
-    }
-
-    /** 유니크 위반이 아이디 쪽인지 이메일 쪽인지 가린다. */
-    private static ErrorCode duplicateCodeOf(DataIntegrityViolationException e) {
-        String message = e.getMostSpecificCause().getMessage();
-        if (message != null && message.contains("ux_user_email")) {
-            return ErrorCode.EMAIL_DUPLICATED;
-        }
-        return ErrorCode.MEMBER_ID_DUPLICATED;
     }
 
     /** 빈 문자열은 {@code null} 로 저장한다 — 선택 항목의 "값 없음"을 한 가지로 통일한다. */
@@ -229,17 +220,22 @@ public class AuthService {
     /**
      * 1.5 토큰 갱신(Rotation). auth-pipeline.md §3 의 7단계를 따른다.
      *
-     * <p>{@code 1005} 와 {@code 1006} 의 구분이 이 메서드의 핵심이다. 세션을 찾지
-     * 못했거나(해시가 비었거나 값이 다르다) 기한이 지났으면 {@code 1005} 이고,
-     * <b>다른 곳에서 로그인해 세션이 교체된 경우만</b> {@code 1006} 이다. 로그아웃 후
-     * 갱신은 해시가 {@code NULL} 이라 조회 자체가 실패하므로 {@code 1005} 다.
+     * <p><b>이 경로에서 {@code 1006} 은 나오지 않는다.</b> 갱신은 Refresh 해시로만 세션을
+     * 찾는데 폐기는 두 해시를 {@code NULL} 로 만들므로(FR-111), 로그아웃한 세션도 다른
+     * 곳에서 로그인해 교체된 세션도 <b>똑같이 "찾을 수 없음"</b>이 된다. 둘을 구분하려면
+     * 폐기된 해시를 남겨야 하는데 그것이 바로 FR-111 이 막는 일이다. 구분해서 얻는 것도
+     * 없다 — 어느 쪽이든 할 일은 재로그인 하나이고, "당신 세션이 교체됐다"를 알려 주면
+     * 훔친 토큰을 들고 온 쪽에게 계정이 살아 있다는 사실을 확인해 준다.
+     * 계약도 그에 맞춰 개정했다(api-contract.md §5).
      */
     public TokenResponse refresh(String refreshToken) {
         UserSession session = sessionService.findByRefreshToken(refreshToken)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REFRESH_TOKEN_INVALID));
 
+        // 해시가 남아 있는 폐기 세션은 정상 흐름에서 생기지 않는다(revoke()가 둘을 함께
+        // 처리한다). 그 불변식이 깨졌을 때를 위한 이중 방어이며, 여기서도 1005 다.
         if (Boolean.TRUE.equals(session.getRevoked())) {
-            throw new BusinessException(ErrorCode.SESSION_INVALID);
+            throw new BusinessException(ErrorCode.REFRESH_TOKEN_INVALID);
         }
         if (session.getRefreshExpiresAt().isBefore(OffsetDateTime.now())) {
             throw new BusinessException(ErrorCode.REFRESH_TOKEN_INVALID);

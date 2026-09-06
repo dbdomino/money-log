@@ -116,6 +116,19 @@ class MemberMeIT extends AbstractApiIT {
         assertThat(resCode(getJson("/api/v1/members/me", null))).isEqualTo(1001);
     }
 
+    @Test
+    @DisplayName("#15 형식이 어긋난 이메일은 9001 이다 — PATCH 는 Bean Validation 이 돌지 않아 빠지기 쉽다")
+    void malformedEmailIsRejectedOnPatch() throws Exception {
+        User user = createMember();
+        Tokens tokens = login(user);
+
+        JsonNode response = patch(tokens, """
+                {"email":"garbage"}
+                """);
+
+        assertThat(resCode(response)).isEqualTo(9001);
+    }
+
     private JsonNode patch(Tokens tokens, String body) throws Exception {
         String response = mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/members/me")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokens.accessToken())

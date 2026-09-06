@@ -16,6 +16,7 @@ import com.dbdomino.moneylog.data.repository.UserRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -91,7 +92,15 @@ public class AdminMemberService {
         user.setRole(role);
         user.setActive(true);
 
-        User saved = userRepository.saveAndFlush(user);
+        User saved;
+        try {
+            saved = userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException e) {
+            // 선검사를 통과한 뒤 다른 요청이 먼저 커밋한 경우다. 가입(1.2)과 같은 판정을 쓴다 —
+            // 잡지 않으면 같은 상황에서 여기만 9000(서버 오류)이 나간다.
+            throw new BusinessException(MemberDuplicationRules.codeOf(e));
+        }
+
         defaultExpendGroupService.createDefaults(saved);
         return toAdminResponse(saved);
     }
@@ -160,6 +169,10 @@ public class AdminMemberService {
         }
         if (fields.has("email")) {
             String email = fields.string("email");
+            // 1.8 과 같은 검사다. PATCH 는 Bean Validation 이 돌지 않아 직접 확인한다.
+            if (!MemberFieldRules.isValidEmail(email)) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "이메일 형식이 올바르지 않습니다.");
+            }
             if (email != null && !email.equalsIgnoreCase(user.getEmail())
                     && userRepository.existsByEmail(email)) {
                 throw new BusinessException(ErrorCode.EMAIL_DUPLICATED);

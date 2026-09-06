@@ -91,6 +91,22 @@ class ResetPasswordIT extends AbstractApiIT {
         assertThat(resCode(loginWith(user, TEST_PASSWORD))).isEqualTo(200);
     }
 
+    @Test
+    @DisplayName("#6 다른 곳에서 재로그인한 뒤 옛 Refresh 로 갱신하면 1005 다 — 해시가 지워져 세션을 특정할 수 없다")
+    void refreshAfterReloginIsRejectedWith1005() throws Exception {
+        User user = createMember();
+        Tokens first = login(user);
+        login(user);
+
+        JsonNode response = postJson("/api/v1/auth/refresh", """
+                {"refreshToken":"%s"}
+                """.formatted(first.refreshToken()));
+
+        // 재로그인은 옛 세션의 해시를 NULL 로 만든다(FR-111). Refresh 는 해시로만 세션을
+        // 찾으므로 "교체된 세션"과 "아무 값"을 구분할 수단이 남지 않아 1005 다.
+        assertThat(resCode(response)).isEqualTo(1005);
+    }
+
     private JsonNode findPassword(User user) throws Exception {
         return postJson("/api/v1/auth/find-password", """
                 {"memberId":"%s","nickname":"%s"}

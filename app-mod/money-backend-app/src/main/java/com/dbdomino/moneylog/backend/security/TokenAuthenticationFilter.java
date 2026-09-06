@@ -15,6 +15,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -70,16 +72,21 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
+    private static final Logger log = LoggerFactory.getLogger(TokenAuthenticationFilter.class);
+
     private final JwtTokenProvider jwtTokenProvider;
     private final MemberSessionService sessionService;
     private final UserRepository userRepository;
+    private final SecurityResponseWriter responseWriter;
 
     public TokenAuthenticationFilter(JwtTokenProvider jwtTokenProvider,
                                      MemberSessionService sessionService,
-                                     UserRepository userRepository) {
+                                     UserRepository userRepository,
+                                     SecurityResponseWriter responseWriter) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.sessionService = sessionService;
         this.userRepository = userRepository;
+        this.responseWriter = responseWriter;
     }
 
     @Override
@@ -94,6 +101,14 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                 // permitAll 경로면 익명으로 계속 진행한다.
                 SecurityContextHolder.clearContext();
                 request.setAttribute(AUTH_ERROR_ATTRIBUTE, e.getErrorCode());
+            } catch (RuntimeException e) {
+                // 예상하지 못한 실패(DB 장애 등)다. 필터는 @RestControllerAdvice 가 닿지 않는
+                // 자리라 그대로 두면 컨테이너 오류 페이지가 나가 응답 규격을 벗어난다(SC-101).
+                // 인증 실패로 둔갑시키지도 않는다 — 원인이 토큰이 아니므로 9000 이 맞다.
+                log.error("token verification failed unexpectedly uri={}", request.getRequestURI(), e);
+                SecurityContextHolder.clearContext();
+                responseWriter.write(response, ErrorCode.INTERNAL_SERVER_ERROR);
+                return;
             }
         }
         filterChain.doFilter(request, response);

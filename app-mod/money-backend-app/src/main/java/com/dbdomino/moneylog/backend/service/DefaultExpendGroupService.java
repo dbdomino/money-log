@@ -48,9 +48,10 @@ public class DefaultExpendGroupService {
      * <p>호출자의 트랜잭션에 참여한다({@code REQUIRED}). 가입이 실패하면 유형도 함께
      * 사라져야 하기 때문이다.
      *
-     * <p>감사 컬럼은 <b>방금 만든 그 회원의 {@code id_key}</b> 다. 관리자가 회원을 추가한
-     * 경우에도 마찬가지다 — 이 행들의 주인은 관리자가 아니라 그 회원이고, 가입 경로는
-     * 인증 이전이라 {@code AuditorAware} 가 값을 주지도 못한다.
+     * <p>감사 컬럼은 <b>이 요청을 한 주체</b>다. 본인 가입이면 방금 만든 그 회원이고,
+     * 관리자 회원 추가(1.12)면 관리자다 — 인증된 요청에서는 {@code SecurityContext} 가
+     * 우선하기 때문이며, 감사 컬럼의 뜻이 "누가 했나"이므로 그것이 맞다. 행의 <b>주인</b>은
+     * 어느 쪽이든 그 회원이고, 그건 {@code id_key} 열이 따로 나타낸다.
      */
     @Transactional
     public void createDefaults(User user) {
