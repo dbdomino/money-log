@@ -528,18 +528,32 @@ public abstract class AbstractApiIT {
      */
     protected void insertMonthlyRow(Member member, long fixedExpenseId, int year, int month,
                                     long amount) {
+        insertMonthlyRow(member, fixedExpenseId, year, month, amount,
+                "%d-%02d-01".formatted(year, month));
+    }
+
+    /**
+     * 결제일을 지정해 월별 내역 1행을 넣는다.
+     *
+     * <p>주 경계 시험(006 의 FR-520)이 쓴다 — 고정지출이 <b>몇째 주에 떨어지는가</b>가
+     * 기대값을 정하므로 1일 고정으로는 주별 합계를 가를 수 없다.
+     *
+     * @param paymentDate {@code "2026-07-05"} 형식
+     */
+    protected void insertMonthlyRow(Member member, long fixedExpenseId, int year, int month,
+                                    long amount, String paymentDate) {
         Long idKey = idKeyOf(member);
         tx.executeWithoutResult(status -> jdbc.update("""
                 insert into moneylog.tbl_fixed_expense_monthly
                     (id_key, fixed_expense_idx, year, month, amount, payment_date, content,
                      payment_method_idx, expend_group_idx, modified,
                      created_at, updated_at, created_by, updated_by)
-                select ?, f.idx, ?, ?, ?, make_date(?, ?, 1), f.content,
+                select ?, f.idx, ?, ?, ?, cast(? as date), f.content,
                        f.payment_method_idx, f.expend_group_idx, false,
                        now(), now(), ?, ?
                   from moneylog.tbl_fixed_expense f
                  where f.idx = ?
-                """, idKey, year, month, amount, year, month, idKey, idKey, fixedExpenseId));
+                """, idKey, year, month, amount, paymentDate, idKey, idKey, fixedExpenseId));
     }
 
     /**
@@ -589,10 +603,17 @@ public abstract class AbstractApiIT {
      * 003 의 참조 검사 시험(수단의 {@code purpose} 변경·유형 삭제 차단)이 그 행들을
      * Repository 로 직접 만들기 때문에, 부모부터 지우면 남은 자식이 FK 로 버틴다.
      *
+     * <p>통계 상세 3종이 {@code tbl_statistics} 보다 앞이고, 넷 다 {@code tbl_user} 를
+     * 참조하므로 회원보다 앞이어야 한다. 006 의 저장본 시험이 이 행들을 만든다.
+     *
      * <p>정리가 실패해도 예외는 다음 테스트의 엉뚱한 자리에서 터지므로 원인을 찾기 어렵다.
      * 새 테이블에 행을 만드는 시험을 추가하면 <b>이 목록도 함께 늘린다</b>.
      */
     private static final List<String> TABLES_IN_DELETE_ORDER = List.of(
+            "tbl_statistics_weekly",
+            "tbl_statistics_expend_group",
+            "tbl_statistics_payment_method",
+            "tbl_statistics",
             "tbl_expense",
             "tbl_income",
             "tbl_fixed_expense_monthly",

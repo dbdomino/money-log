@@ -107,23 +107,23 @@ Spring Boot 멀티모듈이다. 저장소 루트 기준 경로를 쓴다.
 
 ### 테스트
 
-- [ ] T030 [P] [US2] `.../backend/statistics/StatisticsCalculateIT.java` — quickstart #17·#32·#35·#36. 저장본이 없으면 즉석 계산이고 `source=CALCULATED` 다. 합계·비율 **6값**(`incomeTotal`·`expenseTotal`·`fixedAmount`·`regularAmount`·두 비율)이 전부 실린다. 지출 합계가 0이면 두 비율이 **0** 이다. **#36 이 005 와의 경계다** — 한 번도 열지 않은 달의 고정지출 합계가 **0** 이고 조회가 월별 내역을 만들지 않는다
-- [ ] T031 [P] [US2] `.../backend/statistics/StatisticsWeekBoundaryIT.java` — quickstart #24·#25. 그 달 1일이 월요일이 아니면 첫 주는 **1일부터 첫 일요일까지**이고 마지막 주는 **말일에서 끊긴다**. 1일이 월요일인 달도 함께 걸어 두 경우가 다 맞는지 본다
-- [ ] T032 [P] [US2] `.../backend/statistics/StatisticsGroupSummaryIT.java` — quickstart #26·#30·#31. 지출 0원인 유형은 유형별 요약에 **없다**(FR-521). 목표가 0원이면 사용률이 **0**, 목표 1,000원에 지출 1,000만원이면 **`9999.99` 로 잘린다**. **#31 을 빠뜨리면 런타임에 DB 오류가 `9000` 으로 새어 나간다**
-- [ ] T033 [P] [US2] `.../backend/statistics/StatisticsMethodSummaryIT.java` — quickstart #27·#28·#29 (FR-521a). **셋이 한 묶음이다.** 지출 0원인 **사용 중** 수단은 **있고**, 지출 0원인 **삭제 표시된** 수단은 **없고**, 그 달 지출이 **있는** 삭제 표시된 수단은 **있다**. 셋을 함께 봐야 두 집합의 합집합이 확인된다 — 유형별과 정반대라 헷갈리는 지점이다
-- [ ] T032a [P] [US2] `.../backend/statistics/StatisticsStatusIT.java` — quickstart **#30-1** (FR-523). `status` 의 **경계값 넷**을 건다 — 사용률 89.99 → `UNDER`, **90.00 → `OK`**, **110.00 → `OK`**, 110.01 → `OVER`. 경계를 한쪽만 잘못 잡으면(`<` 를 `<=` 로) 90% 와 110% 정확히 걸린 유형이 반대로 분류되는데, 응답이 성공이라 **조용히 틀린다**. **목표가 0 인 유형은 사용률 0 이므로 `UNDER`** 임도 함께 본다
-- [ ] T034 [P] [US2] `.../backend/statistics/StatisticsViewIT.java` — quickstart #18·#19·#20·#21·#22·#23 (SC-507). 기본 조회와 `view=saved` 가 **같은 동작**, `view=live` 는 저장본을 무시하고 즉석 계산하며 `source=CALCULATED` 에 **`savedAt` 이 함께 실린다**(FR-515). **`view=live` 조회가 DB 스냅샷을 바꾸지 않는다**는 것을 저장본 재확인으로 단언한다. `view` 에 다른 값을 주면 `3603` 이다
-- [ ] T035 [P] [US2] `.../backend/statistics/StatisticsYearMonthIT.java` — quickstart #33·#34 (SC-510). 월 0·13 과 연 1999·2101 이 **`3603`** 이다. 경계값 **2000·2100 은 성공**. 연·월을 받는 **다섯 API 전부**에 같은 규칙이 걸리는지 함께 본다 — 한 곳만 빠뜨리기 쉽다
+- [X] T030 [P] [US2] `.../backend/statistics/StatisticsCalculateIT.java` — quickstart #17·#32·#35·#36. 저장본이 없으면 즉석 계산이고 `source=CALCULATED` 다. 합계·비율 **6값**(`incomeTotal`·`expenseTotal`·`fixedAmount`·`regularAmount`·두 비율)이 전부 실린다. 지출 합계가 0이면 두 비율이 **0** 이다. **#36 이 005 와의 경계다** — 한 번도 열지 않은 달의 고정지출 합계가 **0** 이고 조회가 월별 내역을 만들지 않는다
+- [X] T031 [P] [US2] `.../backend/statistics/StatisticsWeekBoundaryIT.java` — quickstart #24·#25. 그 달 1일이 월요일이 아니면 첫 주는 **1일부터 첫 일요일까지**이고 마지막 주는 **말일에서 끊긴다**. 1일이 월요일인 달도 함께 걸어 두 경우가 다 맞는지 본다
+- [X] T032 [P] [US2] `.../backend/statistics/StatisticsGroupSummaryIT.java` — quickstart #26·#30·#31. 지출 0원인 유형은 유형별 요약에 **없다**(FR-521). 목표가 0원이면 사용률이 **0**, 목표 1,000원에 지출 1,000만원이면 **`9999.99` 로 잘린다**. **#31 을 빠뜨리면 런타임에 DB 오류가 `9000` 으로 새어 나간다**
+- [X] T033 [P] [US2] `.../backend/statistics/StatisticsMethodSummaryIT.java` — quickstart #27·#28·#29 (FR-521a). **셋이 한 묶음이다.** 지출 0원인 **사용 중** 수단은 **있고**, 지출 0원인 **삭제 표시된** 수단은 **없고**, 그 달 지출이 **있는** 삭제 표시된 수단은 **있다**. 셋을 함께 봐야 두 집합의 합집합이 확인된다 — 유형별과 정반대라 헷갈리는 지점이다
+- [X] T032a [P] [US2] `.../backend/statistics/StatisticsStatusIT.java` — quickstart **#30-1** (FR-523). `status` 의 **경계값 넷**을 건다 — 사용률 89.99 → `UNDER`, **90.00 → `OK`**, **110.00 → `OK`**, 110.01 → `OVER`. 경계를 한쪽만 잘못 잡으면(`<` 를 `<=` 로) 90% 와 110% 정확히 걸린 유형이 반대로 분류되는데, 응답이 성공이라 **조용히 틀린다**. **목표가 0 인 유형은 사용률 0 이므로 `UNDER`** 임도 함께 본다
+- [X] T034 [P] [US2] `.../backend/statistics/StatisticsViewIT.java` — quickstart #18·#19·#20·#21·#22·#23 (SC-507). 기본 조회와 `view=saved` 가 **같은 동작**, `view=live` 는 저장본을 무시하고 즉석 계산하며 `source=CALCULATED` 에 **`savedAt` 이 함께 실린다**(FR-515). **`view=live` 조회가 DB 스냅샷을 바꾸지 않는다**는 것을 저장본 재확인으로 단언한다. `view` 에 다른 값을 주면 `3603` 이다
+- [X] T035 [P] [US2] `.../backend/statistics/StatisticsYearMonthIT.java` — quickstart #33·#34 (SC-510). 월 0·13 과 연 1999·2101 이 **`3603`** 이다. 경계값 **2000·2100 은 성공**. 연·월을 받는 **다섯 API 전부**에 같은 규칙이 걸리는지 함께 본다 — 한 곳만 빠뜨리기 쉽다
 
 ### 구현
 
-- [ ] T036 [P] [US2] `.../backend/dto/request/StatisticsViewQuery.java` — 5.5 의 `view`. **생략·`saved`·`live` 셋만** 허용하고 그 밖은 `3603` 이다(FR-514). 생략과 `saved` 는 같은 동작이다. 조용히 무시하면 오타(`view=lives`)가 "기본 동작"으로 읽혀 사용자가 최신값을 본다고 믿는다
-- [ ] T037 [P] [US2] `.../backend/dto/response/StatisticsResponse.java` — 합계·비율 6값 + `source`(`SAVED`/`CALCULATED`) + `savedAt`(**저장본이 있을 때만**) + 배열 3종(주별·유형별·수단별). **배열 3종은 `data.list` 규칙의 적용 대상이 아니다**(FR-526·시나리오 #54) — 목록 API 가 아니라 통계 객체의 구성 요소다
-- [ ] T038 [P] [US2] `.../backend/dto/response/` 에 상세 3종 응답 DTO 를 만든다 — 주별(`weekIndex`·기간·금액) · 유형별(`expendGroupId`·**저장 당시 이름**·지출·목표·사용률·상태) · 수단별(`paymentMethodId`·이름·금액)
-- [ ] T039 [US2] `.../backend/mapper/StatisticsMapper.java` — Entity ↔ DTO. **통계 상세의 이름은 저장 당시 스냅샷이다**(FR-519) — 목표금액(현재 이름)과 정반대이며, 원본이 사라져도 화면을 복원해야 하기 때문이다. 이 대비를 javadoc 에 적는다
-- [ ] T040 [US2] `.../backend/service/StatisticsQueryService.java` — 5.5. **저장본 / 즉석 분기**를 여기 둔다(FR-513). 기본은 저장본이 있으면 `SAVED`, 없으면 `CALCULATED` 다
-- [ ] T041 [US2] T040 에 `view=live` 갈래를 더한다 — 저장본을 **무시하고** 즉석 계산하되, 저장본이 있으면 **`savedAt` 을 함께 싣는다**(FR-515). 프론트가 "저장본 있음 / 지금 최신"을 한 응답으로 구분한다. **DB 를 건드리지 않는다** — 읽기 전용 경로다
-- [ ] T042 [US2] `.../backend/controller/StatisticsController.java` — 5.5 `GET /api/v1/statistics/monthly/{year}/{month}`. 연·월은 Path, `view` 는 Query 다
+- [X] T036 [P] [US2] `.../backend/dto/request/StatisticsViewQuery.java` — 5.5 의 `view`. **생략·`saved`·`live` 셋만** 허용하고 그 밖은 `3603` 이다(FR-514). 생략과 `saved` 는 같은 동작이다. 조용히 무시하면 오타(`view=lives`)가 "기본 동작"으로 읽혀 사용자가 최신값을 본다고 믿는다
+- [X] T037 [P] [US2] `.../backend/dto/response/StatisticsResponse.java` — 합계·비율 6값 + `source`(`SAVED`/`CALCULATED`) + `savedAt`(**저장본이 있을 때만**) + 배열 3종(주별·유형별·수단별). **배열 3종은 `data.list` 규칙의 적용 대상이 아니다**(FR-526·시나리오 #54) — 목록 API 가 아니라 통계 객체의 구성 요소다
+- [X] T038 [P] [US2] `.../backend/dto/response/` 에 상세 3종 응답 DTO 를 만든다 — 주별(`weekIndex`·기간·금액) · 유형별(`expendGroupId`·**저장 당시 이름**·지출·목표·사용률·상태) · 수단별(`paymentMethodId`·이름·금액)
+- [X] T039 [US2] `.../backend/mapper/StatisticsMapper.java` — Entity ↔ DTO. **통계 상세의 이름은 저장 당시 스냅샷이다**(FR-519) — 목표금액(현재 이름)과 정반대이며, 원본이 사라져도 화면을 복원해야 하기 때문이다. 이 대비를 javadoc 에 적는다
+- [X] T040 [US2] `.../backend/service/StatisticsQueryService.java` — 5.5. **저장본 / 즉석 분기**를 여기 둔다(FR-513). 기본은 저장본이 있으면 `SAVED`, 없으면 `CALCULATED` 다
+- [X] T041 [US2] T040 에 `view=live` 갈래를 더한다 — 저장본을 **무시하고** 즉석 계산하되, 저장본이 있으면 **`savedAt` 을 함께 싣는다**(FR-515). 프론트가 "저장본 있음 / 지금 최신"을 한 응답으로 구분한다. **DB 를 건드리지 않는다** — 읽기 전용 경로다
+- [X] T042 [US2] `.../backend/controller/StatisticsController.java` — 5.5 `GET /api/v1/statistics/monthly/{year}/{month}`. 연·월은 Path, `view` 는 Query 다
 
 **Checkpoint**: 사용자가 실제로 여는 화면이 선다. **저장 없이도 통계가 보인다**
 

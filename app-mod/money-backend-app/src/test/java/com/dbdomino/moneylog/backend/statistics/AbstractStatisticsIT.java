@@ -123,4 +123,75 @@ abstract class AbstractStatisticsIT extends AbstractApiIT {
         }
         return null;
     }
+
+    /**
+     * 저장본 1건을 <b>JDBC 로 직접</b> 만든다.
+     *
+     * <p>5.6 을 부르지 않는 것은 <b>US2 가 US3 없이 완결되어야 하기</b> 때문이다 —
+     * 저장 API 를 아직 만들지 않은 시점에도 "저장본이 있을 때의 조회"를 시험할 수 있어야
+     * 한다. 005 에서 {@code insertMonthlyRow} 를 같은 이유로 두었다.
+     *
+     * <p><b>합계를 일부러 계산값과 다르게 넣는다.</b> 그래야 응답이 저장본에서 왔는지
+     * 즉석 계산에서 왔는지가 숫자로 구분된다 — {@code source} 필드만 보면 분기는 맞는데
+     * 값을 다른 데서 읽는 구현이 통과한다.
+     *
+     * <p><b>{@code tx.executeWithoutResult} 안에서 한다.</b> datasource 가
+     * {@code auto-commit: false} 라 트랜잭션 밖 갱신은 조용히 사라진다.
+     *
+     * @return 만들어진 통계 행의 {@code idx}. 상세를 붙일 때 쓴다
+     */
+    protected long insertStatistics(Member member, int year, int month, long incomeTotal,
+                                    long expenseTotal) {
+        Long idKey = idKeyOf(member);
+        tx.executeWithoutResult(status -> jdbc.update("""
+                insert into moneylog.tbl_statistics
+                    (id_key, year, month, saved_at, income_total, expense_total,
+                     fixed_amount, regular_amount, fixed_percent, regular_percent,
+                     created_at, updated_at, created_by, updated_by)
+                values (?, ?, ?, now(), ?, ?, 0, ?, 0.00, 100.00, now(), now(), ?, ?)
+                """, idKey, year, month, incomeTotal, expenseTotal, expenseTotal, idKey, idKey));
+        Long idx = jdbc.queryForObject("""
+                select idx from moneylog.tbl_statistics
+                 where id_key = ? and year = ? and month = ?
+                """, Long.class, idKey, year, month);
+        return idx == null ? 0L : idx;
+    }
+
+    /** 저장본에 주별 상세 1행을 붙인다. 저장본이 <b>저장된 경계를 그대로 쓰는지</b> 보는 데 쓴다. */
+    protected void insertStatisticsWeekly(Member member, long statisticsIdx, int weekIndex,
+                                          String weekStart, String weekEnd, long amount) {
+        Long idKey = idKeyOf(member);
+        tx.executeWithoutResult(status -> jdbc.update("""
+                insert into moneylog.tbl_statistics_weekly
+                    (id_key, statistics_idx, week_index, week_start, week_end, amount,
+                     created_at, updated_at, created_by, updated_by)
+                values (?, ?, ?, cast(? as date), cast(? as date), ?, now(), now(), ?, ?)
+                """, idKey, statisticsIdx, weekIndex, weekStart, weekEnd, amount, idKey, idKey));
+    }
+
+    /** 그 회원의 그 달 저장본 {@code saved_at}. 없으면 {@code null} 이다. */
+    protected java.time.OffsetDateTime savedAtOf(Member member, int year, int month) {
+        return jdbc.query("""
+                select s.saved_at from moneylog.tbl_statistics s
+                  join moneylog.tbl_user u on u.id_key = s.id_key
+                 where u.user_id = ? and s.year = ? and s.month = ?
+                """, rs -> rs.next()
+                ? rs.getObject(1, java.time.OffsetDateTime.class) : null,
+                member.memberId(), year, month);
+    }
+
+    /** 응답의 주별 배열에서 그 주차의 행. 없으면 {@code null} 이다. */
+    protected JsonNode weekOf(JsonNode response, int weekIndex) {
+        for (JsonNode item : response.get("data").get("weeklyExpenses")) {
+            if (item.get("weekIndex").asInt() == weekIndex) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /** 응답의 비율 객체. */
+    protected JsonNode ratioOf(JsonNode response) {
+        return response.get("data").get("fixedVsRegularRatio");
+    }
 }
