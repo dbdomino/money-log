@@ -56,17 +56,16 @@ public class ExpendGroupController {
     /**
      * 2.7 지출유형 등록.
      *
-     * <p>{@code iconFile} 파트를 받아 두지만 <b>US4(T042)가 저장을 붙인다.</b> 파일 저장은
-     * 커밋 이후로 미뤄야 해서(행을 넣어 PK 를 받아야 파일명을 정할 수 있다) 서비스의 트랜잭션
-     * 경계를 함께 손봐야 하는 작업이다. 멀티파트 계약을 먼저 세워 두면 그때 Controller 를
-     * 건드리지 않는다.
+     * <p>{@code iconFile} 은 선택이다. 보내면 <b>커밋 뒤에</b> 저장된다 — 파일명에 유형의
+     * PK 가 들어가므로 행이 먼저 있어야 하고, 파일 시스템은 트랜잭션에 참여하지 않는다
+     * (icon-storage.md §2). 형식·크기 위반은 커밋 전에 걸러 {@code 3102} 로 끝난다.
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public RestResponseDto<ExpendGroupResponse> create(
             @AuthenticationPrincipal AuthPrincipal principal,
             @Valid @ModelAttribute ExpendGroupCreateRequest request,
             @RequestParam(name = "iconFile", required = false) MultipartFile iconFile) {
-        return RestResponseDto.ok(expendGroupService.create(principal, request));
+        return RestResponseDto.ok(expendGroupService.create(principal, request, iconFile));
     }
 
     /** 2.8 관리 목록. 삭제 표시된 유형도 포함한다. */
@@ -98,7 +97,8 @@ public class ExpendGroupController {
      * 곧 omit 이다 — 두 필드 모두 DB 가 NOT NULL 이라 "{@code null} 로 비우기"가 없으므로
      * 1.8·2.4 가 쓰는 {@code PatchFields} 같은 장치가 필요 없다.
      *
-     * <p>{@code iconFile} 은 등록과 같은 이유로 US4 에서 처리한다.
+     * <p>{@code iconFile} 을 omit 하면 기존 아이콘을 그대로 둔다(FR-218). 보내면 같은
+     * 파일명으로 덮어쓴다 — 파일명이 ID 기반이라 같은 유형이면 같은 이름이 나온다.
      */
     @PatchMapping(value = "/{expendGroupId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public RestResponseDto<ExpendGroupResponse> update(
@@ -108,7 +108,7 @@ public class ExpendGroupController {
             @RequestParam(name = "inUse", required = false) Boolean inUse,
             @RequestParam(name = "iconFile", required = false) MultipartFile iconFile) {
         return RestResponseDto.ok(
-                expendGroupService.update(principal, expendGroupId, name, inUse));
+                expendGroupService.update(principal, expendGroupId, name, inUse, iconFile));
     }
 
     /**

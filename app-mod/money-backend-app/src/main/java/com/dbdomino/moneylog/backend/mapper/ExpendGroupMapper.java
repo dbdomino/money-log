@@ -1,5 +1,6 @@
 package com.dbdomino.moneylog.backend.mapper;
 
+import com.dbdomino.moneylog.backend.controller.ExpendGroupIconController;
 import com.dbdomino.moneylog.backend.dto.response.ExpendGroupActiveResponse;
 import com.dbdomino.moneylog.backend.dto.response.ExpendGroupResponse;
 import com.dbdomino.moneylog.data.entity.UserExpendGroup;
@@ -29,10 +30,13 @@ import org.mapstruct.Named;
 public interface ExpendGroupMapper {
 
     /**
-     * 아이콘 조회 API 의 경로 앞부분. 2.10 의 URL 과 <b>같은 문자열이어야 한다</b> —
-     * 갈리면 목록이 알려 준 주소로 아이콘을 받을 수 없다.
+     * 아이콘 조회 API 의 경로 앞부분.
+     *
+     * <p>여기서 문자열을 다시 적지 않고 {@link ExpendGroupIconController#ICON_PATH} 를
+     * 가져다 쓴다 — 그 경로를 소유한 것은 매핑을 가진 Controller 이고, 갈리면 목록이 알려 준
+     * 주소로 아이콘을 받을 수 없다.
      */
-    String ICON_URL_PREFIX = "/api/v1/expend-groups/icons/";
+    String ICON_URL_PREFIX = ExpendGroupIconController.ICON_PATH;
 
     /** 등록(2.7)·상세(2.9)·수정(2.11)의 넓은 항목. {@code deleted} 까지 싣는다. */
     @Mapping(target = "expendGroupId", source = "idx")

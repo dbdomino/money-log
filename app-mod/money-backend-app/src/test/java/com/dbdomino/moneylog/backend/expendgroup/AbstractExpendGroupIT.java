@@ -29,7 +29,7 @@ import tools.jackson.databind.JsonNode;
  * <p>PATCH 는 {@code multipart(...)} 뒤에 메서드를 바꿔 넣는다 — 서블릿 규격상 multipart 는
  * POST 를 전제하므로 그 한 줄이 없으면 파트가 파싱되지 않는다.
  */
-abstract class AbstractExpendGroupIT extends AbstractApiIT {
+public abstract class AbstractExpendGroupIT extends AbstractApiIT {
 
     protected static final String URL = "/api/v1/expend-groups";
 

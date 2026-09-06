@@ -15,6 +15,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /**
  * 전역 예외 처리. Controller 가 try-catch 로 응답을 제각각 만들지 않게 한다(헌장 원칙 III).
@@ -26,6 +27,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
  *   <tr><th>예외</th><th>HTTP</th><th>resCode</th></tr>
  *   <tr><td>{@link BusinessException}</td><td>200</td><td>그 코드</td></tr>
  *   <tr><td>검증·형식 오류</td><td>200</td><td>9001</td></tr>
+ *   <tr><td>업로드 크기 초과</td><td>200</td><td>3102</td></tr>
  *   <tr><td>그 밖의 모든 예외</td><td>500</td><td>9000</td></tr>
  * </table>
  *
@@ -66,6 +68,28 @@ public class GlobalExceptionHandler {
     public ResponseEntity<RestResponseDto<Map<String, String>>> handleBadRequest(Exception e) {
         log.warn("bad request type={} message={}", e.getClass().getSimpleName(), e.getMessage());
         return ResponseEntity.ok(RestResponseDto.fail(ErrorCode.BAD_REQUEST));
+    }
+
+    /**
+     * 업로드 크기 초과. HTTP 200 + {@code 3102}.
+     *
+     * <p>{@code spring.servlet.multipart.max-file-size} 가 1MB 를 넘는 요청을
+     * <b>Controller 에 닿기 전에</b> 잘라 낸다. 그래서 애플리케이션의 크기 검사
+     * ({@code ExpendGroupIconService})는 그 요청을 아예 보지 못한다.
+     *
+     * <p>이 매핑이 없으면 아래 {@code Exception} 갈래를 타 {@code 9000} + HTTP 500 이 나가
+     * SC-211("1MB 초과 100% {@code 3102}")이 깨진다. 같은 파일이 요청 크기에 따라 다른
+     * 코드로 거절되는 셈이라, 클라이언트는 "왜 어떤 큰 파일은 3102 고 어떤 것은 서버 오류인지"
+     * 를 설명할 수 없다.
+     *
+     * <p>이 프로젝트에서 파일을 받는 API 는 2.7·2.11 뿐이므로 크기 초과는 곧 아이콘 문제다.
+     * 다른 업로드가 생기면 여기서 어느 API 인지 갈라야 한다.
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<RestResponseDto<Map<String, String>>> handleUploadTooLarge(
+            MaxUploadSizeExceededException e) {
+        log.warn("upload too large message={}", e.getMessage());
+        return ResponseEntity.ok(RestResponseDto.fail(ErrorCode.EXPEND_GROUP_ICON_INVALID));
     }
 
     /**

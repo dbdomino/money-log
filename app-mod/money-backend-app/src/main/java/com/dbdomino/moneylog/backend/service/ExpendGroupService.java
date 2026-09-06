@@ -7,6 +7,7 @@ import com.dbdomino.moneylog.backend.dto.response.ExpendGroupListResponse;
 import com.dbdomino.moneylog.backend.dto.response.ExpendGroupResponse;
 import com.dbdomino.moneylog.backend.mapper.ExpendGroupMapper;
 import com.dbdomino.moneylog.backend.security.AuthPrincipal;
+import com.dbdomino.moneylog.backend.service.ExpendGroupIconService.IconContent;
 import com.dbdomino.moneylog.common.error.BusinessException;
 import com.dbdomino.moneylog.common.error.ErrorCode;
 import com.dbdomino.moneylog.data.entity.User;
@@ -17,6 +18,8 @@ import com.dbdomino.moneylog.data.repository.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 지출유형 — 등록(2.7)·관리 목록(2.8)·상세(2.9)·수정(2.11)·삭제 표시(2.12)·
@@ -44,15 +47,21 @@ public class ExpendGroupService {
     private final UserExpenseRepository expenseRepository;
     private final UserRepository userRepository;
     private final ExpendGroupMapper expendGroupMapper;
+    private final ExpendGroupIconService iconService;
+    private final TransactionTemplate transactions;
 
     public ExpendGroupService(UserExpendGroupRepository expendGroupRepository,
                               UserExpenseRepository expenseRepository,
                               UserRepository userRepository,
-                              ExpendGroupMapper expendGroupMapper) {
+                              ExpendGroupMapper expendGroupMapper,
+                              ExpendGroupIconService iconService,
+                              TransactionTemplate transactions) {
         this.expendGroupRepository = expendGroupRepository;
         this.expenseRepository = expenseRepository;
         this.userRepository = userRepository;
         this.expendGroupMapper = expendGroupMapper;
+        this.iconService = iconService;
+        this.transactions = transactions;
     }
 
     /**
@@ -65,21 +74,32 @@ public class ExpendGroupService {
      * <p>이름 유일성은 <b>선검사와 유니크 위반 처리를 둘 다</b> 둔다(research.md §7).
      * 선검사만으로는 두 요청이 동시에 들어오는 창을 닫지 못하고, 위반 처리만 두면 정상적인
      * 중복이 전부 예외 경로로 흐른다.
+     *
+     * <p><b>아이콘 검사는 트랜잭션 안, 파일 저장은 커밋 뒤다.</b> 이유는
+     * {@link #storeIcon(Long, Prepared)} 에 적었다.
      */
-    @Transactional
-    public ExpendGroupResponse create(AuthPrincipal principal, ExpendGroupCreateRequest request) {
-        String name = request.name().trim();
-        requireNameAvailable(principal.idKey(), name);
+    public ExpendGroupResponse create(AuthPrincipal principal, ExpendGroupCreateRequest request,
+                                      MultipartFile iconFile) {
+        Prepared prepared = transactions.execute(status -> {
+            String name = requireName(request.name());
+            requireNameAvailable(principal.idKey(), name);
+            // 아이콘 검사를 커밋 전에 한다 — 여기서 3102 로 끝나면 행이 만들어지지 않는다.
+            // 통과한 요청만 아래로 내려가고, 저장(파일 쓰기)은 커밋 뒤에 한다.
+            IconContent icon = iconService.validate(iconFile);
 
-        UserExpendGroup group = new UserExpendGroup();
-        group.setUser(ownerOf(principal));
-        group.setName(name);
-        group.setInUse(request.inUse());
-        group.setDefaultGroup(false);
-        group.setDeleted(false);
+            UserExpendGroup group = new UserExpendGroup();
+            group.setUser(ownerOf(principal));
+            group.setName(name);
+            group.setInUse(request.inUse());
+            group.setDefaultGroup(false);
+            group.setDeleted(false);
+            return new Prepared(save(group).getIdx(), icon);
+        });
 
-        return expendGroupMapper.toResponse(save(group));
+        storeIcon(principal.idKey(), prepared);
+        return reload(principal, prepared.expendGroupId());
     }
+
 
     /**
      * 2.8 관리 목록. <b>삭제 표시된 유형까지 전부</b> 돌려준다(FR-223).
@@ -135,31 +155,73 @@ public class ExpendGroupService {
      * <p><b>보내지 않은 필드는 그대로 둔다.</b> multipart 요청이라 "파트가 없음"이 곧 omit
      * 이며, 두 필드 모두 DB 가 NOT NULL 이라 "{@code null} 로 비우기"는 애초에 없다.
      *
+     * <p><b>{@code iconFile} 을 omit 하면 기존 아이콘을 그대로 둔다</b>(FR-218). 파트가
+     * 없으면 {@code icon_filename} 을 건드리지 않는다 — 아이콘을 지우는 조작은 없다.
+     *
      * @param name  보내지 않았으면 {@code null}
      * @param inUse 보내지 않았으면 {@code null}
      */
-    @Transactional
     public ExpendGroupResponse update(AuthPrincipal principal, Long expendGroupId,
-                                      String name, Boolean inUse) {
-        UserExpendGroup group = findOwned(principal, expendGroupId);
+                                      String name, Boolean inUse, MultipartFile iconFile) {
+        Prepared prepared = transactions.execute(status -> {
+            UserExpendGroup group = findOwned(principal, expendGroupId);
 
-        if (name != null) {
-            String newName = requireName(name);
-            if (!newName.equals(group.getName())) {
-                if (Boolean.TRUE.equals(group.getDefaultGroup())) {
-                    throw new BusinessException(ErrorCode.EXPEND_GROUP_DEFAULT_NAME_LOCKED);
+            if (name != null) {
+                String newName = requireName(name);
+                if (!newName.equals(group.getName())) {
+                    if (Boolean.TRUE.equals(group.getDefaultGroup())) {
+                        throw new BusinessException(ErrorCode.EXPEND_GROUP_DEFAULT_NAME_LOCKED);
+                    }
+                    requireNameAvailable(principal.idKey(), newName);
+                    group.setName(newName);
                 }
-                requireNameAvailable(principal.idKey(), newName);
-                group.setName(newName);
+                // 같은 이름을 그대로 보낸 요청은 통과시킨다. 자기 자신을 중복으로 세면
+                // "이름은 두고 사용 여부만 바꾸는" 수정이 막힌다.
             }
-            // 같은 이름을 그대로 보낸 요청은 통과시킨다. 자기 자신을 중복으로 세면
-            // "이름은 두고 사용 여부만 바꾸는" 수정이 막힌다.
-        }
-        if (inUse != null) {
-            group.setInUse(inUse);
-        }
+            // 아이콘 검사는 이름 판정 다음이다(api-contract.md §5). 여기서 3102 로 끝나면
+            // 이름·사용 여부 변경도 함께 롤백된다 — 반쯤 적용된 수정을 남기지 않는다.
+            IconContent icon = iconService.validate(iconFile);
 
-        return expendGroupMapper.toResponse(save(group));
+            if (inUse != null) {
+                group.setInUse(inUse);
+            }
+            return new Prepared(save(group).getIdx(), icon);
+        });
+
+        storeIcon(principal.idKey(), prepared);
+        return reload(principal, prepared.expendGroupId());
+    }
+
+    /**
+     * 아이콘을 디스크에 쓰고 {@code icon_filename} 을 갱신한다. <b>커밋 뒤에 부른다.</b>
+     *
+     * <p>파일 시스템은 트랜잭션에 참여하지 않는다. 순서를 뒤집어 파일을 먼저 쓰고 DB 가
+     * 롤백되면 <b>주인 없는 파일이 영영 남는다</b> — 파일명에 들어간 PK 가 재사용되지 않아
+     * 누구도 그 파일을 회수할 수 없다. 반대로 DB 가 먼저면 최악이 "{@code icon_filename}
+     * 이 {@code null} 인 행"인데, 그건 <b>아이콘 없는 유형</b>이라는 정상 상태이고 사용자가
+     * 다시 올리면 해결된다(icon-storage.md §2).
+     *
+     * <p>파트가 없으면 아무 일도 하지 않는다 — 2.11 의 omit 은 기존 아이콘 유지다.
+     */
+    private void storeIcon(Long idKey, Prepared prepared) {
+        if (prepared.icon() == null) {
+            return;
+        }
+        String filename = iconService.store(idKey, prepared.expendGroupId(), prepared.icon());
+        transactions.executeWithoutResult(status ->
+                expendGroupRepository.findById(prepared.expendGroupId())
+                        .ifPresent(group -> group.setIconFilename(filename)));
+    }
+
+    /**
+     * 응답에 실을 최신 상태를 다시 읽는다.
+     *
+     * <p>{@code icon_filename} 이 별도 트랜잭션에서 갱신되므로, 앞 트랜잭션이 들고 있던
+     * Entity 를 그대로 매핑하면 <b>방금 올린 아이콘이 응답에 빠진다</b>.
+     */
+    private ExpendGroupResponse reload(AuthPrincipal principal, Long expendGroupId) {
+        return transactions.execute(status ->
+                expendGroupMapper.toResponse(findOwned(principal, expendGroupId)));
     }
 
     /**
@@ -242,6 +304,10 @@ public class ExpendGroupService {
             // 중복이다. 제약이 늘면 여기서 무엇이 걸렸는지 가려야 한다.
             throw new BusinessException(ErrorCode.EXPEND_GROUP_NAME_DUPLICATED);
         }
+    }
+
+    /** 커밋을 마친 행과, 아직 디스크에 쓰지 않은 아이콘. */
+    private record Prepared(Long expendGroupId, IconContent icon) {
     }
 
     /** 이름은 비울 수 없다 — 컬럼이 NOT NULL 이다. */

@@ -1,5 +1,6 @@
 package com.dbdomino.moneylog.backend.security;
 
+import com.dbdomino.moneylog.backend.controller.ExpendGroupIconController;
 import com.dbdomino.moneylog.common.error.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -34,8 +35,24 @@ public class RestAuthEntryPoint implements AuthenticationEntryPoint {
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
+        if (isIconRequest(request)) {
+            // 4자리 코드를 실을 JSON 본문이 없는 API 다. 상태 코드만 남긴다.
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
         Object attribute = request.getAttribute(TokenAuthenticationFilter.AUTH_ERROR_ATTRIBUTE);
         ErrorCode errorCode = attribute instanceof ErrorCode code ? code : ErrorCode.UNAUTHORIZED;
         responseWriter.write(response, errorCode);
+    }
+
+    /**
+     * 2.10 아이콘 조회인가.
+     *
+     * <p>경로 문자열을 여기 적지 않고 {@link ExpendGroupIconController#ICON_PATH} 를 본다 —
+     * 두 곳에 복제하면 경로를 바꿀 때 한쪽만 고쳐 놓고 "아이콘만 이상한 401 이 온다"가 된다.
+     */
+    private static boolean isIconRequest(HttpServletRequest request) {
+        return request.getRequestURI() != null
+                && request.getRequestURI().startsWith(ExpendGroupIconController.ICON_PATH);
     }
 }
