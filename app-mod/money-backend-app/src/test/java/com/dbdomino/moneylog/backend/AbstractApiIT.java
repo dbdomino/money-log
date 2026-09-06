@@ -14,6 +14,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockPart;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -304,6 +305,46 @@ public abstract class AbstractApiIT {
         return createPaymentMethod(token, name, "INCOME");
     }
 
+    /**
+     * 003 의 2.7 로 지출유형 1건을 만들고 PK 를 돌려준다.
+     *
+     * <p><b>기본 유형은 이름을 바꿀 수 없다</b>({@code 3105}). 이름 변경이 필요한 시험은
+     * {@link #defaultGroupId} 대신 이것으로 새 유형을 만들어 쓴다.
+     *
+     * <p>{@code multipart/form-data} 다 — 2.7 이 아이콘을 함께 받기 때문이다. 아이콘은
+     * 선택이라 여기서는 폼 필드만 보낸다.
+     *
+     * <p><b>{@code inUse} 는 생략할 수 없다.</b> {@code ExpendGroupCreateRequest} 에서
+     * {@code @NotNull} 이라 빠뜨리면 {@code 9001} 이다 — 2.1 수단 등록의 {@code inUse} 가
+     * 기본값을 갖는 것과 다르다.
+     */
+    protected long createExpendGroup(String token, String name) throws Exception {
+        var request = MockMvcRequestBuilders.multipart("/api/v1/expend-groups");
+        request.header(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        request.part(new MockPart("name", name.getBytes(StandardCharsets.UTF_8)));
+        request.part(new MockPart("inUse", "true".getBytes(StandardCharsets.UTF_8)));
+        JsonNode response = objectMapper.readTree(mockMvc.perform(request)
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+        if (resCode(response) != 200) {
+            throw new IllegalStateException("지출유형 등록 실패: " + response);
+        }
+        return response.get("data").get("expendGroupId").asLong();
+    }
+
+    /** 003 의 2.11 로 지출유형 이름을 바꾼다. {@code multipart} + PATCH 다. */
+    protected JsonNode renameExpendGroup(String token, long expendGroupId, String name)
+            throws Exception {
+        var request = MockMvcRequestBuilders.multipart("/api/v1/expend-groups/" + expendGroupId);
+        request.with(servletRequest -> {
+            servletRequest.setMethod("PATCH");
+            return servletRequest;
+        });
+        request.header(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        request.part(new MockPart("name", name.getBytes(StandardCharsets.UTF_8)));
+        return objectMapper.readTree(mockMvc.perform(request)
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+    }
+
     // ── 005(고정지출·가계부)가 쓰는 헬퍼 ─────────────────────────────────────
 
     /**
@@ -386,6 +427,36 @@ public abstract class AbstractApiIT {
                   join moneylog.tbl_user u on u.id_key = m.id_key
                  where u.user_id = ? and m.fixed_expense_idx = ? and m.year = ? and m.month = ?
                 """, member.memberId(), fixedExpenseId, year, month);
+    }
+
+    /**
+     * 월별 내역 1행을 JDBC 로 직접 넣는다.
+     *
+     * <p><b>4.5 가 아직 없는 US1 단계에서 쓴다.</b> 삭제 CASCADE(SC-407)를 확인하려면
+     * 지울 자식 행이 있어야 하는데, 정상 경로인 lazy 생성은 US2 가 만든다. US2 이후로는
+     * 그 달을 <b>열어서</b> 만드는 편이 낫다 — 그쪽이 실제 경로이고 값도 규칙대로 채워진다.
+     *
+     * <p><b>감사 컬럼을 손으로 채운다.</b> {@code AuditingEntityListener} 는 Entity 를 거칠
+     * 때만 동작하는데 이 경로는 Entity 를 만들지 않는다. 네 컬럼이 NOT NULL 이라 빠뜨리면
+     * INSERT 가 통째로 실패한다.
+     *
+     * <p><b>트랜잭션 안에서 넣는다.</b> datasource 가 {@code auto-commit: false} 라
+     * 트랜잭션 밖 갱신은 커밋되지 않고 조용히 사라진다.
+     */
+    protected void insertMonthlyRow(Member member, long fixedExpenseId, int year, int month,
+                                    long amount) {
+        Long idKey = idKeyOf(member);
+        tx.executeWithoutResult(status -> jdbc.update("""
+                insert into moneylog.tbl_fixed_expense_monthly
+                    (id_key, fixed_expense_idx, year, month, amount, payment_date, content,
+                     payment_method_idx, expend_group_idx, modified,
+                     created_at, updated_at, created_by, updated_by)
+                select ?, f.idx, ?, ?, ?, make_date(?, ?, 1), f.content,
+                       f.payment_method_idx, f.expend_group_idx, false,
+                       now(), now(), ?, ?
+                  from moneylog.tbl_fixed_expense f
+                 where f.idx = ?
+                """, idKey, year, month, amount, year, month, idKey, idKey, fixedExpenseId));
     }
 
     /**

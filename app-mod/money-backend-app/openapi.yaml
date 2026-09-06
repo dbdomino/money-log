@@ -12,15 +12,16 @@ openapi: 3.1.0
 # 둘이 갈리면 어느 쪽이 낡았는지 판단한다. 자동 비교는 하지 않는다 — 설명·예시는
 # 다른 것이 정상이기 때문이다.
 #
-# 대상 범위: 002 회원·인증 / 003 수단·지출유형 / 004 지출·소득·할부·엑셀.
-# **005(고정지출·가계부) 9건은 아직 구현되지 않아 여기 없다.** 구현되면 함께 늘린다.
+# 대상 범위: 002 회원·인증 / 003 수단·지출유형 / 004 지출·소득·할부·엑셀 / 005 고정지출 설정.
+# 005(고정지출·가계부)는 **설정 CRUD 5건(4.1~4.4·4.7)까지 구현**되어 담았다.
+# 월별 내역(4.5·4.6·4.9)과 가계부 목록(4.8) 4건은 아직이며 구현되면 함께 늘린다.
 # =============================================================================
 
 info:
   title: money-log 백엔드 API
   version: v1
   description: |
-    가계부 백엔드 REST API. 41개 오퍼레이션 / 28개 경로.
+    가계부 백엔드 REST API. 46개 오퍼레이션 / 30개 경로.
 
     ## 응답 규격 — 실패도 HTTP 200 이다
 
@@ -79,6 +80,13 @@ tags:
     description: 004 — 소득
   - name: 엑셀
     description: 004 — 양식 다운로드와 일괄 업로드
+  - name: 고정지출
+    description: |
+      005 — 매달 반복되는 지출의 **설정**. 삭제는 **물리 삭제**이며 그 고정지출의 월별
+      내역이 지난 달 것까지 함께 사라진다.
+
+      **이름을 저장하지 않는다.** 응답의 `paymentMethodName`·`expendGroupName` 은 조회
+      시점의 현재 이름이며, 004 의 지출·소득이 등록 당시 스냅샷을 쓰는 것과 정반대다.
   - name: 상태
     description: 헬스체크
 
@@ -1101,6 +1109,170 @@ paths:
                   - properties:
                       data: { $ref: "#/components/schemas/ExcelImportResponse" }
 
+  # ===========================================================================
+  # 005 고정지출 설정
+  # ===========================================================================
+  /api/v1/fixed-expenses:
+    post:
+      tags: [고정지출]
+      summary: "4.1 고정지출 등록"
+      description: |
+        **관리 행 1건만 만든다**(FR-402). 적용 기간이 4개월이든 10년이든 마찬가지이며,
+        월별 내역은 그 달을 **처음 조회할 때** 생긴다(lazy 생성).
+
+        미리 만들면 10년짜리 설정 하나에 120행이 생기는데 사용자가 실제로 여는 달은 몇
+        개뿐이고, 설정을 고칠 때마다 그 120행을 전부 손봐야 한다.
+
+        ### 판정 순서가 결과 코드를 바꾼다
+
+        ```text
+        1. 참조 검증
+           ├ 수단이 없거나 타인 소유이거나 사용 불가      → 3003
+           ├ 지출유형이 없거나 타인 소유이거나 사용 불가   → 3103
+           └ 수단의 purpose 가 EXPENSE 가 아님          → 3401
+        2. 값 검증                                     → 3401
+        3. 관리 행 1건만 INSERT
+        ```
+
+        **용도 불일치가 `3401` 인 것이 004 와 다르다.** 004 는 존재를 감추려고 `3003` 으로
+        묶었지만, 여기 수단은 사용자가 자기 목록에서 고른 것이라 존재가 이미 드러나 있고
+        취할 조치도 다르다("지출용 수단을 고른다").
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FixedExpenseCreateRequest" }
+      responses:
+        "200":
+          description: |
+            성공 `data` 는 FixedExpenseResponse. **이름 두 개는 현재 이름이다.**
+
+            실패: `3003` 수단 · `3103` 지출유형 · `3401` 용도 불일치·결제일 범위·금액 0 이하·
+            월 범위·기간 뒤집힘 · `9001` 형식
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/FixedExpenseResponse" }
+    get:
+      tags: [고정지출]
+      summary: "4.2 고정지출 설정 목록"
+      description: |
+        **005 의 목록 넷 중 페이징이 있는 것은 여기뿐이다.** 4.5·4.8·4.9 는 한 달치를 전부
+        돌려주고 합계·건수를 대신 싣는다.
+
+        `offset`·`limit` 은 필수이고 기본값이 없으며 `offset` 은 `limit` 의 **배수**여야
+        한다. 정렬은 `idx` 오름차순 고정이다 — 정렬이 없으면 페이지마다 순서가 흔들려
+        같은 행이 두 페이지에 나오거나 아예 빠진다.
+      parameters:
+        - { $ref: "#/components/parameters/Offset" }
+        - { $ref: "#/components/parameters/Limit" }
+      responses:
+        "200":
+          description: "실패: `9001`(누락·범위·배수 아님)"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/FixedExpenseListResponse" }
+
+  /api/v1/fixed-expenses/{fixedExpenseId}:
+    parameters:
+      - name: fixedExpenseId
+        in: path
+        required: true
+        schema: { type: integer, format: int64 }
+    get:
+      tags: [고정지출]
+      summary: "4.3 고정지출 상세"
+      description: |
+        **이름 두 개는 조회 시점의 현재 이름이다**(FR-405). 수단 이름을 바꾸고 다시
+        조회하면 새 이름이 나온다 — 004 의 지출과 정반대이며, 고정지출이 "지금 유효한
+        설정"이기 때문이다.
+
+        `tbl_fixed_expense` 에는 이름 컬럼이 **아예 없다.**
+      responses:
+        "200":
+          description: "실패: `3402` 없음 또는 타인 소유(**같은 코드다**)"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/FixedExpenseResponse" }
+    patch:
+      tags: [고정지출]
+      summary: "4.4 고정지출 수정"
+      description: |
+        **omit = 유지.**
+
+        ### 응답에 드러나지 않는 부작용이 있다
+
+        이 호출은 **미래 달이면서 사용자가 직접 고치지 않은(`modified=false`) 월별 내역**을
+        새 설정값으로 함께 갱신한다(FR-412). 넷으로 갈린다.
+
+        | 대상 | 갱신 | 이유 |
+        |---|---|---|
+        | 지난 달 | 안 한다 | 이미 일어난 일이다 |
+        | **이번 달** | **안 한다** | 진행 중이고 사용자가 이미 본 숫자다 |
+        | 미래 달 + `modified=false` | 한다 | — |
+        | 미래 달 + `modified=true` | 안 한다 | 사용자가 직접 손댄 달이다 |
+
+        지난 달을 새 값으로 맞추려면 4.9(재작성)를 부른다. 자동과 수동의 경계가 여기다.
+
+        ### 기간 검증은 병합 후 값으로 한다
+
+        시작만 보내고 종료를 omit 하면 기존 종료와 합쳐진 결과가 뒤집힐 수 있다. 보낸 값만
+        보고 통과시키면 DB CHECK 이 걸려 `3401` 이 아니라 **`9000`**(서버 오류)이 나간다.
+
+        ### 적용 기간을 줄이면 남는 것이 있다
+
+        자동 반영은 **값 갱신만** 하고 삭제하지 않으므로 기간 밖이 된 월별 내역이 남는다.
+        정리는 4.9 의 ④가 맡는다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FixedExpenseUpdateRequest" }
+      responses:
+        "200":
+          description: "실패: `3003` · `3103` · `3401` · `3402` · `9001` 대상 밖 필드"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/FixedExpenseResponse" }
+    delete:
+      tags: [고정지출]
+      summary: "4.7 고정지출 삭제"
+      description: |
+        **물리 삭제다**(FR-416). 수단·지출유형의 삭제 표시와 다르다 — "이 항목 자체를
+        없앤다"는 뜻이므로 그 고정지출의 월별 내역이 **지난 달 것까지 전부** 함께 사라진다
+        (`ON DELETE CASCADE`).
+
+        **막는 조건이 없다.** 003 의 지출유형 삭제는 사용 이력이 있으면 `3106` 으로
+        막았지만, 고정지출을 참조하는 것은 자기 월별 내역뿐이라 함께 지운다.
+
+        같은 설정을 두 번 지우면 두 번째는 `3402` 다 — 행이 사라져 "없음"이기 때문이며,
+        003 처럼 "이미 삭제됨" 코드를 따로 두지 않는다(그런 상태가 존재하지 않는다).
+      responses:
+        "200":
+          description: "실패: `3402`"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/FixedExpenseDeleteResponse" }
+
 # =============================================================================
 components:
 
@@ -1545,6 +1717,113 @@ components:
         row: { type: integer, description: "**1부터 세는 엑셀 행 번호.** 헤더가 1행이라 첫 데이터는 2행", example: 3 }
         column: { type: string, description: "열 문자 A~G", example: C }
         message: { type: string, example: 금액은 0보다 커야 합니다. }
+
+    # ── 005 고정지출 ───────────────────────────────────────────────────────
+    FixedExpenseCreateRequest:
+      type: object
+      required: [name, paymentMethodId, expendGroupId, amount, paymentDayOfMonth, content,
+                 startYear, startMonth, endYear, endMonth]
+      description: |
+        **적용 기간을 연·월 네 필드로 받는다.** `"2026-11"` 문자열 하나가 아닌 이유는
+        저장 형태가 그렇기 때문이다(`start_year`·`start_month`·`end_year`·`end_month`).
+        문자열로 받으면 파싱 실패가 `9001` 인지 `3401` 인지 흐려진다.
+      properties:
+        name: { type: string, maxLength: 50, description: "고정지출 이름(예: 월세). 회원 안에서 중복을 막지 않는다" }
+        paymentMethodId:
+          type: integer
+          format: int64
+          description: "본인 소유의 사용 중 수단. **`purpose=EXPENSE`** 여야 하며 아니면 `3401`"
+        expendGroupId: { type: integer, format: int64, description: 본인 소유의 사용 중 지출유형 }
+        amount: { type: integer, format: int64, minimum: 1, description: "기본 금액(원). 월별로 다른 금액은 월별 행이 따로 갖는다" }
+        paymentDayOfMonth:
+          type: integer
+          minimum: 1
+          maximum: 31
+          description: |
+            매달 결제일. **31 을 허용한다** — 말일 보정은 월별 내역을 만들 때 하며,
+            여기서 막으면 매월 말일에 나가는 고정지출을 표현할 수 없다
+        content: { type: string, maxLength: 255 }
+        startYear: { type: integer, example: 2026 }
+        startMonth: { type: integer, minimum: 1, maximum: 12, example: 11 }
+        endYear: { type: integer, example: 2027 }
+        endMonth:
+          type: integer
+          minimum: 1
+          maximum: 12
+          example: 2
+          description: |
+            종료 연월이 시작보다 앞서면 `3401`. 비교는 **`연 × 12 + 월` 합성값**으로 하며
+            **양 끝을 포함한다**(시작 = 종료인 한 달짜리가 유효하다)
+
+    FixedExpenseUpdateRequest:
+      type: object
+      description: |
+        **omit = 유지.** 대상은 아래 10개뿐이며 그 밖의 필드를 보내면 `9001` 이다.
+
+        **기간은 병합 후 값으로 검증한다** — 시작만 보내고 종료를 omit 하면 기존 종료와
+        합쳐진 결과가 유효해야 한다.
+      properties:
+        name: { type: string, maxLength: 50 }
+        paymentMethodId:
+          type: integer
+          format: int64
+          description: "**보내지 않으면 검증도 하지 않는다** — 삭제 표시된 수단을 쓰던 설정의 금액만 고치는 수정이 성공해야 한다"
+        expendGroupId: { type: integer, format: int64 }
+        amount: { type: integer, format: int64 }
+        paymentDayOfMonth: { type: integer, minimum: 1, maximum: 31 }
+        content: { type: string, maxLength: 255 }
+        startYear: { type: integer }
+        startMonth: { type: integer, minimum: 1, maximum: 12 }
+        endYear: { type: integer }
+        endMonth: { type: integer, minimum: 1, maximum: 12 }
+
+    FixedExpenseResponse:
+      type: object
+      description: |
+        4.1·4.2(목록 요소)·4.3·4.4 가 함께 쓴다.
+
+        **이름 두 개는 스냅샷이 아니라 조회 시점 현재 이름이다**(FR-405).
+        `tbl_fixed_expense` 에 이름 컬럼이 없고 매퍼가 연관을 타고 원본에서 읽는다.
+      properties:
+        fixedExpenseId: { type: integer, format: int64 }
+        name: { type: string }
+        paymentMethodId: { type: integer, format: int64 }
+        paymentMethodName: { type: string, description: "수단의 **현재** 이름(스냅샷 아님)" }
+        expendGroupId: { type: integer, format: int64 }
+        expendGroupName: { type: string, description: "지출유형의 **현재** 이름(스냅샷 아님)" }
+        amount: { type: integer, format: int64 }
+        paymentDayOfMonth:
+          type: integer
+          description: "**말일 보정 전 설정값**이다. 보정된 날짜는 월별 내역의 `paymentDate` 가 갖는다"
+        content: { type: string }
+        startYear: { type: integer }
+        startMonth: { type: integer }
+        endYear: { type: integer }
+        endMonth: { type: integer }
+
+    FixedExpenseListResponse:
+      type: object
+      description: "페이징 필드가 `list` 와 **같은 레벨**이다(FR-423)"
+      properties:
+        list:
+          type: array
+          items: { $ref: "#/components/schemas/FixedExpenseResponse" }
+        offset: { type: integer }
+        limit: { type: integer }
+        totalCount:
+          type: integer
+          format: int64
+          description: "조건에 맞는 **전체 건수**. `list` 길이가 아니다"
+
+    FixedExpenseDeleteResponse:
+      type: object
+      description: |
+        **`deleted` 플래그가 없다.** 수단 삭제(2.5)는 삭제 **표시**라 그 값을 실어야
+        의미가 있지만 고정지출은 **물리 삭제**여서 행 자체가 사라진다. 항상 참인 값을
+        실으면 "false 일 수도 있다"는 오해를 준다.
+      properties:
+        fixedExpenseId: { type: integer, format: int64 }
+        message: { type: string }
 
 security:
   - bearerAuth: []

@@ -78,26 +78,26 @@ spec.md 의 스토리 순서(US1~US5)가 아니라 **우선순위 순서**(P1 �
 
 ### 테스트 (구현보다 먼저 쓰고 실패를 확인한다)
 
-- [ ] T014 [P] [US1] `.../backend/fixedexpense/FixedExpenseCreateIT.java` — quickstart #1·#2·#3·#4·#5·#11. **#1 이 이 스토리의 핵심**이다: 등록하면 **관리 행 1건만** 생기고 월별 내역은 **0건**이다(FR-402). #4(시작=종료 한 달짜리)와 #5(2026-12 시작 → 2027-01 종료)가 합성 비교의 경계다. #11 은 `purpose=INCOME` 수단으로 등록하면 `3401`
-- [ ] T015 [P] [US1] `.../backend/fixedexpense/FixedExpenseListIT.java` — quickstart #6·#7. `data.list` 가 object 배열이고 `offset`·`limit`·`totalCount` 가 **`list` 와 같은 레벨**이다(FR-422·FR-423). #7 은 `offset` 이 `limit` 의 배수가 아니면 `9001`
-- [ ] T016 [P] [US1] `.../backend/fixedexpense/FixedExpenseCurrentNameIT.java` — quickstart #8·#9 (SC-409 의 4.3 몫). **#9 가 004 와의 차이를 드러낸다**: 수단 이름을 바꾸고 같은 설정을 재조회하면 **새 이름이 나온다**. 004 의 지출은 스냅샷이라 바뀌지 않는데 005 의 설정은 바뀐다(FR-405)
-- [ ] T017 [P] [US1] `.../backend/fixedexpense/FixedExpenseOwnershipIT.java` — quickstart #10. 남의 설정 ID 로 4.3·4.4·4.7 을 부르면 전부 `3402` 다. **"없음"과 "타인 소유"를 같은 코드로 낸다**(FR-401)
-- [ ] T018 [P] [US1] `.../backend/fixedexpense/FixedExpenseDeleteIT.java` — quickstart #12 (SC-407). **삭제 전에 월별 내역을 몇 달치 만들어 두고** 삭제 후 그 고정지출의 월별 내역이 **0건**인지 본다(지난 달 포함). `ON DELETE CASCADE` 검증이며 **막는 조건이 없다** — 003 의 지출유형 삭제(사용 이력이 있으면 `3106` 으로 막음)와 다르다
-- [ ] T019 [P] [US1] `.../backend/fixedexpense/FixedExpenseUpdateIT.java` — 4.4 의 PATCH omit 규칙(보낸 필드만 갱신), 값 오류 `3401`, 소유자 `3402`. **자동 반영 범위(FR-412)의 검증은 US4 의 T063 이 맡는다** — 여기서는 설정 행 자체가 올바로 갱신되는지만 본다
+- [X] T014 [P] [US1] `.../backend/fixedexpense/FixedExpenseCreateIT.java` — quickstart #1·#2·#3·#4·#5·#11. **#1 이 이 스토리의 핵심**이다: 등록하면 **관리 행 1건만** 생기고 월별 내역은 **0건**이다(FR-402). #4(시작=종료 한 달짜리)와 #5(2026-12 시작 → 2027-01 종료)가 합성 비교의 경계다. #11 은 `purpose=INCOME` 수단으로 등록하면 `3401`
+- [X] T015 [P] [US1] `.../backend/fixedexpense/FixedExpenseListIT.java` — quickstart #6·#7. `data.list` 가 object 배열이고 `offset`·`limit`·`totalCount` 가 **`list` 와 같은 레벨**이다(FR-422·FR-423). #7 은 `offset` 이 `limit` 의 배수가 아니면 `9001`
+- [X] T016 [P] [US1] `.../backend/fixedexpense/FixedExpenseCurrentNameIT.java` — quickstart #8·#9 (SC-409 의 4.3 몫). **#9 가 004 와의 차이를 드러낸다**: 수단 이름을 바꾸고 같은 설정을 재조회하면 **새 이름이 나온다**. 004 의 지출은 스냅샷이라 바뀌지 않는데 005 의 설정은 바뀐다(FR-405)
+- [X] T017 [P] [US1] `.../backend/fixedexpense/FixedExpenseOwnershipIT.java` — quickstart #10. 남의 설정 ID 로 4.3·4.4·4.7 을 부르면 전부 `3402` 다. **"없음"과 "타인 소유"를 같은 코드로 낸다**(FR-401)
+- [X] T018 [P] [US1] `.../backend/fixedexpense/FixedExpenseDeleteIT.java` — quickstart #12 (SC-407). **삭제 전에 월별 내역을 몇 달치 만들어 두고** 삭제 후 그 고정지출의 월별 내역이 **0건**인지 본다(지난 달 포함). `ON DELETE CASCADE` 검증이며 **막는 조건이 없다** — 003 의 지출유형 삭제(사용 이력이 있으면 `3106` 으로 막음)와 다르다
+- [X] T019 [P] [US1] `.../backend/fixedexpense/FixedExpenseUpdateIT.java` — 4.4 의 PATCH omit 규칙(보낸 필드만 갱신), 값 오류 `3401`, 소유자 `3402`. **자동 반영 범위(FR-412)의 검증은 US4 의 T063 이 맡는다** — 여기서는 설정 행 자체가 올바로 갱신되는지만 본다
 
 ### 구현
 
-- [ ] T020 [P] [US1] `.../backend/dto/request/FixedExpenseCreateRequest.java` — `name` · `paymentMethodId` · `expendGroupId` · `amount` · `paymentDayOfMonth` · `content` · `startYear` · `startMonth` · `endYear` · `endMonth`
-- [ ] T021 [P] [US1] `.../backend/dto/request/FixedExpenseUpdateRequest.java` — 004 의 `PatchFields` 를 써서 **omit 과 명시적 null 을 구분**한다. 전송한 필드만 갱신한다(api-contract §7)
-- [ ] T022 [P] [US1] `.../backend/dto/response/FixedExpenseResponse.java` — 설정 1건. `paymentMethodName`·`expendGroupName` 은 **현재 이름**이다(FR-405)
-- [ ] T023 [P] [US1] `.../backend/dto/response/FixedExpenseListResponse.java` — `list` + `offset` · `limit` · `totalCount` 를 **형제 필드**로 둔다
-- [ ] T024 [P] [US1] `.../backend/dto/response/FixedExpenseDeleteResponse.java` — 삭제 결과
-- [ ] T025 [US1] `.../backend/mapper/FixedExpenseMapper.java` — Entity ↔ DTO. **004 의 `ExpenseMapper` 와 정반대로 매핑한다**: 004 는 Entity 자신의 이름 컬럼에서 읽지만(스냅샷) 005 는 **연관(`paymentMethod.name`·`expendGroup.name`)에서 읽는다**(현재 이름). `tbl_fixed_expense` 에는 이름 컬럼이 아예 없다. 이 대비를 javadoc 에 적어 둔다 — 두 매퍼를 나란히 보는 사람이 한쪽을 다른 쪽에 맞추려 드는 것을 막는다
-- [ ] T026 [US1] `.../backend/service/FixedExpenseFieldRules.java` — 값 검증을 한 곳에 둔다. `paymentDayOfMonth` 1~31 · `amount > 0` · `startMonth`·`endMonth` 1~12 · 종료 연월이 시작보다 앞서지 않음(T005 의 합성 비교). 전부 **`3401`** 이다(FR-403·FR-404)
-- [ ] T027 [US1] `.../backend/service/FixedExpenseService.java` — 4.1 등록 · 4.2 목록 · 4.3 상세. 등록의 판정 순서는 **참조 검증(`3003`/`3103`) → 용도(`3401`) → 값 검증(`3401`) → 관리 행 1건 INSERT** 다(api-contract §6). **적용 기간 전체의 월별 내역을 만들지 않는다**(FR-402)
-- [ ] T028 [US1] `.../backend/service/FixedExpenseService.java` 에 4.4 수정 · 4.7 삭제를 더한다 — 4.4 는 `3402` → `3401` → UPDATE, 4.7 은 `3402` → DELETE(CASCADE 가 월별 내역을 지운다)
-- [ ] T029 [US1] `.../backend/service/FixedExpenseSyncService.java` 에 자동 반영 `propagate(fixedExpense)` 를 만들고 T028 의 4.4 가 부르게 한다 — **미래 달이면서 `modified=false` 인 행만** 갱신한다(FR-412). 미래 달은 **서버 기준 현재 연월을 초과**하는 달이고 **이번 달은 포함하지 않는다** — 포함하면 월세를 올렸을 때 사용자가 이미 본 이번 달 숫자가 소급해 바뀐다(004 의 중도상환 경계 `> today` 와 같은 성격). **월별 내역이 아직 없는 US2 이전에는 아무 일도 하지 않는 no-op 이고, 네 갈래 검증은 US4 의 T063 이 한다**
-- [ ] T030 [US1] `.../backend/controller/FixedExpenseController.java` — 4.1 `POST /api/v1/fixed-expenses` · 4.2 `GET` · 4.3 `GET /{fixedExpenseId}` · 4.4 `PATCH /{fixedExpenseId}` · 4.7 `DELETE /{fixedExpenseId}`. **Repository 를 직접 부르지 않고** Service 에만 의존한다(헌장 원칙 II)
+- [X] T020 [P] [US1] `.../backend/dto/request/FixedExpenseCreateRequest.java` — `name` · `paymentMethodId` · `expendGroupId` · `amount` · `paymentDayOfMonth` · `content` · `startYear` · `startMonth` · `endYear` · `endMonth`
+- [X] T021 [P] [US1] `.../backend/dto/request/FixedExpenseUpdateRequest.java` — 004 의 `PatchFields` 를 써서 **omit 과 명시적 null 을 구분**한다. 전송한 필드만 갱신한다(api-contract §7)
+- [X] T022 [P] [US1] `.../backend/dto/response/FixedExpenseResponse.java` — 설정 1건. `paymentMethodName`·`expendGroupName` 은 **현재 이름**이다(FR-405)
+- [X] T023 [P] [US1] `.../backend/dto/response/FixedExpenseListResponse.java` — `list` + `offset` · `limit` · `totalCount` 를 **형제 필드**로 둔다
+- [X] T024 [P] [US1] `.../backend/dto/response/FixedExpenseDeleteResponse.java` — 삭제 결과
+- [X] T025 [US1] `.../backend/mapper/FixedExpenseMapper.java` — Entity ↔ DTO. **004 의 `ExpenseMapper` 와 정반대로 매핑한다**: 004 는 Entity 자신의 이름 컬럼에서 읽지만(스냅샷) 005 는 **연관(`paymentMethod.name`·`expendGroup.name`)에서 읽는다**(현재 이름). `tbl_fixed_expense` 에는 이름 컬럼이 아예 없다. 이 대비를 javadoc 에 적어 둔다 — 두 매퍼를 나란히 보는 사람이 한쪽을 다른 쪽에 맞추려 드는 것을 막는다
+- [X] T026 [US1] `.../backend/service/FixedExpenseFieldRules.java` — 값 검증을 한 곳에 둔다. `paymentDayOfMonth` 1~31 · `amount > 0` · `startMonth`·`endMonth` 1~12 · 종료 연월이 시작보다 앞서지 않음(T005 의 합성 비교). 전부 **`3401`** 이다(FR-403·FR-404)
+- [X] T027 [US1] `.../backend/service/FixedExpenseService.java` — 4.1 등록 · 4.2 목록 · 4.3 상세. 등록의 판정 순서는 **참조 검증(`3003`/`3103`) → 용도(`3401`) → 값 검증(`3401`) → 관리 행 1건 INSERT** 다(api-contract §6). **적용 기간 전체의 월별 내역을 만들지 않는다**(FR-402)
+- [X] T028 [US1] `.../backend/service/FixedExpenseService.java` 에 4.4 수정 · 4.7 삭제를 더한다 — 4.4 는 `3402` → `3401` → UPDATE, 4.7 은 `3402` → DELETE(CASCADE 가 월별 내역을 지운다)
+- [X] T029 [US1] `.../backend/service/FixedExpenseSyncService.java` 에 자동 반영 `propagate(fixedExpense)` 를 만들고 T028 의 4.4 가 부르게 한다 — **미래 달이면서 `modified=false` 인 행만** 갱신한다(FR-412). 미래 달은 **서버 기준 현재 연월을 초과**하는 달이고 **이번 달은 포함하지 않는다** — 포함하면 월세를 올렸을 때 사용자가 이미 본 이번 달 숫자가 소급해 바뀐다(004 의 중도상환 경계 `> today` 와 같은 성격). **월별 내역이 아직 없는 US2 이전에는 아무 일도 하지 않는 no-op 이고, 네 갈래 검증은 US4 의 T063 이 한다**
+- [X] T030 [US1] `.../backend/controller/FixedExpenseController.java` — 4.1 `POST /api/v1/fixed-expenses` · 4.2 `GET` · 4.3 `GET /{fixedExpenseId}` · 4.4 `PATCH /{fixedExpenseId}` · 4.7 `DELETE /{fixedExpenseId}`. **Repository 를 직접 부르지 않고** Service 에만 의존한다(헌장 원칙 II)
 
 **Checkpoint**: 고정지출 설정 CRUD 가 독립적으로 동작한다. **여기까지가 MVP** 다
 
