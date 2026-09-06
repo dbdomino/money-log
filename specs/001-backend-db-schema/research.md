@@ -250,7 +250,9 @@ API가 주고받는 `memberId`는 `user_id` 값이므로, 인증 필터가 토�
 
 ## 11. 기본 지출유형·아이콘
 
-**Decision**: 회원가입·관리자 회원 추가 시 10종을 INSERT하고, 템플릿 PNG를 `{user_id}_{유형이름}.png`로 복사한 뒤 `icon_filename`에 그 파일명을 저장한다.
+**Decision**: 회원가입·관리자 회원 추가 시 10종을 INSERT하고, 템플릿 PNG를 회원별 복사본으로 만든 뒤 `icon_filename`에 그 파일명을 저장한다.
+
+> **파일명 규칙 개정(2026-09-06)**: 이 결정을 적을 당시의 규칙은 `{user_id}_{유형이름}.png`였으나, `003`의 clarify에서 **`{id_key}_{expendGroupId}.{확장자}`로 바뀌었다**(FR-224, 커밋 `84ad88c`). `{id_key}`는 `tbl_user`의 대리키, `{expendGroupId}`는 `tbl_user_expend_group.idx`다. 로그인 아이디를 뺀 것은 자식 데이터에 `user_id`를 복사하지 않는다는 001의 소유자 규칙 때문이고, 유형 이름을 뺀 것은 파일명이 조회 URL 경로에 그대로 실려 `/`·`..`·공백이 경로 탈출·인코딩 문제를 만들기 때문이다. **파일명에 PK가 들어가므로 행을 먼저 저장해 `idx`를 받은 뒤 파일을 복사한다.** 현행 규칙의 단일 출처는 `003`의 FR-224이며 `002`의 FR-106이 그것을 따른다.
 
 템플릿 위치·상태: `app-mod/money-backend-app/src/main/resources/seed/expend-group-icons/` — 10개 파일(교육·교통·기타·문화·쇼핑·식비·의료·장보기·주거·통신) **이미 커밋되어 있다.**
 

@@ -158,6 +158,7 @@ common-mod/src/main/java/com/dbdomino/moneylog/common/
 
 app-mod/money-backend-app/src/main/
 ├── java/com/dbdomino/moneylog/backend/
+│   ├── MoneyBackendApplication.java            ~ scanBasePackages 에 common 패키지 추가
 │   ├── config/
 │   │   ├── SecurityConfig.java                 + SecurityFilterChain·PasswordEncoder
 │   │   ├── JwtProperties.java                  + 서명키·만료(1일/7일) 바인딩
