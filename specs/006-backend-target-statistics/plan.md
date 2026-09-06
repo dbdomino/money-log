@@ -153,7 +153,8 @@ app-mod/money-backend-app/src/main/
 │   │       ├── WeekBoundaryResolver.java         + 월요일 시작 주 경계
 │   │       └── TargetResolver.java               + 적용 금액(월별 ?? 기본) 판정
 │   ├── support/
-│   │   └── YearMonthValue.java                   ~ 005 가 만든 값 객체를 재사용
+│   │   └── YearMonthValue.java                   ~ 005 것 재사용 + 연 범위 오버로드 추가
+│   │                                               (005 는 1900~9999, 006 은 2000~2100)
 │   ├── dto/
 │   │   ├── request/                              + 목표금액 upsert·통계 저장 Request DTO
 │   │   └── response/                             + ExpendTargetDto·StatisticsDto 등
@@ -191,8 +192,16 @@ app-mod/money-backend-app/src/test/java/com/dbdomino/moneylog/backend/
 - **`TargetResolver`** — 적용 금액(`월별 ?? 기본`) 판정이 5.1·5.2·5.5 세 곳에 필요하다.
   `null`과 `0`의 비대칭을 한 곳에 가둔다.
 
-`YearMonthValue`는 `005`가 만든 것을 재사용한다. 연·월 범위 검증(FR-525)과 미래 월 판정
-(FR-527)이 같은 합성 비교를 쓴다.
+`YearMonthValue`는 `005`가 만든 것을 재사용한다. 미래 월 판정(FR-527)이 그 합성 비교
+(`연 × 12 + 월`)를 그대로 쓴다.
+
+**다만 연 범위는 006이 좁혀야 한다.** 005의 값 객체는 `MIN_YEAR=1900`·`MAX_YEAR=9999`로
+고정돼 있는데 FR-525는 **2000~2100**이다. 그대로 재사용하면 `year=1999`가 통과해
+`3603`이 나가지 않는다. 범위를 인자로 받는 오버로드를 더하고 **005의 기존 시그니처·동작은
+바꾸지 않는다** — 그쪽 호출부 넷(4.5·4.6·4.8·4.9)이 딸려 움직인다.
+
+두 상수는 **한 곳**에 둔다. 이 범위가 5.1·5.2·5.4·5.5·5.6 **다섯 곳**에 걸리므로 각 DTO가
+숫자를 직접 적으면 한 곳만 고쳐도 나머지 넷이 갈린다.
 
 `core-mod`는 이번에도 건드리지 않는다.
 

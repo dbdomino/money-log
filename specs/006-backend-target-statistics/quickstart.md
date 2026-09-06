@@ -86,7 +86,7 @@ psql -h localhost -U moneyloguser -d moneylogdb -c \
 ```bash
 ./gradlew :app-mod:money-backend-app:bootRun     # 백엔드 (:8081)
 
-./gradlew :data-mod:test                          # 스키마 IT 77건
+./gradlew :data-mod:test                          # 스키마 IT 80건
 ./gradlew :app-mod:money-backend-app:test         # 002~006
 ```
 
@@ -138,6 +138,7 @@ psql -h localhost -U moneyloguser -d moneylogdb -c \
 | 28 | 지출 0원인 **삭제 표시된** 수단 | 수단별 요약에 **없다** | FR-521a ② |
 | 29 | 그 달 지출이 **있는** 삭제 표시된 수단 | 수단별 요약에 **있다** | FR-521a ① |
 | 30 | 목표가 0원인 유형의 사용률 | **`0`** | US2-9·FR-522 |
+| 30-1 | 사용률 89.99 · **90.00** · **110.00** · 110.01 의 `status` | `UNDER` · **`OK`** · **`OK`** · `OVER` | FR-523 |
 | 31 | 목표 1,000원에 지출 1,000만원 | 사용률이 **`9999.99`로 잘린다** (저장 실패 아님) | FR-522 |
 | 32 | 지출 합계가 0인 달의 비율 | `fixedPercent`·`regularPercent` 둘 다 **`0`** | FR-513 |
 | 33 | 월에 13 | `3603` | US2-10 |
@@ -167,6 +168,8 @@ psql -h localhost -U moneyloguser -d moneylogdb -c \
 | 44 | 저장 후 **목표금액을 바꾸고** 통계 조회 | 저장본의 목표·사용률·상태는 **저장 당시 값** | Edge Case |
 | 45 | **미래 월** 저장 시도 | `3604` | FR-527 |
 | 46 | **이번 달** 저장 | **성공** (초과가 아니다) | FR-527 |
+| 46-1 | 5.6의 연·월을 **Query·Path**로 보냄 | 받지 않는다 (**Body**로만) — Body가 비어 `3603` | FR-524 |
+| 46-2 | 같은 달을 **두 번** 저장(상세 유니크) | 두 번째도 성공한다 — 삭제·삽입 순서가 어긋나면 `9000` | FR-517 |
 | 47 | 지출·소득이 **한 건도 없는 달** 저장 | **성공.** 합계·비율 6값이 전부 `0` | SC-511·FR-528 |
 | 48 | 47번 저장 후 조회 | `source=SAVED`이고 값이 전부 0 | SC-511 |
 | 49 | 47번의 유형별 상세 | **빈 배열** | FR-528 |
@@ -197,16 +200,19 @@ psql -h localhost -U moneyloguser -d moneylogdb -c \
 | 항목 | 확인 수단 |
 |---|---|
 | 명세 선행 개정 | §0의 `grep` |
-| API 6건 동작 | 시나리오 1~54 |
+| API 6건 동작 | 시나리오 1~54 (30-1·46-1·46-2 포함 **57건**) |
 | SC-501~511 (11건) | 위 표의 "대응" 열 |
 | `null` vs `0` 비대칭 | 시나리오 5·6·7·8 |
 | 수단별 모집단 두 집합 | 시나리오 27·28·29 |
 | 저장본 불변 3갈래 | 시나리오 39·43·44 |
 | 사용률 상한 | 시나리오 31 |
+| `status` 경계 | 시나리오 30-1 — DB CHECK 이 세 값만 받는다 |
+| 재저장의 삭제·삽입 순서 | 시나리오 46-2 — Hibernate 는 INSERT 를 DELETE 보다 먼저 낸다 |
+| 연·월 입력 경로 | 시나리오 46-1 — 5.6 은 Body 로만 받는다 |
 | FK 0건 | 시나리오 51 (`psql` 직접 확인) |
 | `005`와의 경계 | 시나리오 36 |
 | 스키마 무변경 | `git diff sql/schema-moneylogdb.sql` → 변경 없음 |
-| `:data-mod:test` | 77건 통과 |
+| `:data-mod:test` | 80건 통과 (005 까지의 결과. 006 은 data-mod 를 건드리지 않는다) |
 | `:app-mod:money-backend-app:test` | 002~005 기존 + 006 신규 통과 |
 | 헌장 게이트 6개 | [plan.md § Constitution Check](./plan.md#constitution-check) |
 
