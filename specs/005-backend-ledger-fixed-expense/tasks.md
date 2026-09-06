@@ -111,23 +111,23 @@ spec.md 의 스토리 순서(US1~US5)가 아니라 **우선순위 순서**(P1 �
 
 ### 테스트
 
-- [ ] T031 [P] [US2] `.../backend/monthly/MonthlyLazyCreateIT.java` — quickstart #13·#16·#17·#20. #13 은 처음 조회 시 만들어져 **저장되고 함께 돌아온다**, #16 은 기간 **밖**이면 만들어지지 않는다(FR-408), #17 은 대상이 없으면 `list` 가 **빈 배열**, #20 은 `2026-11 ~ 2027-02` 의 2027-01 이 기간 안이다(해를 넘겨도)
-- [ ] T032 [P] [US2] `.../backend/monthly/MonthlyIdempotencyIT.java` — quickstart #14 (SC-402). 같은 달을 **100번** 조회해도 행은 **1건**이다
-- [ ] T033 [P] [US2] `.../backend/monthly/MonthlyConcurrencyIT.java` — quickstart #15 (SC-403). **이 기능에서 가장 중요한 동시성 시험**이다. 같은 달을 동시에 두 요청이 처음 열어도 행은 **1건**이고 **어느 쪽도 오류로 끝나지 않는다** — SC-403 의 뒷부분까지 단언한다. 한쪽이 유니크 위반으로 `9000` 을 내면 실패다. `data-mod` 의 `FixedExpenseMonthlyConcurrencyIT` 방식을 참고한다
-- [ ] T034 [P] [US2] `.../backend/monthly/MonthlyPaymentDateIT.java` — quickstart #18·#19 (SC-404). 결제일 31 인 고정지출의 2026-02 내역 결제일이 **2026-02-28**, 2028-02 는 **2028-02-29**(윤년)다. **저장된 값**을 DB 에서 직접 읽어 확인한다 — 응답만 보면 조회 때마다 계산하는 구현도 통과해 버린다
-- [ ] T034a [P] [US2] `.../backend/monthly/MonthlyCurrentNameIT.java` — quickstart **#22-1** (SC-409 의 4.5 몫). 수단·지출유형 이름을 바꾸고 같은 달 4.5 를 재조회하면 **둘 다 새 이름**이다. **SC-409 는 4.3·4.5·4.8 세 다리를 요구**하는데 T016 이 4.3, T044 가 4.8 을 덮으므로 이것이 남은 하나다 — 월별 내역에도 이름 컬럼이 없다는 사실을 확인하는 자리다(FR-405)
-- [ ] T034b [P] [US2] `.../backend/monthly/MonthlyDeadReferenceIT.java` — quickstart **#22-2** (FR-426). 고정지출만 쓰던 지출유형을 삭제 표시한 뒤 다음 달을 **처음** 조회하면 **내역이 만들어진다**(`3103` 이 아니다). 수단을 사용 안 함으로 돌린 경우도 같이 건다. **T010a 가 지키는 지점**이며, 실패하면 사용자가 아무 잘못 없이 그 달을 열지 못한다
-- [ ] T035 [P] [US2] `.../backend/monthly/MonthlyFilterOrderIT.java` — quickstart #21·#22. **한 쌍이다**: `paymentMethodId` 필터를 걸고 그 달을 **처음** 열면 그 달 대상 **전체**가 생성되고 결과만 좁혀지며(#21), 직후 필터 **없이** 같은 달을 열면 나머지가 **이미 있다**(#22). 순서를 뒤집으면 같은 달의 내역이 "언제 어떤 필터로 처음 열었는가"에 따라 달라진다(FR-406)
+- [X] T031 [P] [US2] `.../backend/monthly/MonthlyLazyCreateIT.java` — quickstart #13·#16·#17·#20. #13 은 처음 조회 시 만들어져 **저장되고 함께 돌아온다**, #16 은 기간 **밖**이면 만들어지지 않는다(FR-408), #17 은 대상이 없으면 `list` 가 **빈 배열**, #20 은 `2026-11 ~ 2027-02` 의 2027-01 이 기간 안이다(해를 넘겨도)
+- [X] T032 [P] [US2] `.../backend/monthly/MonthlyIdempotencyIT.java` — quickstart #14 (SC-402). 같은 달을 **100번** 조회해도 행은 **1건**이다
+- [X] T033 [P] [US2] `.../backend/monthly/MonthlyConcurrencyIT.java` — quickstart #15 (SC-403). **이 기능에서 가장 중요한 동시성 시험**이다. 같은 달을 동시에 두 요청이 처음 열어도 행은 **1건**이고 **어느 쪽도 오류로 끝나지 않는다** — SC-403 의 뒷부분까지 단언한다. 한쪽이 유니크 위반으로 `9000` 을 내면 실패다. `data-mod` 의 `FixedExpenseMonthlyConcurrencyIT` 방식을 참고한다
+- [X] T034 [P] [US2] `.../backend/monthly/MonthlyPaymentDateIT.java` — quickstart #18·#19 (SC-404). 결제일 31 인 고정지출의 2026-02 내역 결제일이 **2026-02-28**, 2028-02 는 **2028-02-29**(윤년)다. **저장된 값**을 DB 에서 직접 읽어 확인한다 — 응답만 보면 조회 때마다 계산하는 구현도 통과해 버린다
+- [X] T034a [P] [US2] `.../backend/monthly/MonthlyCurrentNameIT.java` — quickstart **#22-1** (SC-409 의 4.5 몫). 수단·지출유형 이름을 바꾸고 같은 달 4.5 를 재조회하면 **둘 다 새 이름**이다. **SC-409 는 4.3·4.5·4.8 세 다리를 요구**하는데 T016 이 4.3, T044 가 4.8 을 덮으므로 이것이 남은 하나다 — 월별 내역에도 이름 컬럼이 없다는 사실을 확인하는 자리다(FR-405)
+- [X] T034b [P] [US2] `.../backend/monthly/MonthlyDeadReferenceIT.java` — quickstart **#22-2** (FR-426). 고정지출만 쓰던 지출유형을 삭제 표시한 뒤 다음 달을 **처음** 조회하면 **내역이 만들어진다**(`3103` 이 아니다). 수단을 사용 안 함으로 돌린 경우도 같이 건다. **T010a 가 지키는 지점**이며, 실패하면 사용자가 아무 잘못 없이 그 달을 열지 못한다
+- [X] T035 [P] [US2] `.../backend/monthly/MonthlyFilterOrderIT.java` — quickstart #21·#22. **한 쌍이다**: `paymentMethodId` 필터를 걸고 그 달을 **처음** 열면 그 달 대상 **전체**가 생성되고 결과만 좁혀지며(#21), 직후 필터 **없이** 같은 달을 열면 나머지가 **이미 있다**(#22). 순서를 뒤집으면 같은 달의 내역이 "언제 어떤 필터로 처음 열었는가"에 따라 달라진다(FR-406)
 
 ### 구현
 
-- [ ] T036 [P] [US2] `.../backend/dto/request/FixedExpenseMonthlyListQuery.java` — `year`·`month` 필수(범위 오류는 **`3403`**), `paymentMethodId`·`expendGroupId` 선택 필터
-- [ ] T037 [P] [US2] `.../backend/dto/response/FixedExpenseMonthlyResponse.java` — 월별 내역 1건. 이름 2개는 **현재 이름**이다
-- [ ] T038 [P] [US2] `.../backend/dto/response/FixedExpenseMonthlyListResponse.java` — `list` + `year` · `month` · `total`(그 달 고정지출 합계)를 **형제 필드**로 둔다(api-contract §3)
-- [ ] T039 [US2] `.../backend/mapper/FixedExpenseMonthlyMapper.java` — Entity ↔ DTO. T025 와 같이 **연관에서 현재 이름을 읽는다**
-- [ ] T040 [US2] `.../backend/service/FixedExpenseMonthlyService.java` 의 lazy 생성 — 그 연·월에 걸리는 설정을 `findApplicableTo` 로 모으고, T010 의 팩토리로 값을 만들어 **`insertIfAbsent`(`ON CONFLICT DO NOTHING`)로 삽입한 뒤 다시 조회**한다. 애플리케이션의 "있으면 건너뛴다" 검사만으로 끝내지 않는다 — 두 트랜잭션이 같은 순간 "없음"을 보는 창이 열려 하나가 유니크 위반으로 실패한다(research §2)
-- [ ] T041 [US2] `.../backend/service/FixedExpenseMonthlyService.java` 에서 **필터를 생성 뒤에** 적용한다(FR-406) — 생성을 전부 끝낸 다음 결과를 좁힌다. T035 가 지키는 지점이다
-- [ ] T042 [US2] `.../backend/controller/FixedExpenseMonthlyController.java` — 4.5 `GET /api/v1/fixed-expenses/monthly`
+- [X] T036 [P] [US2] `.../backend/dto/request/FixedExpenseMonthlyListQuery.java` — `year`·`month` 필수(범위 오류는 **`3403`**), `paymentMethodId`·`expendGroupId` 선택 필터
+- [X] T037 [P] [US2] `.../backend/dto/response/FixedExpenseMonthlyResponse.java` — 월별 내역 1건. 이름 2개는 **현재 이름**이다
+- [X] T038 [P] [US2] `.../backend/dto/response/FixedExpenseMonthlyListResponse.java` — `list` + `year` · `month` · `total`(그 달 고정지출 합계)를 **형제 필드**로 둔다(api-contract §3)
+- [X] T039 [US2] `.../backend/mapper/FixedExpenseMonthlyMapper.java` — Entity ↔ DTO. T025 와 같이 **연관에서 현재 이름을 읽는다**
+- [X] T040 [US2] `.../backend/service/FixedExpenseMonthlyService.java` 의 lazy 생성 — 그 연·월에 걸리는 설정을 `findApplicableTo` 로 모으고, T010 의 팩토리로 값을 만들어 **`insertIfAbsent`(`ON CONFLICT DO NOTHING`)로 삽입한 뒤 다시 조회**한다. 애플리케이션의 "있으면 건너뛴다" 검사만으로 끝내지 않는다 — 두 트랜잭션이 같은 순간 "없음"을 보는 창이 열려 하나가 유니크 위반으로 실패한다(research §2)
+- [X] T041 [US2] `.../backend/service/FixedExpenseMonthlyService.java` 에서 **필터를 생성 뒤에** 적용한다(FR-406) — 생성을 전부 끝낸 다음 결과를 좁힌다. T035 가 지키는 지점이다
+- [X] T042 [US2] `.../backend/controller/FixedExpenseMonthlyController.java` — 4.5 `GET /api/v1/fixed-expenses/monthly`
 
 **Checkpoint**: 설정이 그 달의 실제 금액으로 드러나고, 동시 조회에도 행이 1건이다
 

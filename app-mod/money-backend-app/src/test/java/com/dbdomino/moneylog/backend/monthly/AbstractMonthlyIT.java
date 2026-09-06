@@ -48,6 +48,21 @@ abstract class AbstractMonthlyIT extends AbstractApiIT {
         return prepare(25);
     }
 
+    /**
+     * 적용 기간을 <b>2026-01 ~ 2028-12</b> 로 넓게 잡는다.
+     *
+     * <p>말일 보정 시험이 2026-02(평년)·2028-02(윤년)·30일 달·31일 달을 모두 열어야 하는데,
+     * {@link #START}~{@link #END} 는 넉 달이라 대상이 들어오지 않는다.
+     */
+    protected Fixture prepareWide(int paymentDayOfMonth) throws Exception {
+        Member member = signupAndLogin();
+        long paymentMethodId = createExpensePaymentMethod(member.token(), "국민카드");
+        long expendGroupId = defaultGroupId(member, "주거");
+        long fixedExpenseId = createFixedExpense(member.token(), "월세", paymentMethodId,
+                expendGroupId, 500000L, paymentDayOfMonth, "2026-01", "2028-12");
+        return new Fixture(member, paymentMethodId, expendGroupId, fixedExpenseId);
+    }
+
     /** 그 회원에게 고정지출 설정을 하나 더 붙인다. 필터·다건 생성 시험이 쓴다. */
     protected long addFixedExpense(Fixture fixture, String name, long paymentMethodId,
                                    long amount) throws Exception {
