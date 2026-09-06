@@ -13,15 +13,15 @@ openapi: 3.1.0
 # 다른 것이 정상이기 때문이다.
 #
 # 대상 범위: 002 회원·인증 / 003 수단·지출유형 / 004 지출·소득·할부·엑셀 / 005 고정지출 설정.
-# 005(고정지출·가계부)는 **설정 CRUD 5건(4.1~4.4·4.7)·월별 내역 목록(4.5)·가계부 목록(4.8)까지 구현**되어 담았다.
-# 월별 단건 수정(4.6)·재작성(4.9) 2건은 아직이며 구현되면 함께 늘린다.
+# 005(고정지출·가계부)는 **재작성(4.9)을 뺀 8건이 구현**되어 담았다.
+# 재작성(4.9) 1건은 아직이며 구현되면 함께 늘린다.
 # =============================================================================
 
 info:
   title: money-log 백엔드 API
   version: v1
   description: |
-    가계부 백엔드 REST API. 48개 오퍼레이션 / 32개 경로.
+    가계부 백엔드 REST API. 49개 오퍼레이션 / 33개 경로.
 
     ## 응답 규격 — 실패도 HTTP 200 이다
 
@@ -1356,6 +1356,95 @@ paths:
                   - properties:
                       data: { $ref: "#/components/schemas/FixedExpenseMonthlyListResponse" }
 
+  /api/v1/fixed-expenses/monthly/{year}/{month}/{fixedExpenseId}:
+    patch:
+      tags: [고정지출]
+      summary: "4.6 월별 고정지출 내역 단건 수정"
+      description: |
+        **설정과 월별을 나눈 이유 그 자체다.** 한 테이블이었다면 "3월만 5만원"을 표현할
+        자리가 없다. 이 수정은 **그 달만** 바꾸고 설정과 다른 달은 건드리지 않는다.
+
+        ### Path 가 세 조각인 이유
+
+        `fixedExpenseId` 하나로는 행이 특정되지 않는다 — 같은 고정지출이 여러 달에 걸쳐
+        행을 갖기 때문이다. 유니크 제약
+        `ux_fixed_expense_monthly (fixed_expense_idx, year, month)` 와 같은 조합이다.
+
+        ### 바꿀 수 있는 것은 넷뿐이다
+
+        `amount` · `paymentDate` · `content` · `paymentMethodId`(FR-410).
+        **이름과 지출유형은 대상이 아니며 보내면 `9001`** 이다 — 그것들은 설정(4.4)에서
+        바꾸고 월별 내역이 따라간다. 여기서 바꾸게 두면 같은 고정지출의 달마다 유형이
+        달라져 통계가 무너진다.
+
+        ### 판정 순서가 결과 코드를 바꾼다
+
+        ```text
+        1. fixedExpenseId 로 설정 조회 (본인 소유?)   없음·타인 → 3402
+        2. Path 의 year·month 범위                   오류    → 3403
+        3. 그 연·월의 월별 내역이 있는가              없음    → 3405
+        4. 값 검증                                  → 3003 / 3401
+        5. UPDATE + modified = true
+        ```
+
+        1번이 가장 먼저인 것은 **남의 설정의 존재가 코드 차이로 새어 나가는 것을 막기
+        위해서**다. 값 검증을 먼저 하면 "남의 설정 + 잘못된 값"이 `3402` 가 아니라
+        `3401` 로 나가 그 ID 가 실재함이 드러난다.
+
+        ### `3405` 가 lazy 생성 모델의 대가다
+
+        **열어 본 적 없는 달은 고칠 수 없다** — 행이 없으니 UPDATE 할 대상이 없다.
+        사용자는 먼저 4.5 로 그 달을 열거나 4.9 로 재작성해야 한다.
+
+        ### 빈 Body 는 `3401` 이다 — omit 규칙의 예외
+
+        PATCH 의 omit = 유지 규칙대로면 `{}` 는 성공해야 하지만 거절한다. 성공으로
+        흘러가면 **`modified=true` 만 세워지고**, 그 표시가 이후 설정 수정(4.4)의 자동
+        반영에서 이 달을 영구히 제외한다. 아무것도 바꾸지 않은 달이 "사용자가 직접 손댄
+        달"로 굳는 것이다.
+
+        ### 수단은 사용 가능 여부까지 본다 — 자동 생성과 방향이 반대다
+
+        자동 생성·재작성(4.5·4.8·4.9)은 설정의 참조를 그대로 복사하며 사용 가능 여부를
+        **묻지 않지만**(FR-426), 여기는 **사용자가 직접 고르는 경로**라 죽은 수단으로
+        갈아타는 것을 막아야 한다. 코드는 4.1 등록과 같다 — 없음·타인·사용 불가는
+        `3003`, 용도 불일치만 `3401` 이다.
+      parameters:
+        - name: year
+          in: path
+          required: true
+          schema: { type: integer }
+          description: "범위 오류는 `3403`"
+        - name: month
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 12 }
+        - name: fixedExpenseId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+          description: "고정지출 **설정**의 PK. 월별 내역의 PK 가 아니다"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FixedExpenseMonthlyUpdateRequest" }
+      responses:
+        "200":
+          description: |
+            성공 `data` 는 FixedExpenseMonthlyResponse 이며 **`modified` 가 `true`** 다.
+
+            실패: `3402` 설정 없음·타인 · `3403` Path 연·월 범위 · `3405` 그 달 내역 없음 ·
+            `3003` 수단 없음·타인·사용 불가 · `3401` 빈 Body·금액 0 이하·다른 달 결제일·용도 불일치 ·
+            `9001` 대상 밖 필드
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/FixedExpenseMonthlyResponse" }
+
   # ===========================================================================
   # 005 월별 가계부 통합 목록
   # ===========================================================================
@@ -2055,6 +2144,31 @@ components:
           description: |
             사용자가 이 달 값을 직접 고쳤는가(4.6). 참이면 설정 수정(4.4)의 자동 반영이
             이 달을 덮지 않는다
+
+    FixedExpenseMonthlyUpdateRequest:
+      type: object
+      description: |
+        **omit = 유지.** 대상은 아래 넷뿐이며 그 밖의 이름(`name`·`expendGroupId` 등)을
+        보내면 `9001` 이다 — 조용히 버리면 오타(`amout`)가 "아무것도 안 바꿈"으로 흘러가
+        사용자는 고쳤다고 믿는다.
+
+        **빈 Body(`{}`)는 `3401`** 이다. omit 규칙의 예외이며, 성공시키면 `modified=true`
+        만 세워져 그 달이 이후 자동 반영에서 영구히 제외된다.
+      properties:
+        amount: { type: integer, format: int64, minimum: 1, description: "그 달 금액. 0 이하는 `3401`" }
+        paymentDate:
+          type: string
+          format: date
+          description: |
+            그 달 결제일. **Path 의 `year`·`month` 와 같은 달**이어야 하며 아니면 `3401` —
+            11월 행에 12월 날짜를 넣으면 그 행이 어느 달 것인지가 무너진다
+        content: { type: string, maxLength: 255 }
+        paymentMethodId:
+          type: integer
+          format: int64
+          description: |
+            그 달 수단. 본인 소유의 **사용 중**이고 `purpose=EXPENSE` 여야 한다.
+            없음·타인·사용 불가는 `3003`, 용도 불일치는 `3401`
 
     LedgerItemResponse:
       type: object

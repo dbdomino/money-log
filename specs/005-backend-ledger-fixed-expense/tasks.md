@@ -173,15 +173,15 @@ spec.md 의 스토리 순서(US1~US5)가 아니라 **우선순위 순서**(P1 �
 
 ### 테스트
 
-- [ ] T057 [P] [US3] `.../backend/monthly/MonthlyUpdateIT.java` — quickstart #23·#24·#29. 두 달치 중 한 달의 금액만 고치면 다른 달은 그대로이고(#23), 그 행이 `modified=true` 가 되며(#24), **이름·지출유형은 이 경로로 바뀌지 않는다**(#29) — 바꿀 수 있는 것은 금액·결제일·내용·수단 넷뿐이다(FR-410)
-- [ ] T058 [P] [US3] `.../backend/monthly/MonthlyUpdateRejectIT.java` — quickstart #25·#26·#27·#28. #25 는 아직 만들어지지 않은 달이면 **`3405`**(lazy 생성 모델의 대가다 — 열어 본 적 없는 달은 고칠 수 없다), #26 은 **바꿀 필드를 하나도 안 보내면 `3401`**, #27 은 `paymentDate` 가 Path 의 연·월과 다른 달이면 `3401`, #28 은 `paymentMethodId` 가 `purpose=INCOME` 이면 `3401`. **#26 을 빠뜨리기 쉽다** — PATCH omit 규칙상 빈 Body 가 "아무것도 안 바꾼다"로 읽히지만 설계 명세는 이를 거절한다. 의미 없는 요청이 `modified=true` 만 세우는 것을 막는 장치다
+- [X] T057 [P] [US3] `.../backend/monthly/MonthlyUpdateIT.java` — quickstart #23·#24·#29. 두 달치 중 한 달의 금액만 고치면 다른 달은 그대로이고(#23), 그 행이 `modified=true` 가 되며(#24), **이름·지출유형은 이 경로로 바뀌지 않는다**(#29) — 바꿀 수 있는 것은 금액·결제일·내용·수단 넷뿐이다(FR-410)
+- [X] T058 [P] [US3] `.../backend/monthly/MonthlyUpdateRejectIT.java` — quickstart #25·#26·#27·#28. #25 는 아직 만들어지지 않은 달이면 **`3405`**(lazy 생성 모델의 대가다 — 열어 본 적 없는 달은 고칠 수 없다), #26 은 **바꿀 필드를 하나도 안 보내면 `3401`**, #27 은 `paymentDate` 가 Path 의 연·월과 다른 달이면 `3401`, #28 은 `paymentMethodId` 가 `purpose=INCOME` 이면 `3401`. **#26 을 빠뜨리기 쉽다** — PATCH omit 규칙상 빈 Body 가 "아무것도 안 바꾼다"로 읽히지만 설계 명세는 이를 거절한다. 의미 없는 요청이 `modified=true` 만 세우는 것을 막는 장치다
 
 ### 구현
 
-- [ ] T059 [P] [US3] `.../backend/dto/request/FixedExpenseMonthlyUpdateRequest.java` — `PatchFields` 로 omit 을 구분하고 **전부 omit 이면 `3401`**. 대상은 `amount`·`paymentDate`·`content`·`paymentMethodId` 넷뿐이다. **"전부 omit" 판정은 이 네 필드에 대해서만 한다** — 요청에 `name`·`expendGroupId` 같은 대상 밖 필드만 담겨 있으면 Jackson 이 그것들을 버리므로(`fail-on-unknown-properties` 는 기본 `false`) 네 필드가 전부 omit 이라 `3401` 이다. quickstart #29 와 #26 이 같은 답으로 이어지는 지점이다
-- [ ] T060 [US3] `.../backend/service/FixedExpenseMonthlyService.java` 에 4.6 의 **판정 순서**를 넣는다 — `3402`(설정 없음·타인) → `3403`(Path 연·월 범위) → `3405`(그 연·월 내역 없음) → `3401`(값 검증). **순서가 결과를 바꾼다**(api-contract §6). 수단은 **본인 소유 · `purpose=EXPENSE` · 사용 중**(`in_use=true`, `deleted=false`)까지 전부 봐서 아니면 `3401` 을 낸다 — T006 의 `requireOwnedUsablePaymentMethod` + `requirePurpose(..., FIXED_EXPENSE_FIELD_INVALID)` 조합이다. **T010a 와 방향이 반대인 것에 주의한다**: 자동 생성은 사용 가능 여부를 묻지 않지만 4.6 은 **사용자가 수단을 직접 고르는 경로**라 죽은 수단으로 갈아타는 것을 막아야 한다(FR-426)
-- [ ] T061 [US3] `.../backend/service/FixedExpenseMonthlyService.java` 에서 UPDATE 후 **`modified = true`** 로 표시한다 — 이 표시가 FR-412 의 자동 반영과 FR-414 의 ③보존을 가르는 유일한 근거다
-- [ ] T062 [US3] `.../backend/controller/FixedExpenseMonthlyController.java` 에 4.6 을 더한다 — `PATCH /api/v1/fixed-expenses/monthly/{year}/{month}/{fixedExpenseId}`
+- [X] T059 [P] [US3] `.../backend/dto/request/FixedExpenseMonthlyUpdateRequest.java` — `PatchFields` 로 omit 을 구분하고 **전부 omit 이면 `3401`**. 대상은 `amount`·`paymentDate`·`content`·`paymentMethodId` 넷뿐이다. **"전부 omit" 판정은 이 네 필드에 대해서만 한다** — 요청에 `name`·`expendGroupId` 같은 대상 밖 필드만 담겨 있으면 Jackson 이 그것들을 버리므로(`fail-on-unknown-properties` 는 기본 `false`) 네 필드가 전부 omit 이라 `3401` 이다. quickstart #29 와 #26 이 같은 답으로 이어지는 지점이다
+- [X] T060 [US3] `.../backend/service/FixedExpenseMonthlyService.java` 에 4.6 의 **판정 순서**를 넣는다 — `3402`(설정 없음·타인) → `3403`(Path 연·월 범위) → `3405`(그 연·월 내역 없음) → `3401`(값 검증). **순서가 결과를 바꾼다**(api-contract §6). 수단은 **본인 소유 · `purpose=EXPENSE` · 사용 중**(`in_use=true`, `deleted=false`)까지 전부 봐서 아니면 `3401` 을 낸다 — T006 의 `requireOwnedUsablePaymentMethod` + `requirePurpose(..., FIXED_EXPENSE_FIELD_INVALID)` 조합이다. **T010a 와 방향이 반대인 것에 주의한다**: 자동 생성은 사용 가능 여부를 묻지 않지만 4.6 은 **사용자가 수단을 직접 고르는 경로**라 죽은 수단으로 갈아타는 것을 막아야 한다(FR-426)
+- [X] T061 [US3] `.../backend/service/FixedExpenseMonthlyService.java` 에서 UPDATE 후 **`modified = true`** 로 표시한다 — 이 표시가 FR-412 의 자동 반영과 FR-414 의 ③보존을 가르는 유일한 근거다
+- [X] T062 [US3] `.../backend/controller/FixedExpenseMonthlyController.java` 에 4.6 을 더한다 — `PATCH /api/v1/fixed-expenses/monthly/{year}/{month}/{fixedExpenseId}`
 
 **Checkpoint**: 설정과 월별을 나눈 이유가 실제로 쓰인다 — 한 달만 다르게 고칠 수 있다
 

@@ -159,7 +159,7 @@ psql -h localhost -U moneyloguser -d moneylogdb -c \
 | 26 | **바꿀 필드를 하나도 안 보냄** | `3401` | FR-410 |
 | 27 | `paymentDate`가 Path의 `year`·`month`와 다른 달 | `3401` | FR-410 |
 | 28 | `paymentMethodId`가 `purpose=INCOME` 수단 | `3401` | FR-410 |
-| 29 | 이름·지출유형을 이 경로로 변경 시도 | 대상이 아니다 (반영되지 않는다) | US3-4 |
+| 29 | 이름·지출유형을 이 경로로 변경 시도 | **`9001`** — 대상이 아니라 거절된다(반영되지 않는다) | US3-4 |
 
 **26번을 빠뜨리기 쉽다.** PATCH omit 규칙상 빈 Body가 "아무것도 안 바꾼다"로 읽히지만,
 설계 명세는 이를 거절한다 — 의미 없는 요청이 `modified=true`만 세우는 것을 막는다.

@@ -1,18 +1,25 @@
 package com.dbdomino.moneylog.backend.service;
 
 import com.dbdomino.moneylog.backend.dto.request.FixedExpenseMonthlyListQuery;
+import com.dbdomino.moneylog.backend.dto.request.FixedExpenseMonthlyUpdateRequest;
+import com.dbdomino.moneylog.backend.dto.request.PatchFields;
 import com.dbdomino.moneylog.backend.dto.response.FixedExpenseMonthlyListResponse;
 import com.dbdomino.moneylog.backend.dto.response.FixedExpenseMonthlyResponse;
 import com.dbdomino.moneylog.backend.mapper.FixedExpenseMonthlyMapper;
 import com.dbdomino.moneylog.backend.security.AuthPrincipal;
 import com.dbdomino.moneylog.backend.service.FixedExpenseMonthlyFactory.MonthlyValues;
 import com.dbdomino.moneylog.backend.support.YearMonthValue;
+import com.dbdomino.moneylog.common.error.BusinessException;
+import com.dbdomino.moneylog.common.error.ErrorCode;
 import com.dbdomino.moneylog.data.entity.UserFixedExpense;
 import com.dbdomino.moneylog.data.entity.UserFixedExpenseMonthly;
+import com.dbdomino.moneylog.data.entity.UserPaymentMethod;
 import com.dbdomino.moneylog.data.repository.UserFixedExpenseMonthlyRepository;
 import com.dbdomino.moneylog.data.repository.UserFixedExpenseRepository;
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,15 +53,18 @@ public class FixedExpenseMonthlyService {
     private final UserFixedExpenseMonthlyRepository monthlyRepository;
     private final FixedExpenseMonthlyFactory monthlyFactory;
     private final FixedExpenseMonthlyMapper monthlyMapper;
+    private final ReferenceResolver referenceResolver;
 
     public FixedExpenseMonthlyService(UserFixedExpenseRepository fixedExpenseRepository,
                                       UserFixedExpenseMonthlyRepository monthlyRepository,
                                       FixedExpenseMonthlyFactory monthlyFactory,
-                                      FixedExpenseMonthlyMapper monthlyMapper) {
+                                      FixedExpenseMonthlyMapper monthlyMapper,
+                                      ReferenceResolver referenceResolver) {
         this.fixedExpenseRepository = fixedExpenseRepository;
         this.monthlyRepository = monthlyRepository;
         this.monthlyFactory = monthlyFactory;
         this.monthlyMapper = monthlyMapper;
+        this.referenceResolver = referenceResolver;
     }
 
     /**
@@ -131,6 +141,126 @@ public class FixedExpenseMonthlyService {
                     principal.idKey());
         }
         return created;
+    }
+
+    /**
+     * 4.6 단건 수정 — <b>판정 순서가 결과 코드를 바꾼다</b>(api-contract §6).
+     *
+     * <pre>{@code
+     * 1. fixedExpenseId 로 설정 조회 (본인 소유?)  없음·타인 → 3402
+     * 2. Path 의 year·month 범위                  오류    → 3403
+     * 3. 그 연·월의 월별 내역이 있는가             없음    → 3405
+     * 4. 값 검증                                          → 3401
+     * 5. UPDATE + modified = true
+     * }</pre>
+     *
+     * <p><b>1번이 가장 먼저인 이유</b>는 남의 설정의 존재가 코드 차이로 새어 나가는 것을
+     * 막기 위해서다. 값 검증을 먼저 하면 "남의 설정 + 잘못된 값"이 {@code 3402} 가 아니라
+     * {@code 3401} 로 나가 그 ID 가 실재함이 드러난다.
+     *
+     * <p><b>3번이 이 API 의 핵심 제약이다.</b> lazy 생성 모델의 대가로 열어 본 적 없는 달은
+     * 고칠 수 없다 — 행이 없으니 UPDATE 할 대상이 없다. 사용자는 먼저 4.5 로 그 달을 열거나
+     * 4.9 로 재작성한다.
+     *
+     * <p><b>수단은 사용 가능 여부까지 본다.</b> 자동 생성(4.5·4.8·4.9)이 죽은 참조를 그대로
+     * 복사하는 것과 <b>방향이 반대</b>다(FR-426) — 여기는 사용자가 직접 고르는 경로라 죽은
+     * 수단으로 갈아타는 것을 막아야 한다. 한쪽 규칙을 양쪽에 쓰면 반드시 한쪽이 틀린다.
+     */
+    @Transactional
+    public FixedExpenseMonthlyResponse update(AuthPrincipal principal, Long fixedExpenseId,
+                                              Integer year, Integer month,
+                                              Map<String, Object> body) {
+        // 1. 소유자 판정이 가장 먼저다.
+        UserFixedExpense setting = fixedExpenseRepository
+                .findByIdxAndUserIdKey(fixedExpenseId, principal.idKey())
+                .orElseThrow(() -> new BusinessException(ErrorCode.FIXED_EXPENSE_NOT_FOUND));
+
+        // 2. Path 의 연·월 범위. 3405 보다 먼저다 — 범위 밖 값으로는 "행이 있는가"를
+        //    물을 수조차 없다.
+        YearMonthValue yearMonth =
+                YearMonthValue.require(year, month, ErrorCode.FIXED_EXPENSE_MONTH_INVALID);
+
+        // 3. 그 달 행이 있는가. lazy 생성 모델의 대가가 여기서 드러난다.
+        UserFixedExpenseMonthly row = monthlyRepository
+                .findByFixedExpenseIdxAndYearAndMonth(
+                        setting.getIdx(), yearMonth.year(), yearMonth.month())
+                .orElseThrow(() ->
+                        new BusinessException(ErrorCode.FIXED_EXPENSE_MONTHLY_NOT_CREATED));
+
+        // 4. 값 검증. 대상 밖 필드는 9001, 빈 Body 는 3401 이다.
+        PatchFields fields = FixedExpenseMonthlyUpdateRequest.of(body);
+        applyChanges(principal, row, fields, yearMonth);
+
+        // 5. 사용자가 직접 손댄 달임을 표시한다. 이 표시가 FR-412 의 자동 반영과
+        //    FR-414 의 ③보존을 가르는 유일한 근거다.
+        row.setModified(true);
+
+        return monthlyMapper.toResponse(monthlyRepository.saveAndFlush(row));
+    }
+
+    /** 보낸 필드만 반영한다. omit 은 손대지 않는다. */
+    private void applyChanges(AuthPrincipal principal, UserFixedExpenseMonthly row,
+                              PatchFields fields, YearMonthValue yearMonth) {
+        if (fields.has("amount")) {
+            row.setAmount(requireAmount(fields));
+        }
+        if (fields.has("paymentDate")) {
+            row.setPaymentDate(requirePaymentDate(fields, yearMonth));
+        }
+        if (fields.has("content")) {
+            row.setContent(FixedExpenseFieldRules.requireContent(fields.string("content")));
+        }
+        if (fields.has("paymentMethodId")) {
+            row.setPaymentMethod(requireExpenseMethod(principal, fields));
+        }
+    }
+
+    private static long requireAmount(PatchFields fields) {
+        if (fields.hasNonIntegerNumber("amount")) {
+            throw new BusinessException(ErrorCode.FIXED_EXPENSE_FIELD_INVALID,
+                    "금액은 원 단위 정수여야 합니다.");
+        }
+        return FixedExpenseFieldRules.requireAmount(fields.longNumber("amount"));
+    }
+
+    /**
+     * 결제일 — <b>Path 의 연·월과 같은 달이어야 한다</b>.
+     *
+     * <p>11월 행에 12월 날짜를 넣으면 그 행이 어느 달 것인지가 무너진다. 목록은
+     * {@code year}·{@code month} 컬럼으로 고르는데 화면에 뜨는 날짜는 다른 달이 된다.
+     */
+    private static LocalDate requirePaymentDate(PatchFields fields, YearMonthValue yearMonth) {
+        String raw = fields.string("paymentDate");
+        LocalDate parsed;
+        try {
+            parsed = LocalDate.parse(raw);
+        } catch (RuntimeException e) {
+            throw new BusinessException(ErrorCode.FIXED_EXPENSE_FIELD_INVALID,
+                    "결제일은 YYYY-MM-DD 형식이어야 합니다.");
+        }
+        if (!yearMonth.contains(parsed)) {
+            throw new BusinessException(ErrorCode.FIXED_EXPENSE_FIELD_INVALID,
+                    "결제일은 %s 안의 날짜여야 합니다.".formatted(yearMonth));
+        }
+        return parsed;
+    }
+
+    /**
+     * 새 수단 — 소유·사용 가능({@code 3003}) 다음 용도({@code 3401})다.
+     *
+     * <p>4.1 등록과 같은 조합이며 순서도 같다. 남의 수단은 존재를 감춰야 하므로
+     * {@code 3003} 이고, 용도 불일치는 사용자가 자기 목록에서 고른 것이라 {@code 3401} 이다.
+     */
+    private UserPaymentMethod requireExpenseMethod(AuthPrincipal principal, PatchFields fields) {
+        Long requestedId = fields.longNumber("paymentMethodId");
+        if (requestedId == null) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST,
+                    "paymentMethodId 은(는) 비울 수 없습니다.");
+        }
+        UserPaymentMethod method =
+                referenceResolver.requireOwnedUsablePaymentMethod(principal, requestedId);
+        return referenceResolver.requirePurpose(method, UserPaymentMethod.PURPOSE_EXPENSE,
+                ErrorCode.FIXED_EXPENSE_FIELD_INVALID);
     }
 
     /** 두 필터를 적용한다. 걸리지 않은 필터는 통과다. */
