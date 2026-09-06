@@ -1,8 +1,13 @@
 package com.dbdomino.moneylog.backend.controller;
 
+import com.dbdomino.moneylog.backend.dto.request.FindIdRequest;
+import com.dbdomino.moneylog.backend.dto.request.FindPasswordRequest;
 import com.dbdomino.moneylog.backend.dto.request.LoginRequest;
 import com.dbdomino.moneylog.backend.dto.request.RefreshRequest;
+import com.dbdomino.moneylog.backend.dto.request.ResetPasswordRequest;
 import com.dbdomino.moneylog.backend.dto.request.SignupRequest;
+import com.dbdomino.moneylog.backend.dto.response.FindIdResponse;
+import com.dbdomino.moneylog.backend.dto.response.FindPasswordResponse;
 import com.dbdomino.moneylog.backend.dto.response.LoginResponse;
 import com.dbdomino.moneylog.backend.dto.response.MessageResponse;
 import com.dbdomino.moneylog.backend.dto.response.SignupResponse;
@@ -77,6 +82,35 @@ public class AuthController {
     public RestResponseDto<MessageResponse> revoke(
             @AuthenticationPrincipal AuthPrincipal principal) {
         return RestResponseDto.ok(authService.revoke(principal));
+    }
+
+    /**
+     * 1.9 아이디 찾기. 가입 이메일로 찾아 가린 아이디를 돌려준다.
+     *
+     * <p>로그인하지 못하는 사람이 부르는 API 라 인증을 요구하지 않는다(FR-122).
+     */
+    @PostMapping(value = "/find-id", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public RestResponseDto<FindIdResponse> findId(@Valid @RequestBody FindIdRequest request) {
+        return RestResponseDto.ok(authService.findId(request.email()));
+    }
+
+    /** 1.10 비밀번호 찾기. 본인 확인만 하고 아무것도 바꾸지 않는다. */
+    @PostMapping(value = "/find-password", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public RestResponseDto<FindPasswordResponse> findPassword(
+            @Valid @RequestBody FindPasswordRequest request) {
+        return RestResponseDto.ok(authService.findPassword(request));
+    }
+
+    /**
+     * 1.11 비밀번호 재설정.
+     *
+     * <p>1.10 을 거쳤는지 확인하지 않는다 — 재설정 토큰을 두지 않기로 했으므로 같은 두
+     * 값을 여기서 다시 검증하는 것이 유일한 근거다.
+     */
+    @PostMapping(value = "/reset-password", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public RestResponseDto<MessageResponse> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+        return RestResponseDto.ok(authService.resetPassword(request));
     }
 
     /**

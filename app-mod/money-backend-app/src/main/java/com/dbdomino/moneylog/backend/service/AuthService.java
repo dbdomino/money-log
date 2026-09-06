@@ -1,8 +1,12 @@
 package com.dbdomino.moneylog.backend.service;
 
+import com.dbdomino.moneylog.backend.dto.request.FindPasswordRequest;
 import com.dbdomino.moneylog.backend.dto.request.LoginRequest;
 import com.dbdomino.moneylog.backend.dto.request.MemberFieldRules;
+import com.dbdomino.moneylog.backend.dto.request.ResetPasswordRequest;
 import com.dbdomino.moneylog.backend.dto.request.SignupRequest;
+import com.dbdomino.moneylog.backend.dto.response.FindIdResponse;
+import com.dbdomino.moneylog.backend.dto.response.FindPasswordResponse;
 import com.dbdomino.moneylog.backend.dto.response.LoginResponse;
 import com.dbdomino.moneylog.backend.dto.response.MessageResponse;
 import com.dbdomino.moneylog.backend.dto.response.SignupResponse;
@@ -245,6 +249,76 @@ public class AuthService {
         }
 
         return TokenResponse.from(sessionService.rotate(session));
+    }
+
+    /**
+     * 1.9 아이디 찾기. 가입 이메일로 회원을 찾아 <b>가린 아이디</b>를 돌려준다.
+     *
+     * <p>이메일 형식 오류는 Bean Validation 이 {@code 9001} 로, 일치하는 회원이 없으면
+     * {@code 2001} 로 나간다. <b>계정 존재 여부를 감추는 통일 응답은 쓰지 않는다</b> —
+     * 스펙이 "해당 이메일로 가입된 회원 없음"을 알려 주기로 정했다. 대신 찾아낸 아이디를
+     * 가려서 이메일 하나로 남의 아이디를 온전히 얻지는 못하게 한다.
+     */
+    @Transactional(readOnly = true)
+    public FindIdResponse findId(String email) {
+        User user = userRepository.findByEmail(email.trim())
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        return new FindIdResponse(MemberIdMasker.mask(user.getUserId()), true);
+    }
+
+    /**
+     * 1.10 비밀번호 찾기. 본인 확인만 하고 <b>아무것도 바꾸지 않는다</b>.
+     *
+     * <p>확인 수단은 {@code memberId}+{@code nickname} 대조 하나다. 통과해도 서버는
+     * 상태를 남기지 않는다 — 재설정 토큰·인증코드·만료 시간이 존재하지 않으므로,
+     * 이 호출은 화면이 다음 단계로 넘어가도 되는지 묻는 것에 가깝다.
+     */
+    @Transactional(readOnly = true)
+    public FindPasswordResponse findPassword(FindPasswordRequest request) {
+        User user = findByMemberIdAndNickname(request.memberId(), request.nickname());
+        return new FindPasswordResponse(true, MemberIdMasker.mask(user.getUserId()));
+    }
+
+    /**
+     * 1.11 비밀번호 재설정.
+     *
+     * <p><b>1.10 과 같은 두 값을 다시 검증한다.</b> 1.10 을 거쳤는지 서버는 알지 못하고
+     * 알 필요도 없다 — 상태를 들고 다니지 않으므로 이 API 만 직접 불러도 판정이 같다.
+     * 그래서 "찾기를 통과했다"는 사실이 재설정의 근거가 되지 않는다.
+     *
+     * <p>성공하면 <b>그 회원의 활성 세션을 폐기한다</b>. 비밀번호를 재설정하는 상황은
+     * 대개 남이 알고 있다고 의심될 때인데, 세션을 남겨 두면 그 남이 계속 들어와 있다.
+     */
+    @Transactional
+    public MessageResponse resetPassword(ResetPasswordRequest request) {
+        if (!request.newPassword().equals(request.newPasswordConfirm())) {
+            throw new BusinessException(ErrorCode.PASSWORD_CONFIRM_MISMATCH);
+        }
+        if (!MemberFieldRules.isValidPassword(request.newPassword())) {
+            throw new BusinessException(ErrorCode.PASSWORD_RULE_VIOLATION);
+        }
+        User user = findByMemberIdAndNickname(request.memberId(), request.nickname());
+
+        user.setPw(passwordEncoder.encode(request.newPassword()));
+        userRepository.saveAndFlush(user);
+        sessionService.revokeActiveSession(user.getIdKey());
+        return new MessageResponse("비밀번호가 변경되었습니다");
+    }
+
+    /**
+     * 아이디·닉네임 대조. 1.10 과 1.11 이 같은 판정을 쓰도록 한 곳에 둔다.
+     *
+     * <p>불일치는 {@code 2001}, 비활성 계정은 {@code 1004} 다. 아이디가 없는 것과
+     * 닉네임이 다른 것을 같은 코드로 묶는다 — 나누면 "그 아이디는 존재한다"를 알려 준다.
+     */
+    private User findByMemberIdAndNickname(String memberId, String nickname) {
+        User user = userRepository.findByUserId(memberId.trim())
+                .filter(found -> found.getNickname().equals(nickname.trim()))
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        if (!Boolean.TRUE.equals(user.getActive())) {
+            throw new BusinessException(ErrorCode.ACCOUNT_INACTIVE);
+        }
+        return user;
     }
 
     private static long secondsUntil(OffsetDateTime at) {

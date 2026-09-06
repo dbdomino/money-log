@@ -144,17 +144,17 @@ description: "Task list for 002-backend-member-auth"
 
 ### Tests for User Story 3
 
-- [ ] T048 [P] [US3] `app-mod/money-backend-app/src/test/java/com/dbdomino/moneylog/backend/recovery/FindIdIT.java` — #16(가입 이메일로 아이디 찾기 성공, 응답 `memberId`가 **원문과 다르고** `masked=true` — SC-109)·#17(없는 이메일 `2001`). 이메일 형식 오류가 `9001`인 것도 함께 본다(형식은 `9001`, 형식은 맞는데 회원이 없으면 `2001` — api-contract.md §5)
-- [ ] T049 [P] [US3] `app-mod/money-backend-app/src/test/java/com/dbdomino/moneylog/backend/recovery/ResetPasswordIT.java` — #18(재설정 후 옛 비밀번호로 로그인하면 `1003`)·#19(재설정하면 기존 세션이 폐기되어 있다)·#20(**1.10을 건너뛰고 1.11만 직접 호출해도 판정이 같다**). #20이 "재설정 토큰을 두지 않는다"는 결정을 실제로 검증하는 자리다 — 상태를 들고 다니지 않으므로 단독 호출이 성공해야 한다
+- [X] T048 [P] [US3] `app-mod/money-backend-app/src/test/java/com/dbdomino/moneylog/backend/recovery/FindIdIT.java` — #16(가입 이메일로 아이디 찾기 성공, 응답 `memberId`가 **원문과 다르고** `masked=true` — SC-109)·#17(없는 이메일 `2001`). 이메일 형식 오류가 `9001`인 것도 함께 본다(형식은 `9001`, 형식은 맞는데 회원이 없으면 `2001` — api-contract.md §5)
+- [X] T049 [P] [US3] `app-mod/money-backend-app/src/test/java/com/dbdomino/moneylog/backend/recovery/ResetPasswordIT.java` — #18(재설정 후 옛 비밀번호로 로그인하면 `1003`)·#19(재설정하면 기존 세션이 폐기되어 있다)·#20(**1.10을 건너뛰고 1.11만 직접 호출해도 판정이 같다**). #20이 "재설정 토큰을 두지 않는다"는 결정을 실제로 검증하는 자리다 — 상태를 들고 다니지 않으므로 단독 호출이 성공해야 한다
 
 ### Implementation for User Story 3
 
-- [ ] T050 [US3] `data-mod/src/main/java/com/dbdomino/moneylog/data/repository/UserRepository.java`에 `findByEmail(String)`을 추가한다. 기존 `existsByEmail`이 파생 쿼리를 피해 `@Query`로 술어를 고정한 것과 **같은 이유**로, 이메일이 `null`인 요청이 들어와도 회원을 찾지 못하게 한다(선택 항목이라 비어 있는 회원이 여럿이다)
-- [ ] T051 [P] [US3] `app-mod/money-backend-app/src/main/java/com/dbdomino/moneylog/backend/dto/request/`에 `FindIdRequest`(email)·`FindPasswordRequest`(memberId·nickname)·`ResetPasswordRequest`(memberId·nickname·newPassword·passwordConfirm)를, `dto/response/FindIdResponse.java`에 `maskedMemberId`·`masked`를 만든다
-- [ ] T052 [P] [US3] `app-mod/money-backend-app/src/main/java/com/dbdomino/moneylog/backend/service/MemberIdMasker.java`에 아이디 마스킹 규칙을 만든다 — 예: 앞 3자 + `***` + 뒤 2자. **결과가 원문과 반드시 달라야 한다**(SC-109). 아이디가 4자로 짧아도 같아지지 않도록 짧은 길이의 처리를 명시한다. T011의 로그 마스킹(`***` 전체 대체)과 **목적이 다르므로 규칙을 공유하지 않는다**(api-contract.md §6)
-- [ ] T053 [US3] `app-mod/money-backend-app/src/main/java/com/dbdomino/moneylog/backend/service/AuthService.java`에 아이디 찾기(1.9)를 구현한다 — 이메일 형식 오류 `9001`, 일치 회원 없음 `2001`, 성공 시 마스킹한 아이디 + `masked=true`. **계정 존재 여부를 감추는 통일 응답은 쓰지 않는다**(스펙 Edge Case에서 확정). T044·T050·T052에 의존(같은 파일이라 순차)
-- [ ] T054 [US3] `app-mod/money-backend-app/src/main/java/com/dbdomino/moneylog/backend/service/AuthService.java`에 비밀번호 찾기(1.10)와 재설정(1.11)을 구현한다 — 본인 확인은 `memberId`+`nickname` 대조 **하나뿐**이고, **1.11이 같은 두 값을 다시 검증한다**(재설정 토큰·인증코드·만료 시간이 존재하지 않는다 — FR-124). 불일치 `2001`, 비활성 `1004`, 새 비밀번호 규칙 위반 `2004`, 확인 불일치 `2005`. 재설정 성공 시 bcrypt 재해시 + **그 회원의 활성 세션 폐기**(US3 시나리오 3). T053과 같은 파일이라 순차
-- [ ] T055 [US3] `app-mod/money-backend-app/src/main/java/com/dbdomino/moneylog/backend/controller/AuthController.java`에 1.9~1.11을 추가한다 — `POST /api/v1/auth/find-id`·`find-password`·`reset-password`. 셋 다 `permitAll`이다(FR-122). T045와 같은 파일이라 순차
+- [X] T050 [US3] `data-mod/src/main/java/com/dbdomino/moneylog/data/repository/UserRepository.java`에 `findByEmail(String)`을 추가한다. 기존 `existsByEmail`이 파생 쿼리를 피해 `@Query`로 술어를 고정한 것과 **같은 이유**로, 이메일이 `null`인 요청이 들어와도 회원을 찾지 못하게 한다(선택 항목이라 비어 있는 회원이 여럿이다)
+- [X] T051 [P] [US3] `app-mod/money-backend-app/src/main/java/com/dbdomino/moneylog/backend/dto/request/`에 `FindIdRequest`(email)·`FindPasswordRequest`(memberId·nickname)·`ResetPasswordRequest`(memberId·nickname·newPassword·passwordConfirm)를, `dto/response/FindIdResponse.java`에 `maskedMemberId`·`masked`를 만든다
+- [X] T052 [P] [US3] `app-mod/money-backend-app/src/main/java/com/dbdomino/moneylog/backend/service/MemberIdMasker.java`에 아이디 마스킹 규칙을 만든다 — 예: 앞 3자 + `***` + 뒤 2자. **결과가 원문과 반드시 달라야 한다**(SC-109). 아이디가 4자로 짧아도 같아지지 않도록 짧은 길이의 처리를 명시한다. T011의 로그 마스킹(`***` 전체 대체)과 **목적이 다르므로 규칙을 공유하지 않는다**(api-contract.md §6)
+- [X] T053 [US3] `app-mod/money-backend-app/src/main/java/com/dbdomino/moneylog/backend/service/AuthService.java`에 아이디 찾기(1.9)를 구현한다 — 이메일 형식 오류 `9001`, 일치 회원 없음 `2001`, 성공 시 마스킹한 아이디 + `masked=true`. **계정 존재 여부를 감추는 통일 응답은 쓰지 않는다**(스펙 Edge Case에서 확정). T044·T050·T052에 의존(같은 파일이라 순차)
+- [X] T054 [US3] `app-mod/money-backend-app/src/main/java/com/dbdomino/moneylog/backend/service/AuthService.java`에 비밀번호 찾기(1.10)와 재설정(1.11)을 구현한다 — 본인 확인은 `memberId`+`nickname` 대조 **하나뿐**이고, **1.11이 같은 두 값을 다시 검증한다**(재설정 토큰·인증코드·만료 시간이 존재하지 않는다 — FR-124). 불일치 `2001`, 비활성 `1004`, 새 비밀번호 규칙 위반 `2004`, 확인 불일치 `2005`. 재설정 성공 시 bcrypt 재해시 + **그 회원의 활성 세션 폐기**(US3 시나리오 3). T053과 같은 파일이라 순차
+- [X] T055 [US3] `app-mod/money-backend-app/src/main/java/com/dbdomino/moneylog/backend/controller/AuthController.java`에 1.9~1.11을 추가한다 — `POST /api/v1/auth/find-id`·`find-password`·`reset-password`. 셋 다 `permitAll`이다(FR-122). T045와 같은 파일이라 순차
 
 **Checkpoint**: US1~US3이 각각 독립적으로 동작한다. 비밀번호를 잊은 사용자가 돌아올 수 있다
 

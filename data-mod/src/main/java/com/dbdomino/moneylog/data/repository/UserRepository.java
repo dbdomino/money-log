@@ -35,4 +35,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("select count(u) > 0 from User u where u.email is not null and u.email = :email")
     boolean existsByEmail(@Param("email") String email);
+
+    /**
+     * 이메일로 회원 1건을 찾는다. 아이디 찾기(1.9)의 본인 확인 수단이다.
+     *
+     * <p>{@link #existsByEmail(String)}과 <b>같은 이유</b>로 파생 쿼리를 쓰지 않는다.
+     * Spring Data 는 파라미터가 {@code null}이면 {@code email = ?}를
+     * {@code email IS NULL}로 바꿔 생성하는데, 이메일은 선택 항목이라 비어 있는 회원이
+     * 여럿이다. 그러면 이메일 없이 보낸 요청이 <b>아무 회원이나</b> 찾아내게 된다.
+     *
+     * <p>부분 유니크 인덱스 {@code ux_user_email}이 값이 있을 때의 유일성을 보장하므로
+     * 결과는 0건 또는 1건이다.
+     */
+    @Query("select u from User u where u.email is not null and u.email = :email")
+    Optional<User> findByEmail(@Param("email") String email);
 }
