@@ -60,6 +60,36 @@ icon:
     # 두 값이 어긋나면 어느 한쪽만 통과하는 크기 구간이 생긴다.
     max-file-size: 1MB
 
+# Swagger UI 와 OpenAPI 문서. 실행 중인 앱에서 API 를 확인·호출하기 위한 것이다.
+#
+#   Swagger UI   http://localhost:8081/swagger-ui.html
+#   OpenAPI JSON http://localhost:8081/v3/api-docs
+#   OpenAPI YAML http://localhost:8081/v3/api-docs.yaml
+#
+# **운영에서는 끈다.** 두 enabled 를 false 로 두면 경로가 404 가 되므로 SecurityConfig 의
+# permitAll 이 남아 있어도 노출되지 않는다 — 경로를 지우는 것보다 이쪽이 안전하다.
+# 여기 값을 지우지 말고 배포 프로필에서 덮어쓴다.
+#
+# 이 문서는 코드에서 만들어지므로 컨트롤러·DTO 가 바뀌면 따라 바뀐다. 사람이 쓴
+# 계약 문서(app-mod/money-backend-app/openapi.yaml)와 역할이 다르다 — docs/API-문서.md 참고.
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    # 태그(자원)와 메서드를 이름순으로 세운다. 기본값은 컨트롤러 등록 순서라 기동할 때마다
+    # 흔들릴 수 있어 "어제 보던 자리"에 없다.
+    tags-sorter: alpha
+    operations-sorter: alpha
+    # 응답 예시를 접어 둔다. 37개 API 가 전부 펼쳐져 있으면 목록을 훑을 수 없다.
+    doc-expansion: none
+    # 요청 기간(Duration)을 응답에 표시해 느린 호출을 눈으로 잡는다.
+    display-request-duration: true
+  # 문서에 담을 경로. 액추에이터·에러 경로가 섞이지 않게 /api/v1 만 훑는다.
+  paths-to-match: /api/v1/**
+
 # common-mod 의 웹 공용 빈(GlobalExceptionHandler·ApiLoggingAspect) 활성화 스위치.
 #
 # 두 빈은 common-mod 에 있고 money-app(프론트)도 common-mod 를 의존한다. 프론트의

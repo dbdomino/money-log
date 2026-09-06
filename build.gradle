@@ -124,6 +124,15 @@ project(':app-mod:money-backend-app') {
 		// common-mod 가 아니라 여기 둔다 — 프론트 money-app 이 common-mod 를 의존하므로
 		// 거기 넣으면 프론트 빌드가 엑셀 라이브러리를 통째로 끌고 간다.
 		implementation 'org.apache.poi:poi-ooxml:5.5.1'
+
+		// Swagger UI 와 /v3/api-docs. 실행 중인 앱에서 API 를 확인·호출하기 위한 것이다.
+		//
+		// 버전을 문자열로 고정한다 — Spring Boot BOM 이 springdoc 을 관리하지 않는다.
+		// **3.x 를 써야 한다.** 2.x 는 Spring Boot 3 (Jackson 2 · javax→jakarta 이후) 전용이라
+		// Boot 4 + Jackson 3(tools.jackson) 조합에서 컨텍스트가 뜨지 않는다.
+		//
+		// 백엔드에만 넣는다. 프론트 money-app 은 API 를 소비할 뿐 노출하지 않는다.
+		implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0'
 	}
 
 	clean {

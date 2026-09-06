@@ -1,0 +1,1550 @@
+openapi: 3.1.0
+
+# =============================================================================
+# money-log 백엔드 API 연동규격
+#
+# 이 파일은 **사람이 쓴 계약 문서**다. 실행 중인 앱이 /v3/api-docs 로 내놓는 문서와
+# 역할이 다르다 — 자세한 대비는 docs/API-문서.md 를 본다.
+#
+#   이 파일          의도와 계약. 실패 코드·판정 순서·설계 근거를 담는다.
+#   /v3/api-docs    코드의 현재 모습. 컨트롤러·DTO 에서 자동으로 나온다.
+#
+# 둘이 갈리면 어느 쪽이 낡았는지 판단한다. 자동 비교는 하지 않는다 — 설명·예시는
+# 다른 것이 정상이기 때문이다.
+#
+# 대상 범위: 002 회원·인증 / 003 수단·지출유형 / 004 지출·소득·할부·엑셀.
+# **005(고정지출·가계부) 9건은 아직 구현되지 않아 여기 없다.** 구현되면 함께 늘린다.
+# =============================================================================
+
+info:
+  title: money-log 백엔드 API
+  version: v1
+  description: |
+    가계부 백엔드 REST API. 41개 오퍼레이션 / 28개 경로.
+
+    ## 응답 규격 — 실패도 HTTP 200 이다
+
+    성공·실패 모두 `{ "resCode": <숫자>, "data": { ... } }` 한 형태다(헌장 원칙 III).
+    성공은 `resCode: 200`, 비즈니스·검증 실패는 **정수 4자리** 에러코드다.
+
+    **HTTP 상태만 보고 성공으로 읽으면 안 된다.** 아래 둘을 제외한 모든 API 가
+    실패에도 HTTP 200 을 돌려준다.
+
+    | 예외 | 이유 |
+    |---|---|
+    | `GET /api/v1/expend-groups/icons/{filename}` | `<img>`/fetch 로 받는 이미지라 성공·실패 모두 래퍼가 아니다. 실패는 본문 없는 HTTP 상태코드다 |
+    | `GET /api/v1/expense-incomes/excel/template` | **성공만** 예외다(.xlsx 바이너리). 실패는 래퍼 + HTTP 200 이다 — 사용자가 다운로드 버튼을 누르는 흐름이라 사유를 화면에 띄워야 한다 |
+
+    실패 응답의 `data` 는 `{ "message": "..." }` 한 칸이며, 엑셀 행 검증 실패(`3502`)만
+    `errors[]` 를 더 싣는다.
+
+    ## HTTP 메서드
+
+    GET 조회 · POST 생성·로그인 · PATCH 수정 · DELETE 삭제. **PUT 은 쓰지 않는다.**
+
+    PATCH 는 **omit = 유지**다. 보내지 않은 필드는 그대로 두고 보낸 필드만 바꾼다.
+    그래서 요청 스키마의 모든 필드가 선택이며, 명시적 `null` 과 omit 을 구분한다.
+
+    ## 인증
+
+    로그인이 주는 `accessToken` 을 `Authorization: Bearer <token>` 으로 보낸다.
+    Access 1일 · Refresh 7일이고 **회원당 활성 세션은 1건**이라 새 로그인이 기존 세션을
+    폐기한다. 검증은 서명·만료뿐 아니라 **DB 세션 대조까지** 한다.
+
+    권한은 관리자 `1`, 일반 `3`(가입 기본값). 사용자는 **본인 데이터만** 접근한다.
+
+    ## 소유자 판정과 에러코드
+
+    "없음"과 "타인 소유"를 **같은 코드**로 낸다. 나누면 ID 를 훑는 것만으로 남의 데이터가
+    존재한다는 사실이 새어 나간다.
+
+servers:
+  - url: http://localhost:8081
+    description: 로컬 개발 서버
+
+tags:
+  - name: 인증
+    description: 002 — 가입·로그인·토큰·아이디/비밀번호 찾기
+  - name: 회원
+    description: 002 — 본인 정보 조회·수정
+  - name: 관리자
+    description: 002 — 회원 관리. 권한 `1` 전용이며 아니면 `1002`
+  - name: 지출 수단
+    description: 003 — 카드·계좌. 삭제는 **삭제 표시**(행 보존)
+  - name: 지출유형
+    description: 003 — 유형과 아이콘. 삭제는 **삭제 표시**
+  - name: 지출
+    description: 004 — 일시불·할부 지출
+  - name: 소득
+    description: 004 — 소득
+  - name: 엑셀
+    description: 004 — 양식 다운로드와 일괄 업로드
+  - name: 상태
+    description: 헬스체크
+
+paths:
+
+  # ===========================================================================
+  # 상태
+  # ===========================================================================
+  /api/v1/ha:
+    get:
+      tags: [상태]
+      summary: 헬스체크
+      description: 인증이 필요 없다. 로드밸런서·기동 확인용이다.
+      security: []
+      responses:
+        "200":
+          description: "항상 `resCode: 200`"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          status: { type: string, example: UP }
+                          module: { type: string, example: money-backend-app }
+
+  # ===========================================================================
+  # 002 인증
+  # ===========================================================================
+  /api/v1/auth/signup:
+    post:
+      tags: [인증]
+      summary: "1.2 회원가입"
+      description: |
+        가입과 동시에 **기본 지출유형 10종(식비·교통·주거·통신·쇼핑·장보기·의료·교육·문화·기타)과
+        그 아이콘이 함께 만들어진다.** 지출을 적으려면 참조할 유형이 있어야 하기 때문이다.
+
+        비밀번호는 bcrypt 해시로만 저장한다. 권한은 `3`(일반)으로 고정이며 요청으로 정할 수 없다.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SignupRequest" }
+      responses:
+        "200":
+          description: |
+            성공 `data`: `memberId` · `nickname` · `role`.
+
+            실패: `2002` 아이디 중복 · `2003` 이메일 중복 · `2004` 비밀번호 규칙 위반 ·
+            `2005` 비밀번호 확인 불일치 · `9001` 형식 오류
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/SignupResponse" }
+
+  /api/v1/auth/login:
+    post:
+      tags: [인증]
+      summary: "1.1 로그인"
+      description: |
+        성공하면 **기존 세션을 폐기하고** 새 세션을 만든다(회원당 활성 세션 1건).
+        성공·실패 모두 `tbl_user_login_history` 에 남는다.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: |
+            실패: `1003` 아이디/비밀번호 불일치(**둘을 구분하지 않는다** — 구분하면 아이디
+            존재 여부가 새어 나간다) · `1004` 비활성 계정
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/LoginResponse" }
+
+  /api/v1/auth/validate:
+    get:
+      tags: [인증]
+      summary: "1.3 토큰 검증"
+      description: 서명·만료 검증과 **DB 세션 대조를 모두** 한다. 둘 중 하나만으로는 폐기된 세션을 걸러내지 못한다.
+      responses:
+        "200":
+          description: "실패: `1001` 토큰 없음·형식 오류 · `1006` 세션 만료·폐기"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/TokenValidateResponse" }
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [인증]
+      summary: "1.4 토큰 재발급"
+      description: Refresh 토큰으로 Access 를 다시 받는다. 저장된 세션의 해시와 대조한다.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "200":
+          description: "실패: `1005` Refresh 무효·만료 · `1006` 세션 없음"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/TokenResponse" }
+
+  /api/v1/auth/revoke:
+    post:
+      tags: [인증]
+      summary: "1.5 로그아웃"
+      description: 현재 세션을 폐기한다. 본문이 없고 토큰으로 대상을 정한다.
+      responses:
+        "200":
+          description: 성공 `data.message`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/MessageResponse" }
+
+  /api/v1/auth/find-id:
+    post:
+      tags: [인증]
+      summary: "1.6 아이디 찾기"
+      description: |
+        이메일로 아이디를 찾는다. **아이디를 그대로 주지 않고 마스킹해** 돌려준다
+        (`masked: true`) — 이메일만 알면 아이디를 수집할 수 있게 되는 것을 막는다.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "200":
+          description: "실패: `2001` 해당 이메일의 회원 없음"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/FindIdResponse" }
+
+  /api/v1/auth/find-password:
+    post:
+      tags: [인증]
+      summary: "1.7 비밀번호 찾기(본인 확인)"
+      description: 아이디+닉네임이 맞는지만 확인한다. 실제 재설정은 1.8 이 한다.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [memberId, nickname]
+              properties:
+                memberId: { type: string }
+                nickname: { type: string }
+      responses:
+        "200":
+          description: "성공 `data`: `matched` · `memberId`"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/FindPasswordResponse" }
+
+  /api/v1/auth/reset-password:
+    post:
+      tags: [인증]
+      summary: "1.8 비밀번호 재설정"
+      description: 1.7 과 같은 본인 확인(아이디+닉네임)을 다시 하고 새 비밀번호를 세운다.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ResetPasswordRequest" }
+      responses:
+        "200":
+          description: "실패: `2001` 본인 확인 실패 · `2004` 규칙 위반 · `2005` 확인 불일치"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/MessageResponse" }
+
+  # ===========================================================================
+  # 002 회원
+  # ===========================================================================
+  /api/v1/members/me:
+    get:
+      tags: [회원]
+      summary: "1.9 내 정보 조회"
+      description: 토큰이 대상을 정한다. 경로에 아이디를 두지 않아 남의 정보를 요청할 자리가 없다.
+      responses:
+        "200":
+          description: 성공 `data`는 MemberResponse
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/MemberResponse" }
+    patch:
+      tags: [회원]
+      summary: "1.10 내 정보 수정"
+      description: |
+        **omit = 유지.** 보낸 필드만 바꾼다.
+
+        아이디와 권한은 바꿀 수 없다 — 요청에 담아도 무시가 아니라 **대상이 아니다**.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MemberUpdateRequest" }
+      responses:
+        "200":
+          description: "실패: `2003` 이메일 중복 · `2004`/`2005` 비밀번호 · `9001` 형식"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/MemberResponse" }
+
+  # ===========================================================================
+  # 002 관리자 — 전부 권한 1 전용. 아니면 1002
+  # ===========================================================================
+  /api/v1/admin/members:
+    post:
+      tags: [관리자]
+      summary: "1.11 회원 등록"
+      description: 관리자가 회원을 만든다. **`role` 을 지정할 수 있는 유일한 경로**다(가입은 `3` 고정).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminMemberCreateRequest" }
+      responses:
+        "200":
+          description: "실패: `1002` 권한 없음 · `2002`/`2003` 중복 · `2004` 비밀번호 규칙"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/AdminMemberResponse" }
+    get:
+      tags: [관리자]
+      summary: "1.13 회원 목록"
+      description: |
+        **`offset`·`limit` 은 필수이고 기본값이 없다.** 빠지면 `9001` 로 거절한다 —
+        기본값을 채워 조용히 통과시키면 프론트가 페이징을 빠뜨린 채 동작해 버린다.
+
+        `offset` 은 `limit` 의 **배수**여야 한다. 페이지 경계에 맞지 않는 임의 offset 이
+        목록을 겹쳐 보이게 하는 것을 막는다.
+      parameters:
+        - { $ref: "#/components/parameters/Offset" }
+        - { $ref: "#/components/parameters/Limit" }
+        - name: memberId
+          in: query
+          required: false
+          schema: { type: string }
+          description: 아이디 부분 일치
+        - name: nickname
+          in: query
+          required: false
+          schema: { type: string }
+          description: 닉네임 부분 일치. `memberId` 와 함께 오면 AND 다
+      responses:
+        "200":
+          description: "실패: `1002` · `9001`(누락·범위·배수 아님)"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/AdminMemberListResponse" }
+
+  /api/v1/admin/members/{memberId}:
+    parameters:
+      - name: memberId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [관리자]
+      summary: "1.12 회원 상세"
+      responses:
+        "200":
+          description: "실패: `1002` · `2001` 회원 없음"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/AdminMemberResponse" }
+    patch:
+      tags: [관리자]
+      summary: "1.14 회원 수정"
+      description: "**omit = 유지.** 관리자는 `role` 도 바꿀 수 있다."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminMemberUpdateRequest" }
+      responses:
+        "200":
+          description: "실패: `1002` · `2001` · `2003` · `2004` · `9001`"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/AdminMemberResponse" }
+
+  /api/v1/admin/members/{memberId}/deactivate:
+    patch:
+      tags: [관리자]
+      summary: "1.15 회원 비활성화"
+      description: |
+        **행을 지우지 않는다.** `active` 를 내려 로그인을 막을 뿐이며(로그인 시 `1004`),
+        그 회원의 지출·소득 기록은 그대로 남는다. 본문이 없다.
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: "실패: `1002` · `2001`"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/AdminMemberDeactivateResponse" }
+
+  # ===========================================================================
+  # 003 지출 수단
+  # ===========================================================================
+  /api/v1/payment-methods:
+    post:
+      tags: [지출 수단]
+      summary: "2.1 수단 등록"
+      description: |
+        `type` 은 `CARD`·`ACCOUNT`, `purpose` 는 `EXPENSE`·`INCOME` 이다.
+
+        **한 수단은 한쪽 용도만 갖는다.** 지출용 카드로 소득을 적을 수 없다.
+        `type=CARD` 면 `cardExpiry`(`YYYY-MM`)를 받는다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentMethodCreateRequest" }
+      responses:
+        "200":
+          description: "실패: `3001` type/purpose 오류 · `3002` 유효기간 형식 · `9001`"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/PaymentMethodResponse" }
+    get:
+      tags: [지출 수단]
+      summary: "2.2 수단 관리 목록"
+      description: |
+        **삭제 표시된 것까지 전부** 돌려준다. 관리 화면용이라 `deleted`·`inUse` 가 함께 온다.
+
+        페이징이 없다 — 한 회원의 수단은 많아야 수십 건이다.
+      responses:
+        "200":
+          description: 성공 `data.list`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          list:
+                            type: array
+                            items: { $ref: "#/components/schemas/PaymentMethodResponse" }
+
+  /api/v1/payment-methods/active/{purpose}:
+    get:
+      tags: [지출 수단]
+      summary: "2.6 사용 중 수단 목록"
+      description: |
+        입력 화면의 드롭다운용이다. **사용 중이고 삭제되지 않은 것만**, 그중에서도
+        요청한 용도만 돌려준다.
+
+        **응답 항목이 2.2 보다 좁다** — `deleted`·`inUse`·`purpose` 가 없다. 전부 참으로
+        정해진 값이라 실을 이유가 없고, 실으면 프론트가 그 값으로 다시 거를 수 있다는
+        착각을 준다.
+      parameters:
+        - name: purpose
+          in: path
+          required: true
+          schema: { type: string, enum: [EXPENSE, INCOME] }
+      responses:
+        "200":
+          description: 성공 `data.list`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          list:
+                            type: array
+                            items: { $ref: "#/components/schemas/PaymentMethodActiveResponse" }
+
+  /api/v1/payment-methods/{paymentMethodId}:
+    parameters:
+      - name: paymentMethodId
+        in: path
+        required: true
+        schema: { type: integer, format: int64 }
+    get:
+      tags: [지출 수단]
+      summary: "2.3 수단 상세"
+      responses:
+        "200":
+          description: "실패: `3003` 없음 또는 타인 소유(**같은 코드다**)"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/PaymentMethodResponse" }
+    patch:
+      tags: [지출 수단]
+      summary: "2.4 수단 수정"
+      description: |
+        **omit = 유지.**
+
+        `purpose` 변경은 **참조가 0건일 때만** 허용한다(`3005`). 지출·소득·고정지출 설정·
+        월별 고정지출 **네 테이블을 전부** 본다 — 하나라도 빠뜨리면 "소득 수단으로 낸 지출"이
+        만들어져 집계가 어긋난다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentMethodUpdateRequest" }
+      responses:
+        "200":
+          description: "실패: `3001` · `3002` · `3003` · `3005` 용도 변경 잠김 · `9001`"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/PaymentMethodResponse" }
+    delete:
+      tags: [지출 수단]
+      summary: "2.5 수단 삭제"
+      description: |
+        **삭제 표시다(행 보존).** 물리 삭제하면 그 수단으로 적은 과거 지출이 참조를 잃는다.
+
+        삭제 표시된 뒤에도 **그 수단을 쓰던 기존 기록은 조회·수정·삭제가 된다.**
+        막히는 것은 "새로 그 수단을 거는 것"뿐이다.
+      responses:
+        "200":
+          description: "실패: `3003` · `3004` 이미 삭제됨"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/PaymentMethodDeleteResponse" }
+
+  # ===========================================================================
+  # 003 지출유형
+  # ===========================================================================
+  /api/v1/expend-groups:
+    post:
+      tags: [지출유형]
+      summary: "2.7 지출유형 등록"
+      description: |
+        **`multipart/form-data` 다** — 아이콘 파일을 함께 받기 때문이다.
+
+        아이콘은 선택이며 최대 1MB. 크기·형식 위반은 `3102` 다. 서블릿 한도(10MB)는
+        엑셀에 맞춰져 있어 아이콘의 방어선이 아니다 — 애플리케이션이 1MB 로 좁힌다.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 30 }
+                inUse: { type: boolean, default: true }
+                iconFile:
+                  type: string
+                  format: binary
+                  description: 선택. 최대 1MB
+      responses:
+        "200":
+          description: "실패: `3101` 이름 중복 · `3102` 아이콘 형식·크기 · `9001`"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/ExpendGroupResponse" }
+    get:
+      tags: [지출유형]
+      summary: "2.8 지출유형 관리 목록"
+      description: "**삭제 표시된 것까지 전부.** 관리 화면용이라 `deleted`·`inUse` 가 온다."
+      responses:
+        "200":
+          description: 성공 `data.list`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          list:
+                            type: array
+                            items: { $ref: "#/components/schemas/ExpendGroupResponse" }
+
+  /api/v1/expend-groups/active:
+    get:
+      tags: [지출유형]
+      summary: "2.13 사용 중 지출유형 목록"
+      description: |
+        입력 화면용. **사용 중이고 삭제되지 않은 것만**이다.
+
+        2.6 과 같은 이유로 응답 항목이 2.8 보다 좁다 — `deleted`·`inUse` 가 없다.
+      responses:
+        "200":
+          description: 성공 `data.list`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          list:
+                            type: array
+                            items: { $ref: "#/components/schemas/ExpendGroupActiveResponse" }
+
+  /api/v1/expend-groups/{expendGroupId}:
+    parameters:
+      - name: expendGroupId
+        in: path
+        required: true
+        schema: { type: integer, format: int64 }
+    get:
+      tags: [지출유형]
+      summary: "2.9 지출유형 상세"
+      responses:
+        "200":
+          description: "실패: `3103` 없음 또는 타인 소유"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/ExpendGroupResponse" }
+    patch:
+      tags: [지출유형]
+      summary: "2.11 지출유형 수정"
+      description: |
+        **`multipart/form-data` 다**(아이콘 교체 때문). omit = 유지.
+
+        **기본 유형 10종은 이름을 바꿀 수 없다**(`3105`). 아이콘과 `inUse` 는 바꿀 수 있다.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 30 }
+                inUse: { type: boolean }
+                iconFile: { type: string, format: binary }
+      responses:
+        "200":
+          description: "실패: `3101` · `3102` · `3103` · `3105` 기본 유형 이름 잠김"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/ExpendGroupResponse" }
+    delete:
+      tags: [지출유형]
+      summary: "2.12 지출유형 삭제"
+      description: |
+        **삭제 표시다(행 보존).**
+
+        막는 조건이 둘이다 — **기본 유형은 삭제할 수 없고**(`3107`), **그 유형을 쓴 일반
+        지출이 있으면 삭제할 수 없다**(`3106`).
+
+        > 참고: `3106` 판정은 `tbl_expense` **하나만** 본다. 고정지출 설정이 그 유형을 쓰고
+        > 있어도 삭제된다. 005 의 월별 내역 자동 생성이 이 상황을 견디도록 설계된 이유다.
+      responses:
+        "200":
+          description: "실패: `3103` · `3106` 사용 중 · `3107` 기본 유형 · `3108` 이미 삭제됨"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/ExpendGroupDeleteResponse" }
+
+  /api/v1/expend-groups/icons/{filename}:
+    get:
+      tags: [지출유형]
+      summary: "2.10 아이콘 조회"
+      description: |
+        **래퍼를 쓰지 않는 유일한 API 다 — 성공도 실패도.**
+
+        `<img src>` 나 fetch 로 받는 이미지라 성공은 바이너리, 실패는 **본문 없는 HTTP
+        상태코드**다. JSON 래퍼를 돌려주면 `<img>` 가 깨진 이미지를 표시한다.
+
+        3.11(엑셀 양식)과 다르다 — 그쪽은 사용자가 버튼을 눌러 받는 흐름이라 실패에 래퍼를 쓴다.
+      security: []
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: 이미지 바이너리
+          content:
+            image/*:
+              schema: { type: string, format: binary }
+        "401":
+          description: 인증 실패. **본문이 없다**
+        "404":
+          description: 파일 없음. **본문이 없다**
+
+  # ===========================================================================
+  # 004 지출
+  # ===========================================================================
+  /api/v1/expenses:
+    post:
+      tags: [지출]
+      summary: "3.1 지출 등록(일시불)"
+      description: |
+        **수단·지출유형의 이름을 그 시점 값으로 스냅샷해 저장한다.** 지출은 과거 기록이라
+        나중에 수단 이름이 바뀌어도 그때 이름으로 남아야 한다.
+
+        참조는 **사용 중인 것만** 걸 수 있다(`3003`/`3103`). 할부 3컬럼은 전부 `NULL` 이다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExpenseCreateRequest" }
+      responses:
+        "200":
+          description: |
+            성공 `data.expenseId`.
+
+            실패: `3003` 수단 없음·타인·사용 불가·용도 불일치 · `3103` 지출유형 ·
+            `3201` 금액 0 이하·날짜 형식·길이 초과 · `9001`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/ExpenseCreateResponse" }
+
+  /api/v1/expenses/installments:
+    post:
+      tags: [지출]
+      summary: "3.5 할부 등록"
+      description: |
+        **N개월치 지출 행을 한 번에 만든다.** 응답은 목록이 아니라 **결과 요약**이다.
+
+        같은 `installmentGroupId` 를 공유하고 `installmentIndex` 가 1..N, `installmentTotal`
+        이 N 이다. **셋은 전부 비거나 전부 채워진다** — 하나만 채운 행은 "일시불인가 할부인가"를
+        판정할 수 없게 만든다.
+
+        `installmentMonths` 는 **2 이상**이다(1개월은 할부가 아니라 일시불이다).
+        전체가 한 트랜잭션이라 중간에 실패하면 한 건도 남지 않는다(`3205`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InstallmentCreateRequest" }
+      responses:
+        "200":
+          description: "실패: `3003` · `3103` · `3204` 개월 수·금액 오류 · `3205` 생성 실패(전체 롤백)"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/InstallmentCreateResponse" }
+
+  /api/v1/expenses/installments/{installmentGroupId}/remainder:
+    patch:
+      tags: [지출]
+      summary: "3.6 할부 중도상환"
+      description: |
+        남은 회차를 정리한다. 본문이 없다(`{}`).
+
+        **경계가 `> 오늘` 이다** — 오늘 결제된 회차는 남는다. `>=` 로 잡으면 오늘 나간 돈이
+        사라져 이번 달 합계가 소급해 줄어든다.
+      parameters:
+        - name: installmentGroupId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: "실패: `3206` 그룹 없음·타인 소유 · `3207` 정리할 미래 회차 없음"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/InstallmentSettleResponse" }
+
+  /api/v1/expenses/{expenseId}:
+    parameters:
+      - name: expenseId
+        in: path
+        required: true
+        schema: { type: integer, format: int64 }
+    get:
+      tags: [지출]
+      summary: "3.2 지출 상세"
+      description: 이름 두 개는 **등록 당시 스냅샷**이다. 원본 이름이 바뀌어도 따라가지 않는다.
+      responses:
+        "200":
+          description: "실패: `3202` 없음 또는 타인 소유"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/ExpenseResponse" }
+    patch:
+      tags: [지출]
+      summary: "3.3 지출 수정"
+      description: |
+        **omit = 유지.**
+
+        **스냅샷은 참조가 실제로 바뀔 때만 갱신한다.** 세 갈래다.
+
+        | 요청 | 처리 |
+        |---|---|
+        | 참조 필드를 안 보냄 | 참조·스냅샷 그대로. **검증도 하지 않는다** |
+        | 보냈는데 값이 같음 | 그대로 |
+        | 보냈고 값이 다름 | 새 참조를 검증하고 그 **현재** 이름으로 스냅샷 갱신 |
+
+        첫 갈래가 중요하다 — **삭제 표시된 수단을 쓰던 과거 지출의 금액만 고치는 수정이
+        성공해야 한다.** 참조를 안 보냈으니 검증할 것도 없다.
+
+        **할부 개월 수와 시작 연월은 바꿀 수 없다**(`3203`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExpenseUpdateRequest" }
+      responses:
+        "200":
+          description: "실패: `3003` · `3103` · `3201` · `3202` · `3203` 할부 항목 불변 · `9001`"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/ExpenseResponse" }
+    delete:
+      tags: [지출]
+      summary: "3.4 지출 삭제"
+      description: "**물리 삭제다.** 수단·지출유형과 달리 삭제 표시로 남기지 않는다."
+      responses:
+        "200":
+          description: "실패: `3202`"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/ExpenseDeleteResponse" }
+
+  # ===========================================================================
+  # 004 소득
+  # ===========================================================================
+  /api/v1/incomes:
+    post:
+      tags: [소득]
+      summary: "3.7 소득 등록"
+      description: |
+        지출과 달리 **지출유형·장소가 없다.** 소득에는 그 개념이 없어 컬럼 자체가 없다.
+
+        수단은 **`purpose=INCOME`** 이어야 한다. 지출용 수단을 보내면 `3003` 이다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IncomeCreateRequest" }
+      responses:
+        "200":
+          description: "실패: `3003` · `3301` 금액·날짜 형식 · `9001`"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/IncomeCreateResponse" }
+
+  /api/v1/incomes/{incomeId}:
+    parameters:
+      - name: incomeId
+        in: path
+        required: true
+        schema: { type: integer, format: int64 }
+    get:
+      tags: [소득]
+      summary: "3.8 소득 상세"
+      description: "`paymentMethodName` 은 **등록 당시 스냅샷**이다."
+      responses:
+        "200":
+          description: "실패: `3302` 없음 또는 타인 소유"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/IncomeResponse" }
+    patch:
+      tags: [소득]
+      summary: "3.9 소득 수정"
+      description: "**omit = 유지.** 스냅샷 갱신 규칙은 3.3 과 같다(참조가 실제로 바뀔 때만)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IncomeUpdateRequest" }
+      responses:
+        "200":
+          description: "실패: `3003` · `3301` · `3302` · `9001`"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/IncomeResponse" }
+    delete:
+      tags: [소득]
+      summary: "3.10 소득 삭제"
+      description: "**물리 삭제다.**"
+      responses:
+        "200":
+          description: "실패: `3302`"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/IncomeDeleteResponse" }
+
+  # ===========================================================================
+  # 004 엑셀
+  # ===========================================================================
+  /api/v1/expense-incomes/excel/template:
+    get:
+      tags: [엑셀]
+      summary: "3.11 업로드 양식 다운로드"
+      description: |
+        **성공만 래퍼의 예외다** — 본문이 `.xlsx` 바이너리다.
+        **인증 실패는 래퍼 + HTTP 200(`1001`)** 이다. 2.10(아이콘)과 다른 지점이며,
+        사용자가 다운로드 버튼을 누르는 흐름이라 실패 사유를 화면에 띄워야 하기 때문이다.
+
+        시트 이름은 `지출소득`, 헤더 1행 A~G(`구분`·`결제일`·`금액`·`수단`·`지출유형`·`장소`·`내용`),
+        데이터는 2행부터다. **안내 행을 두지 않아** "헤더만 = 데이터 0행"이 곧바로 성립한다.
+
+        A열·수단·지출유형 열에 **드롭다운**이 들어간다. 수단·유형 목록은 **그 회원의 사용 중
+        항목만**이며 남의 것이나 삭제 표시된 것은 들어가지 않는다.
+      responses:
+        "200":
+          description: |
+            성공이면 `.xlsx` 바이너리(`Content-Disposition: attachment;
+            filename=expense_income_template.xlsx`). 인증 실패면 JSON 래퍼(`1001`).
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+
+  /api/v1/expense-incomes/excel/upload:
+    post:
+      tags: [엑셀]
+      summary: "3.12 지출·소득 일괄 업로드"
+      description: |
+        각 행이 **지출 또는 소득으로 저장된다.** 별도의 "가계부" 행은 만들어지지 않는다.
+        만들어지는 행의 규칙은 3.1·3.7 과 **완전히 같다** — 이름 스냅샷도, 사용 중 참조만
+        허용하는 것도 같다. 양식에 할부 열이 없어 **업로드는 일시불만 만든다.**
+
+        ### 판정 순서가 결과를 바꾼다
+
+        **파일 단위 판정이 행 검증보다 먼저다.** 300행을 넘는 파일에 행 오류가 섞여 있어도
+        `3502` 가 아니라 `3504` 다 — 사용자가 할 일이 "표를 고치는 것"이 아니라
+        "파일을 나누는 것"이기 때문이다.
+
+        | 코드 | 뜻 | 사용자가 할 일 |
+        |---|---|---|
+        | `3503` | `.xlsx` 가 아님(**내용으로 판정** — 확장자만 바꾼 파일도 걸린다) | 파일을 다시 고른다 |
+        | `3504` | 데이터가 300행 초과 | 파일을 나눈다 |
+        | `3505` | 데이터 0행(헤더만·빈 줄만·빈 파일) | 파일을 다시 고른다 |
+        | `3502` | 행 값 오류 | 표의 N행 M열을 고친다 |
+
+        ### 행 검증은 저장보다 완전히 앞선다
+
+        **오류를 전부 모아서** 한 번에 돌려준다(`errors[]`). 첫 오류에서 멈추면 사용자가
+        파일을 여러 번 왕복하며 고치게 된다. 한 행이라도 잘못되면 **한 건도 저장하지
+        않는다** — 부분 성공은 재등록에서 중복을 만든다.
+
+        같은 이름의 수단이 둘이면 그 행은 오류다. 첫 매치를 고르면 금액이 붙는 자리를
+        서버가 임의로 정하는 셈이 된다.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: "`.xlsx`. 데이터 최대 300행"
+      responses:
+        "200":
+          description: |
+            성공에도 `errors` 필드가 있고 **비어 있다** — 프론트가 길이만 보면 된다.
+
+            실패: `3502`(**`data.errors[]` 를 더 싣는 유일한 코드**) · `3503` · `3504` ·
+            `3505` · `9001` 파일 크기 초과
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/ExcelImportResponse" }
+
+# =============================================================================
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 로그인 응답의 `accessToken`
+
+  parameters:
+    Offset:
+      name: offset
+      in: query
+      required: true
+      schema: { type: integer, minimum: 0 }
+      description: "건너뛸 건수. 0 이상이고 `limit` 의 **배수**. 빠지면 `9001`"
+    Limit:
+      name: limit
+      in: query
+      required: true
+      schema: { type: integer, minimum: 1 }
+      description: "가져올 건수. 1 이상. 빠지면 `9001`"
+
+  schemas:
+
+    # ── 응답 래퍼 ──────────────────────────────────────────────────────────
+    Envelope:
+      type: object
+      description: |
+        모든 응답의 겉모양. **최상위 필드는 `resCode`·`data` 둘뿐이다.**
+      required: [resCode, data]
+      properties:
+        resCode:
+          type: integer
+          description: "성공 `200`. 실패는 **정수 4자리** 에러코드"
+          example: 200
+        data:
+          type: object
+
+    ErrorEnvelope:
+      type: object
+      description: |
+        실패 응답. `data` 는 `message` 한 칸이며 **`3502` 만 `errors[]` 를 더 싣는다.**
+      required: [resCode, data]
+      properties:
+        resCode: { type: integer, example: 3003 }
+        data:
+          type: object
+          required: [message]
+          properties:
+            message:
+              type: string
+              description: 사용자에게 보여줄 문구
+              example: 결제수단을 찾을 수 없습니다.
+            errors:
+              type: array
+              description: "`3502` 에서만 온다"
+              items: { $ref: "#/components/schemas/ExcelRowError" }
+
+    # ── 002 인증·회원 ──────────────────────────────────────────────────────
+    SignupRequest:
+      type: object
+      required: [memberId, password, passwordConfirm, nickname]
+      properties:
+        memberId: { type: string, description: 로그인 아이디. 중복 불가 }
+        password:
+          type: string
+          format: password
+          description: 8자 이상, 영문 대문자·소문자·숫자·특수문자 중 **3종류 이상**
+        passwordConfirm: { type: string, format: password }
+        nickname: { type: string }
+        email: { type: string, format: email, description: 선택. 중복 불가 }
+        phone: { type: string, description: 선택 }
+        intro: { type: string, description: 선택 }
+
+    SignupResponse:
+      type: object
+      properties:
+        memberId: { type: string }
+        nickname: { type: string }
+        role: { type: integer, description: 가입은 항상 `3`(일반), example: 3 }
+
+    LoginRequest:
+      type: object
+      required: [memberId, password]
+      properties:
+        memberId: { type: string }
+        password: { type: string, format: password }
+
+    LoginResponse:
+      type: object
+      properties:
+        memberId: { type: string }
+        nickname: { type: string }
+        role: { type: integer, description: "관리자 `1` · 일반 `3`" }
+        accessToken: { type: string }
+        tokenType: { type: string, example: Bearer }
+        expiresIn: { type: integer, format: int64, description: 초. 86400(1일) }
+        refreshToken: { type: string }
+        refreshExpiresIn: { type: integer, format: int64, description: 초. 604800(7일) }
+
+    TokenResponse:
+      type: object
+      properties:
+        accessToken: { type: string }
+        tokenType: { type: string, example: Bearer }
+        expiresIn: { type: integer, format: int64 }
+        refreshToken: { type: string }
+        refreshExpiresIn: { type: integer, format: int64 }
+
+    TokenValidateResponse:
+      type: object
+      properties:
+        valid: { type: boolean }
+        memberId: { type: string }
+        role: { type: integer }
+        expiresIn: { type: integer, format: int64, description: 남은 유효 시간(초) }
+
+    FindIdResponse:
+      type: object
+      properties:
+        memberId: { type: string, description: "**마스킹된** 아이디", example: "hon***" }
+        masked: { type: boolean }
+
+    FindPasswordResponse:
+      type: object
+      properties:
+        matched: { type: boolean }
+        memberId: { type: string }
+
+    ResetPasswordRequest:
+      type: object
+      required: [memberId, nickname, newPassword, newPasswordConfirm]
+      properties:
+        memberId: { type: string }
+        nickname: { type: string, description: 본인 확인용 }
+        newPassword: { type: string, format: password }
+        newPasswordConfirm: { type: string, format: password }
+
+    MessageResponse:
+      type: object
+      properties:
+        message: { type: string }
+
+    MemberResponse:
+      type: object
+      properties:
+        memberId: { type: string }
+        nickname: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        intro: { type: string }
+        role: { type: integer }
+
+    MemberUpdateRequest:
+      type: object
+      description: "**omit = 유지.** 아이디·권한은 대상이 아니다."
+      properties:
+        nickname: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        intro: { type: string }
+        password: { type: string, format: password }
+        passwordConfirm: { type: string, format: password }
+
+    AdminMemberCreateRequest:
+      type: object
+      required: [memberId, password, nickname]
+      properties:
+        memberId: { type: string }
+        password: { type: string, format: password }
+        nickname: { type: string }
+        role: { type: integer, description: "`1` 관리자 · `3` 일반. 생략하면 `3`" }
+        email: { type: string, format: email }
+        phone: { type: string }
+        intro: { type: string }
+
+    AdminMemberUpdateRequest:
+      type: object
+      description: "**omit = 유지.** 관리자는 `role` 도 바꿀 수 있다."
+      properties:
+        nickname: { type: string }
+        role: { type: integer }
+        email: { type: string, format: email }
+        phone: { type: string }
+        intro: { type: string }
+        password: { type: string, format: password }
+
+    AdminMemberResponse:
+      type: object
+      properties:
+        memberId: { type: string }
+        nickname: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        intro: { type: string }
+        role: { type: integer }
+        active: { type: boolean }
+
+    AdminMemberListResponse:
+      type: object
+      properties:
+        list:
+          type: array
+          items: { $ref: "#/components/schemas/AdminMemberResponse" }
+        offset: { type: integer }
+        limit: { type: integer }
+        totalCount:
+          type: integer
+          format: int64
+          description: "조건에 맞는 **전체 건수**(`list` 길이가 아니다)"
+
+    AdminMemberDeactivateResponse:
+      type: object
+      properties:
+        memberId: { type: string }
+        active: { type: boolean, description: 항상 `false` }
+        message: { type: string }
+
+    # ── 003 수단·지출유형 ──────────────────────────────────────────────────
+    PaymentMethodCreateRequest:
+      type: object
+      required: [name, type, purpose]
+      properties:
+        name: { type: string, maxLength: 50, description: 회원 안에서 **중복이 허용된다** }
+        type: { type: string, enum: [CARD, ACCOUNT] }
+        purpose:
+          type: string
+          enum: [EXPENSE, INCOME]
+          description: "**한 수단은 한쪽만 갖는다.** 등록 후 변경은 참조 0건일 때만"
+        inUse: { type: boolean, default: true }
+        cardExpiry: { type: string, pattern: "^\\d{4}-\\d{2}$", description: "`type=CARD` 일 때. `YYYY-MM`" }
+
+    PaymentMethodUpdateRequest:
+      type: object
+      description: "**omit = 유지.**"
+      properties:
+        name: { type: string, maxLength: 50 }
+        type: { type: string, enum: [CARD, ACCOUNT] }
+        purpose: { type: string, enum: [EXPENSE, INCOME], description: "참조가 있으면 `3005`" }
+        inUse: { type: boolean }
+        cardExpiry: { type: string }
+
+    PaymentMethodResponse:
+      type: object
+      description: 관리 화면용. `deleted`·`inUse` 를 포함한다
+      properties:
+        paymentMethodId: { type: integer, format: int64 }
+        name: { type: string }
+        type: { type: string, enum: [CARD, ACCOUNT] }
+        purpose: { type: string, enum: [EXPENSE, INCOME] }
+        inUse: { type: boolean }
+        cardExpiry: { type: string }
+        deleted: { type: boolean }
+
+    PaymentMethodActiveResponse:
+      type: object
+      description: |
+        입력 화면용. **관리 목록보다 좁다** — `purpose`·`inUse`·`deleted` 가 없다.
+        전부 정해진 값이라 실으면 프론트가 다시 거를 수 있다는 착각을 준다.
+      properties:
+        paymentMethodId: { type: integer, format: int64 }
+        name: { type: string }
+        type: { type: string }
+        cardExpiry: { type: string }
+
+    PaymentMethodDeleteResponse:
+      type: object
+      properties:
+        paymentMethodId: { type: integer, format: int64 }
+        deleted: { type: boolean, description: 항상 `true`. **행은 남는다** }
+        message: { type: string }
+
+    ExpendGroupResponse:
+      type: object
+      description: 관리 화면용
+      properties:
+        expendGroupId: { type: integer, format: int64 }
+        name: { type: string }
+        inUse: { type: boolean }
+        iconUrl: { type: string, description: "`/api/v1/expend-groups/icons/{filename}`" }
+        defaultGroup: { type: boolean, description: 가입이 만든 기본 10종인가. **삭제 불가·이름 변경 불가** }
+        deleted: { type: boolean }
+
+    ExpendGroupActiveResponse:
+      type: object
+      description: 입력 화면용. `inUse`·`deleted` 가 없다
+      properties:
+        expendGroupId: { type: integer, format: int64 }
+        name: { type: string }
+        iconUrl: { type: string }
+        defaultGroup: { type: boolean }
+
+    ExpendGroupDeleteResponse:
+      type: object
+      properties:
+        expendGroupId: { type: integer, format: int64 }
+        message: { type: string }
+
+    # ── 004 지출·소득 ──────────────────────────────────────────────────────
+    ExpenseCreateRequest:
+      type: object
+      required: [paymentMethodId, expendGroupId, amount, paymentDate, place, content]
+      properties:
+        paymentMethodId:
+          type: integer
+          format: int64
+          description: "**사용 중이고 `purpose=EXPENSE`** 인 본인 수단"
+        expendGroupId: { type: integer, format: int64, description: 사용 중인 본인 지출유형 }
+        amount: { type: integer, format: int64, minimum: 1, description: 원 단위 정수. **0 이하는 `3201`** }
+        paymentDate: { type: string, format: date, description: "`YYYY-MM-DD`" }
+        place: { type: string, maxLength: 100 }
+        content: { type: string, maxLength: 255 }
+
+    ExpenseUpdateRequest:
+      type: object
+      description: |
+        **omit = 유지.** 참조 필드를 보내지 않으면 검증도 하지 않는다 — 삭제 표시된 수단을
+        쓰던 과거 지출의 금액만 고치는 수정이 성공해야 하기 때문이다.
+      properties:
+        paymentMethodId: { type: integer, format: int64 }
+        expendGroupId: { type: integer, format: int64 }
+        amount: { type: integer, format: int64 }
+        paymentDate: { type: string, format: date }
+        place: { type: string }
+        content: { type: string }
+
+    ExpenseCreateResponse:
+      type: object
+      properties:
+        expenseId: { type: integer, format: int64 }
+
+    ExpenseResponse:
+      type: object
+      properties:
+        expenseId: { type: integer, format: int64 }
+        paymentMethodId: { type: integer, format: int64 }
+        paymentMethodName: { type: string, description: "**등록 당시 스냅샷.** 원본 이름이 바뀌어도 따라가지 않는다" }
+        expendGroupId: { type: integer, format: int64 }
+        expendGroupName: { type: string, description: "**등록 당시 스냅샷**" }
+        amount: { type: integer, format: int64 }
+        paymentDate: { type: string, format: date }
+        place: { type: string }
+        content: { type: string }
+        installmentGroupId:
+          type: [integer, "null"]
+          format: int64
+          description: "일시불이면 `null`. **아래 셋은 전부 비거나 전부 채워진다**"
+        installmentIndex: { type: [integer, "null"], description: "회차 1..N" }
+        installmentTotal: { type: [integer, "null"], description: "전체 회차 N (2 이상)" }
+
+    ExpenseDeleteResponse:
+      type: object
+      properties:
+        expenseId: { type: integer, format: int64 }
+        message: { type: string }
+
+    InstallmentCreateRequest:
+      type: object
+      required: [paymentMethodId, expendGroupId, monthlyAmount, installmentMonths, startYearMonth, place, content]
+      properties:
+        paymentMethodId: { type: integer, format: int64 }
+        expendGroupId: { type: integer, format: int64 }
+        monthlyAmount: { type: integer, format: int64, minimum: 1, description: "**월 납입액**(총액이 아니다)" }
+        installmentMonths: { type: integer, minimum: 2, description: "**2 이상.** 1개월은 할부가 아니다" }
+        startYearMonth: { type: string, pattern: "^\\d{4}-\\d{2}$", description: "`YYYY-MM`. 첫 회차가 떨어지는 달" }
+        place: { type: string, maxLength: 100 }
+        content: { type: string, maxLength: 255 }
+
+    InstallmentCreateResponse:
+      type: object
+      description: 목록이 아니라 **결과 요약**이다
+      properties:
+        installmentGroupId: { type: integer, format: int64, description: N개 행이 공유하는 그룹 식별자 }
+        createdCount: { type: integer, description: 만들어진 회차 수 }
+
+    InstallmentSettleResponse:
+      type: object
+      properties:
+        installmentGroupId: { type: integer, format: int64 }
+        settledCount: { type: integer, format: int64, description: 정리된 미래 회차 수 }
+        message: { type: string }
+
+    IncomeCreateRequest:
+      type: object
+      required: [paymentMethodId, amount, paymentDate]
+      properties:
+        paymentMethodId: { type: integer, format: int64, description: "**`purpose=INCOME`** 인 본인 수단" }
+        amount: { type: integer, format: int64, minimum: 1 }
+        paymentDate: { type: string, format: date }
+        content: { type: string, maxLength: 255, description: "**선택이다** — 지출의 `content` 와 다르다" }
+
+    IncomeUpdateRequest:
+      type: object
+      description: "**omit = 유지.**"
+      properties:
+        paymentMethodId: { type: integer, format: int64 }
+        amount: { type: integer, format: int64 }
+        paymentDate: { type: string, format: date }
+        content: { type: string }
+
+    IncomeCreateResponse:
+      type: object
+      properties:
+        incomeId: { type: integer, format: int64 }
+
+    IncomeResponse:
+      type: object
+      description: "**지출유형·장소가 없다** — 소득에는 그 개념이 없어 컬럼 자체가 없다"
+      properties:
+        incomeId: { type: integer, format: int64 }
+        paymentMethodId: { type: integer, format: int64 }
+        paymentMethodName: { type: string, description: "**등록 당시 스냅샷**" }
+        amount: { type: integer, format: int64 }
+        paymentDate: { type: string, format: date }
+        content: { type: string }
+
+    IncomeDeleteResponse:
+      type: object
+      properties:
+        incomeId: { type: integer, format: int64 }
+        message: { type: string }
+
+    # ── 004 엑셀 ───────────────────────────────────────────────────────────
+    ExcelImportResponse:
+      type: object
+      properties:
+        importedCount: { type: integer, description: 저장된 전체 건수. 실패면 **0** }
+        expenseCount: { type: integer }
+        incomeCount: { type: integer }
+        message: { type: string }
+        errors:
+          type: array
+          description: "성공에도 이 필드가 있고 **비어 있다** — 프론트가 길이만 보면 된다"
+          items: { $ref: "#/components/schemas/ExcelRowError" }
+
+    ExcelRowError:
+      type: object
+      description: 사용자가 엑셀에서 보는 좌표 그대로다
+      properties:
+        row: { type: integer, description: "**1부터 세는 엑셀 행 번호.** 헤더가 1행이라 첫 데이터는 2행", example: 3 }
+        column: { type: string, description: "열 문자 A~G", example: C }
+        message: { type: string, example: 금액은 0보다 커야 합니다. }
+
+security:
+  - bearerAuth: []
