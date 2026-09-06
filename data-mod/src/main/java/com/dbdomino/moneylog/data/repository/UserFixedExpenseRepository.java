@@ -3,6 +3,8 @@ package com.dbdomino.moneylog.data.repository;
 import com.dbdomino.moneylog.data.entity.UserFixedExpense;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,8 +17,20 @@ import org.springframework.data.repository.query.Param;
  */
 public interface UserFixedExpenseRepository extends JpaRepository<UserFixedExpense, Long> {
 
-    /** 관리 목록(4.2) — 본인 고정지출 전체. 고정지출은 삭제 표시가 아니라 물리 삭제다. */
+    /** 관리 목록 — 본인 고정지출 전체. 고정지출은 삭제 표시가 아니라 물리 삭제다. */
     List<UserFixedExpense> findByUserIdKeyOrderByIdxAsc(Long idKey);
+
+    /**
+     * 관리 목록(4.2)의 한 페이지. {@code totalCount} 는 {@code Page#getTotalElements()} 다.
+     *
+     * <p>{@code offset}·{@code limit} 을 {@code PageRequest.of(offset / limit, limit)} 으로
+     * 옮긴다. {@code offset} 이 {@code limit} 의 배수임을 {@code FixedExpenseListQuery} 가
+     * 이미 검증했으므로({@code 9001}) 나누어떨어진다 — 002 의 관리자 목록(1.13)과 같은 방식이다.
+     *
+     * <p>정렬은 호출자가 {@code Pageable} 에 담는다. 목록이 페이지마다 흔들리지 않으려면
+     * <b>결정적인 정렬</b>이 필요하고 {@code idx} 오름차순이 그것이다.
+     */
+    Page<UserFixedExpense> findByUserIdKey(Long idKey, Pageable pageable);
 
     /**
      * 적용 기간이 주어진 연·월을 포함하는 고정지출(FR-056). 양 끝을 포함한다.

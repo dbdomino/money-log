@@ -5,6 +5,7 @@ import com.dbdomino.moneylog.data.repository.UserRepository;
 import tools.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -301,6 +302,108 @@ public abstract class AbstractApiIT {
     /** 소득용 수단. 3.7 이 쓴다. */
     protected long createIncomePaymentMethod(String token, String name) throws Exception {
         return createPaymentMethod(token, name, "INCOME");
+    }
+
+    // ── 005(고정지출·가계부)가 쓰는 헬퍼 ─────────────────────────────────────
+
+    /**
+     * 4.1 로 고정지출 설정 1건을 만들고 PK 를 돌려준다.
+     *
+     * <p><b>API 로 만든다.</b> JDBC 로 넣으면 감사 컬럼을 손으로 채워야 하고, 004 에서
+     * 겪었듯 등록 규칙과 시험이 갈릴 수 있다.
+     *
+     * <p><b>이 호출은 관리 행 1건만 만든다.</b> 월별 내역은 그 달을 처음 조회할 때
+     * 생긴다(FR-402). 시험이 월별 행을 원하면 4.5·4.8 을 부르거나 4.9 로 재작성한다.
+     *
+     * @param yearMonthRange {@code "2026-11"} ~ {@code "2027-02"} 를 각각 시작·종료로 쓴다
+     */
+    protected long createFixedExpense(String token, String name, long paymentMethodId,
+                                      long expendGroupId, long amount, int paymentDayOfMonth,
+                                      String startYearMonth, String endYearMonth) throws Exception {
+        JsonNode response = postJson("/api/v1/fixed-expenses", token, """
+                {"name":"%s","paymentMethodId":%d,"expendGroupId":%d,"amount":%d,
+                 "paymentDayOfMonth":%d,"content":"%s",
+                 "startYear":%s,"startMonth":%s,"endYear":%s,"endMonth":%s}
+                """.formatted(name, paymentMethodId, expendGroupId, amount, paymentDayOfMonth, name,
+                yearOf(startYearMonth), monthOf(startYearMonth),
+                yearOf(endYearMonth), monthOf(endYearMonth)));
+        if (resCode(response) != 200) {
+            throw new IllegalStateException("고정지출 등록 실패: " + response);
+        }
+        return response.get("data").get("fixedExpenseId").asLong();
+    }
+
+    /** {@code "2026-11"} 의 연. */
+    protected static int yearOf(String yearMonth) {
+        return Integer.parseInt(yearMonth.substring(0, 4));
+    }
+
+    /** {@code "2026-11"} 의 월. */
+    protected static int monthOf(String yearMonth) {
+        return Integer.parseInt(yearMonth.substring(5, 7));
+    }
+
+    /**
+     * 그 회원의 그 연·월 월별 내역 건수.
+     *
+     * <p>lazy 생성이 실제로 몇 행을 만들었는지는 <b>DB 를 봐야</b> 안다. 응답의 목록
+     * 길이는 필터가 걸리면 달라지므로(FR-406) 생성 여부의 근거가 되지 못한다.
+     */
+    protected int countMonthly(Member member, int year, int month) {
+        Integer count = jdbc.queryForObject("""
+                select count(*) from moneylog.tbl_fixed_expense_monthly m
+                  join moneylog.tbl_user u on u.id_key = m.id_key
+                 where u.user_id = ? and m.year = ? and m.month = ?
+                """, Integer.class, member.memberId(), year, month);
+        return count == null ? 0 : count;
+    }
+
+    /** 그 회원의 월별 내역 전체 건수(연·월 무관). 삭제 CASCADE 검증(SC-407)이 쓴다. */
+    protected int countMonthlyAll(Member member) {
+        Integer count = jdbc.queryForObject("""
+                select count(*) from moneylog.tbl_fixed_expense_monthly m
+                  join moneylog.tbl_user u on u.id_key = m.id_key
+                 where u.user_id = ?
+                """, Integer.class, member.memberId());
+        return count == null ? 0 : count;
+    }
+
+    /**
+     * 한 고정지출의 그 연·월 행을 통째로 읽는다.
+     *
+     * <p>{@code payment_date}(말일 보정 결과)와 {@code modified} 를 <b>저장된 값</b>으로
+     * 확인하는 데 쓴다. 응답만 보면 조회 때마다 다시 계산하는 구현도 통과해 버린다.
+     *
+     * @return 컬럼 이름 → 값. 행이 없으면 예외가 난다 — "아직 안 만들어졌다"를 확인할
+     *         때는 {@link #countMonthly} 를 쓴다
+     */
+    protected Map<String, Object> monthlyRowOf(Member member, long fixedExpenseId,
+                                               int year, int month) {
+        return jdbc.queryForMap("""
+                select m.idx, m.amount, m.payment_date, m.content, m.modified,
+                       m.payment_method_idx, m.expend_group_idx, m.year, m.month
+                  from moneylog.tbl_fixed_expense_monthly m
+                  join moneylog.tbl_user u on u.id_key = m.id_key
+                 where u.user_id = ? and m.fixed_expense_idx = ? and m.year = ? and m.month = ?
+                """, member.memberId(), fixedExpenseId, year, month);
+    }
+
+    /**
+     * 그 달 행의 {@code modified} 를 JDBC 로 세운다.
+     *
+     * <p>4.6 이 아직 없는 단계(US2)에서 "직접 수정한 달"을 만들 때 쓴다. US3 이후로는
+     * 4.6 을 부르는 편이 낫다 — 그쪽이 실제 경로다.
+     *
+     * <p><b>트랜잭션 안에서 갱신한다.</b> datasource 가 {@code auto-commit: false} 라
+     * 트랜잭션 밖 갱신은 커밋되지 않고 조용히 사라진다.
+     */
+    protected void markMonthlyModified(Member member, long fixedExpenseId, int year, int month) {
+        tx.executeWithoutResult(status -> jdbc.update("""
+                update moneylog.tbl_fixed_expense_monthly
+                   set modified = true
+                 where fixed_expense_idx = ? and year = ? and month = ?
+                   and id_key = (select id_key from moneylog.tbl_user where user_id = ?)
+                """, fixedExpenseId, year, month, member.memberId()));
     }
 
     /**

@@ -27,6 +27,40 @@ public interface UserFixedExpenseMonthlyRepository
             Long fixedExpenseIdx, int year, int month);
 
     /**
+     * 설정 수정(4.4)의 <b>자동 반영 대상</b> — 미래 달이면서 사용자가 손대지 않은 행(FR-412).
+     *
+     * <p>두 조건이 함께 걸린다.
+     *
+     * <table border="1">
+     *   <caption>설정을 고쳤을 때 어느 달이 따라가나</caption>
+     *   <tr><th>대상</th><th>갱신</th><th>이유</th></tr>
+     *   <tr><td>지난 달</td><td>안 한다</td><td>이미 일어난 일이다</td></tr>
+     *   <tr><td>이번 달</td><td><b>안 한다</b></td><td>진행 중이고 사용자가 이미 본 숫자다</td></tr>
+     *   <tr><td>미래 달 + {@code modified=false}</td><td><b>한다</b></td><td>—</td></tr>
+     *   <tr><td>미래 달 + {@code modified=true}</td><td>안 한다</td><td>사용자가 직접 손댄 달이다</td></tr>
+     * </table>
+     *
+     * <p><b>이번 달을 포함하지 않는 것</b>이 판단이 필요했던 지점이다. 포함하면 월세를
+     * 올렸을 때 이번 달 가계부 금액이 소급해 바뀐다 — 004 의 중도상환 경계({@code > today})와
+     * 같은 성격의 결정이며, 여기서는 {@code >} 비교가 그 역할을 한다.
+     *
+     * <p>비교를 {@code year * 12 + month} 합성값으로 하는 이유는
+     * {@link UserFixedExpenseRepository#findApplicableTo} 와 같다 — 연과 월을 따로 보면
+     * 해를 넘기는 구간에서 어긋난다.
+     *
+     * @param currentYearMonth 서버 기준 <b>현재</b> 연월의 합성값. 이 값보다 <b>큰</b> 달만
+     *                         걸리므로 이번 달은 빠진다
+     */
+    @Query("select m from UserFixedExpenseMonthly m "
+            + "where m.fixedExpense.idx = :fixedExpenseIdx "
+            + "and m.modified = false "
+            + "and (m.year * 12 + m.month) > :currentYearMonth "
+            + "order by m.year asc, m.month asc")
+    List<UserFixedExpenseMonthly> findFutureUnmodified(
+            @Param("fixedExpenseIdx") Long fixedExpenseIdx,
+            @Param("currentYearMonth") int currentYearMonth);
+
+    /**
      * 수동 재작성(FR-060) — 지정한 연·월에서 주어진 고정지출들의 행을 지운다.
      *
      * <p>적용 기간이 그 연·월을 더는 포함하지 않게 된 행을 걷어내는 용도다
