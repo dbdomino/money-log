@@ -2,6 +2,7 @@ package com.dbdomino.moneylog.data.schema;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.dbdomino.moneylog.data.TestAuditorAware;
 import com.dbdomino.moneylog.data.entity.BaseAuditEntity;
 import com.dbdomino.moneylog.data.entity.User;
 import com.dbdomino.moneylog.data.entity.UserExpendGroup;
@@ -62,6 +63,32 @@ public abstract class AbstractSchemaIT {
 
     @Autowired
     protected JdbcTemplate jdbc;
+
+    /**
+     * 테스트용 감사자. 값을 바꿔 "로그인하지 않은 요청"을 재현할 때 쓴다.
+     *
+     * @see #withoutAuditor(Runnable)
+     */
+    @Autowired
+    protected TestAuditorAware auditorAware;
+
+    /**
+     * 감사자가 없는 상태에서 작업을 실행한다.
+     *
+     * <p>운영에는 감사자가 없는 경로가 실제로 있다 — 회원가입은 로그인 없이 도는 요청이라
+     * {@code SecurityContext}가 비어 있고, 그래서 {@code tbl_user}만 두 감사 컬럼이
+     * nullable 이다. 그 상황에서 무엇이 저장되고 무엇이 막히는지가 검증 대상이다.
+     *
+     * <p>끝나면 기본값으로 되돌린다 — 예외로 빠져나가도 되돌아온다.
+     */
+    protected void withoutAuditor(Runnable work) {
+        auditorAware.clear();
+        try {
+            work.run();
+        } finally {
+            auditorAware.reset();
+        }
+    }
 
     /**
      * 저장 가능한 회원 1건을 만들어 돌려준다(아직 저장하지 않는다).

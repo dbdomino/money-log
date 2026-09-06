@@ -1,6 +1,7 @@
 package com.dbdomino.moneylog.data;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 
 /**
  * {@code data-mod} 테스트 전용 부트 클래스.
@@ -19,4 +20,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  */
 @SpringBootApplication
 public class DataModTestApplication {
+
+    /**
+     * 감사 컬럼 공급자(테스트 전용).
+     *
+     * <p>{@code JpaAuditingConfig}에는 {@code AuditorAware}가 없다 — 값의 출처가 현재
+     * 요청의 인증 주체라 웹 계층을 아는 모듈에서 공급해야 하기 때문이다. 이 빈이 없으면
+     * 감사 컬럼이 채워지지 않아 스키마 IT 가 전부 깨진다(그 컬럼은 {@code tbl_user}를 뺀
+     * 전 테이블에서 NOT NULL 이다).
+     */
+    @Bean
+    public TestAuditorAware auditorAware() {
+        return new TestAuditorAware();
+    }
 }

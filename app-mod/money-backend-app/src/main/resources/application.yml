@@ -20,6 +20,27 @@ spring:
 server:
   port: 8081
 
+# JWT. 상세는 specs/002-backend-member-auth/contracts/auth-pipeline.md §6.
+#
+# secret 은 기본값을 두지 않는다 — 주입을 잊어도 기동이 성공하면 알려진 키가 그대로
+# 운영에 나간다. HS256 이라 256비트(32바이트) 이상이어야 하고, 그 검증은 JwtProperties 가
+# 기동 시점에 한다. 로컬 기동: JWT_SECRET 환경변수를 넣고 bootRun.
+# 테스트는 이 값을 요구하지 않는다 — AbstractApiIT 가 @SpringBootTest properties 로 싣는다.
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-validity-seconds: 86400    # 1일
+  refresh-token-validity-seconds: 604800  # 7일
+
+# common-mod 의 웹 공용 빈(GlobalExceptionHandler·ApiLoggingAspect) 활성화 스위치.
+#
+# 두 빈은 common-mod 에 있고 money-app(프론트)도 common-mod 를 의존한다. 프론트의
+# 컴포넌트 스캔 범위가 com.dbdomino.moneylog 전체라 조건이 없으면 프론트에도 자동
+# 등록되어 기존 ControllerExceptionHandler 와 advice 두 개가 공존한다. 백엔드에서만 켠다.
+moneylog:
+  common:
+    web:
+      enabled: true
+
 logging:
   level:
     org:

@@ -122,30 +122,38 @@ class AuditColumnIT extends AbstractSchemaIT {
     void entityPathRejectsMissingAuthorBeforeReachingDatabase() {
         User user = inTx(() -> userRepository.save(newUser()));
 
-        // stampAudit 을 부르지 않는다. AuditorAware 가 아직 빈 Optional 을 돌려주는
-        // 임시 구현이라 createdBy 가 채워지지 않는다. 두 겹으로 막히는 것이 정상이며,
+        // stampAudit 을 부르지 않고, 감사자도 없는 상태로 저장한다 — 로그인하지 않은
+        // 요청이 자식 테이블에 쓰려는 상황이다. 두 겹으로 막히는 것이 정상이며,
         // 위 시험이 DB 쪽 겹을, 이 시험이 매핑 쪽 겹을 각각 확인한다.
-        assertThatThrownBy(() -> inTx(() -> {
+        //
+        // 감사자를 지우지 않으면 AuditorAware 가 createdBy 를 채워 저장이 성공한다.
+        // 그건 정상 동작이고(로그인한 요청), 이 시험이 보려는 상황이 아니다.
+        withoutAuditor(() -> assertThatThrownBy(() -> inTx(() -> {
             UserExpendGroup group = new UserExpendGroup();
             group.setUser(user);
             group.setName("감사누락");
             expendGroupRepository.saveAndFlush(group);
         }))
                 .isInstanceOf(DataIntegrityViolationException.class)
-                .hasMessageContaining("createdBy");
+                .hasMessageContaining("createdBy"));
     }
 
     @Test
     @DisplayName("#20 tbl_user 는 created_by 없이도 저장된다 — 가입은 자기 자신을 만드는 행위다")
     void userRowWithoutAuthorIsAccepted() {
-        User saved = inTx(() -> {
+        // 감사자가 없는 상태로 저장한다 — 회원가입은 로그인 없이 도는 요청이라
+        // SecurityContext 가 비어 있고, AuditorAware 가 빈 값을 돌려준다. tbl_user 의
+        // 두 감사 컬럼이 nullable 인 이유가 바로 이 경로다.
+        User[] holder = new User[1];
+        withoutAuditor(() -> holder[0] = inTx(() -> {
             User user = new User();
             user.setUserId(TEST_USER_PREFIX + "noauthor");
             user.setPw("$2a$12$0123456789012345678901234567890123456789012345678901");
             user.setNickname("가입직후");
             // createdBy·updatedBy 를 채우지 않는다
             return userRepository.saveAndFlush(user);
-        });
+        }));
+        User saved = holder[0];
 
         User found = inTx(() -> userRepository.findById(saved.getIdKey()).orElseThrow());
 

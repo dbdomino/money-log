@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  백엔드 로깅. 헌장 원칙 IV — 콘솔과 파일에 동시에 남긴다.
+
+  money-app 의 logback.xml 은 전체를 <springProfile name="default"> 로 감싸고 있는데,
+  이 앱은 spring.profiles.active=postgresql 로 뜨므로 같은 구조를 쓰면 어느 appender 도
+  붙지 않는다(오류 없이 조용히 로그가 사라진다). 여기서는 프로필로 감싸지 않고,
+  프로필별로 달라져야 하는 것만 <springProfile> 로 나눈다.
+
+  파일명을 logback-spring.xml 로 둔 이유는 <springProfile>·<springProperty> 를 쓰기
+  위해서다. logback.xml 은 Spring 이 개입하기 전에 로드돼 그 태그를 해석하지 못한다.
+-->
+<configuration>
+
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name"
+                    defaultValue="money-backend-app"/>
+
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+    <property name="LOG_DIR" value="logs"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${APP_NAME}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/${APP_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE"/>
+    </root>
+
+    <!-- 요청~응답 AOP 로그(ApiLoggingAspect)가 나오는 자리. 마스킹은 SensitiveMasker 가 한다. -->
+    <logger name="com.dbdomino.moneylog" level="info"/>
+    <logger name="org.springframework" level="warn"/>
+
+</configuration>
