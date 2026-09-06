@@ -146,9 +146,12 @@ app-mod/money-backend-app/src/main/
 │   │   └── LedgerController.java                 + 4.8
 │   ├── service/
 │   │   ├── FixedExpenseService.java              + 설정 CRUD (4.1~4.4·4.7)
+│   │   ├── FixedExpenseFieldRules.java           + 기간·결제일·금액 값 검증 (3401)
 │   │   ├── FixedExpenseMonthlyService.java       + lazy 생성·단건 수정 (4.5·4.6)
-│   │   ├── FixedExpenseSyncService.java          + 재작성 4단계 (4.9)
+│   │   ├── FixedExpenseMonthlyFactory.java       + 설정+연·월 → 월별 1행. 생성 규칙의 단일 지점
+│   │   ├── FixedExpenseSyncService.java          + 설정 반영 — 자동(FR-412)과 재작성 4단계(4.9)
 │   │   ├── LedgerService.java                    + 4.8 유스케이스
+│   │   ├── ReferenceResolver.java                ~ 용도 불일치를 3401 로 낼 수 있게 분기 추가
 │   │   └── ledger/
 │   │       ├── LedgerAssembler.java              + 4개 출처를 한 목록으로
 │   │       └── LedgerItemFactory.java            + type 별 행 변환·ledgerItemId 생성
@@ -156,6 +159,9 @@ app-mod/money-backend-app/src/main/
 │   │   └── YearMonthValue.java                   + 연×12+월 합성 비교를 가두는 값 객체
 │   ├── dto/
 │   │   ├── request/                              + 등록·수정·재작성 Request DTO
+│   │   │                                           + FixedExpenseListQuery(4.2 페이징 9001)
+│   │   │                                           + FixedExpenseMonthlyListQuery(3403)
+│   │   │                                           + LedgerMonthlyListQuery(3501·필터·정렬)
 │   │   └── response/                             + FixedExpenseDto·MonthlyDto·LedgerItemDto
 │   └── mapper/
 │       ├── FixedExpenseMapper.java               + Entity ↔ DTO (현재 이름 조립)
@@ -185,6 +191,10 @@ app-mod/money-backend-app/src/test/java/com/dbdomino/moneylog/backend/
   행 변환(`LedgerItemFactory`)을 나눈다.
 - **`FixedExpenseSyncService` 분리** — 재작성(4.9)은 생성·갱신·보존·삭제 **네 처리**를
   한 트랜잭션에서 하고 각 건수를 센다. 설정 CRUD와 성격이 달라 서비스를 나눈다.
+  **설정 수정(4.4)의 자동 반영(FR-412)도 여기 둔다** — 둘 다 "설정을 월별 내역에
+  반영한다"는 같은 일이고, 대상 범위(자동은 미래·미수정만, 재작성은 지정한 한 달 전부)만
+  다르다. `FixedExpenseService`에 자동 반영을 두면 설정 CRUD가 다른 테이블을 쓰게 되어
+  두 서비스의 경계가 흐려진다.
 - **`YearMonthValue`** — `연 × 12 + 월` 합성 비교가 FR-404·408·412·413에 걸쳐 반복된다.
   각자 계산하면 한 곳만 틀려도 해를 넘기는 구간에서 조용히 어긋난다.
   DB CHECK `ck_fixed_expense_period`도 같은 식을 쓰므로 값 객체로 가둬 규칙을 하나로 만든다.
