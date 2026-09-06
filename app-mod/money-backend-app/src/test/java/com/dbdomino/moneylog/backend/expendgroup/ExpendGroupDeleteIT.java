@@ -30,13 +30,6 @@ import tools.jackson.databind.JsonNode;
  */
 class ExpendGroupDeleteIT extends AbstractExpendGroupIT {
 
-    /** 회원의 {@code id_key}. 참조 행의 소유자·감사 컬럼에 쓴다. */
-    private Long idKeyOf(Member member) {
-        return jdbc.queryForObject(
-                "select id_key from moneylog.tbl_user where user_id = ?",
-                Long.class, member.memberId());
-    }
-
     /** 그 유형을 쓴 지출 1건을 만든다. 수단은 2.1 로 만들어 FK 를 채운다. */
     private void insertExpense(Member member, long expendGroupId, String groupName)
             throws Exception {

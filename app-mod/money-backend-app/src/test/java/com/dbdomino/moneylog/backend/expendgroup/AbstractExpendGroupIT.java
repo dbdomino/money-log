@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.dbdomino.moneylog.backend.AbstractApiIT;
 import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.mock.web.MockPart;
@@ -15,11 +14,15 @@ import tools.jackson.databind.JsonNode;
 /**
  * 지출유형 통합 테스트의 공통 바탕.
  *
- * <h2>가입 API 로 회원을 만든다</h2>
+ * <h2>가입 헬퍼는 {@link AbstractApiIT} 에 있다</h2>
  *
- * <p>{@code createMember()} 는 Repository 로 회원 행만 만들어 <b>기본 지출유형 10종이 생기지
- * 않는다</b>. 기본 유형은 {@code 3105}(이름 변경 불가)·{@code 3107}(삭제 불가) 판정의 대상이라
- * 없으면 그 시나리오를 세울 수 없다.
+ * <p>{@code signupAndLogin()}·{@code Member}·{@code defaultGroupId(...)} 는 004(지출·소득)의
+ * 네 테스트 패키지도 필요로 해 상위로 올렸다. 여기서 다시 정의하지 않는다 — 복제하면
+ * 가입 절차가 두 곳에서 갈린다.
+ *
+ * <p>{@code createMember()} 를 쓰지 않는 이유는 그대로다. 그쪽은 Repository 로 회원 행만
+ * 만들어 <b>기본 지출유형 10종이 생기지 않는데</b>, 기본 유형은 {@code 3105}(이름 변경
+ * 불가)·{@code 3107}(삭제 불가) 판정의 대상이라 없으면 그 시나리오를 세울 수 없다.
  *
  * <h2>2.7·2.11 은 multipart 다</h2>
  *
@@ -32,25 +35,6 @@ import tools.jackson.databind.JsonNode;
 public abstract class AbstractExpendGroupIT extends AbstractApiIT {
 
     protected static final String URL = "/api/v1/expend-groups";
-
-    /** 가입한 회원. 아이디를 함께 들고 다녀야 그 회원의 행만 골라 볼 수 있다. */
-    protected record Member(String memberId, String token) {
-    }
-
-    /** 가입하고 로그인한다. 기본 지출유형 10종과 아이콘이 함께 생긴다. */
-    protected Member signupAndLogin() throws Exception {
-        String memberId = TEST_USER_PREFIX + UUID.randomUUID().toString().substring(0, 8);
-        JsonNode signup = postJson("/api/v1/auth/signup", """
-                {"memberId":"%s","password":"%s","passwordConfirm":"%s","nickname":"테스트회원"}
-                """.formatted(memberId, TEST_PASSWORD, TEST_PASSWORD));
-        assertThat(resCode(signup)).isEqualTo(200);
-
-        JsonNode login = postJson("/api/v1/auth/login", """
-                {"memberId":"%s","password":"%s"}
-                """.formatted(memberId, TEST_PASSWORD));
-        assertThat(resCode(login)).isEqualTo(200);
-        return new Member(memberId, login.get("data").get("accessToken").asString());
-    }
 
     /** 2.7 등록. 아이콘 없이 폼 필드만 보낸다. */
     protected JsonNode createGroup(String token, String name, Boolean inUse) throws Exception {
@@ -107,14 +91,5 @@ public abstract class AbstractExpendGroupIT extends AbstractApiIT {
     protected long idOf(JsonNode response) {
         assertThat(resCode(response)).isEqualTo(200);
         return response.get("data").get("expendGroupId").asLong();
-    }
-
-    /** 그 회원의 기본 유형 하나(이름으로 고른다)의 PK. */
-    protected long defaultGroupId(Member member, String name) {
-        return jdbc.queryForObject("""
-                select g.idx from moneylog.tbl_user_expend_group g
-                  join moneylog.tbl_user u on u.id_key = g.id_key
-                 where u.user_id = ? and g.name = ?
-                """, Long.class, member.memberId(), name);
     }
 }

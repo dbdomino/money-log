@@ -220,6 +220,89 @@ public abstract class AbstractApiIT {
     protected record Tokens(String accessToken, String refreshToken) {
     }
 
+    // ── 가입으로 만든 회원과 그 소유 자원 ──────────────────────────────────
+    //
+    // 아래 헬퍼는 003(지출유형·아이콘)과 004(지출·소득·할부·엑셀)가 함께 쓴다.
+    // 원래 003 의 AbstractExpendGroupIT 에 있었으나, 004 의 네 테스트 패키지가 전부
+    // 필요로 해 여기로 올렸다 — 복제하면 가입 절차가 두 곳에서 갈린다.
+
+    /**
+     * 가입으로 만든 회원. <b>아이디를 함께 들고 다닌다</b> — 그 회원의 행만 골라 보거나
+     * 고치려면 토큰만으로는 부족하다.
+     */
+    protected record Member(String memberId, String token) {
+    }
+
+    /**
+     * 가입(1.2)하고 로그인(1.1)한다. <b>기본 지출유형 10종과 아이콘이 함께 생긴다.</b>
+     *
+     * <p>{@link #createMember()} 와 다르다 — 그쪽은 Repository 로 회원 행만 만들어
+     * 기본 지출유형이 생기지 않는다. 지출을 등록하려면 참조할 유형이 있어야 하므로
+     * 004 의 시험은 대부분 이쪽을 쓴다.
+     */
+    protected Member signupAndLogin() throws Exception {
+        String memberId = TEST_USER_PREFIX + UUID.randomUUID().toString().substring(0, 8);
+        JsonNode signup = postJson("/api/v1/auth/signup", """
+                {"memberId":"%s","password":"%s","passwordConfirm":"%s","nickname":"테스트회원"}
+                """.formatted(memberId, TEST_PASSWORD, TEST_PASSWORD));
+        if (resCode(signup) != 200) {
+            throw new IllegalStateException("가입 실패: " + signup);
+        }
+
+        JsonNode login = postJson("/api/v1/auth/login", """
+                {"memberId":"%s","password":"%s"}
+                """.formatted(memberId, TEST_PASSWORD));
+        if (resCode(login) != 200) {
+            throw new IllegalStateException("로그인 실패: " + login);
+        }
+        return new Member(memberId, login.get("data").get("accessToken").asString());
+    }
+
+    /** 그 회원의 대리키. 참조 행을 JDBC 로 만들 때 소유자·감사 컬럼에 쓴다. */
+    protected Long idKeyOf(Member member) {
+        return jdbc.queryForObject(
+                "select id_key from moneylog.tbl_user where user_id = ?",
+                Long.class, member.memberId());
+    }
+
+    /** 가입이 만들어 준 기본 지출유형 하나(이름으로 고른다)의 PK. */
+    protected long defaultGroupId(Member member, String name) {
+        return jdbc.queryForObject("""
+                select g.idx from moneylog.tbl_user_expend_group g
+                  join moneylog.tbl_user u on u.id_key = g.id_key
+                 where u.user_id = ? and g.name = ?
+                """, Long.class, member.memberId(), name);
+    }
+
+    /**
+     * 003 의 2.1 로 수단 1건을 만들고 PK 를 돌려준다.
+     *
+     * <p><b>API 로 만든다.</b> JDBC 로 넣으면 감사 컬럼을 손으로 채워야 하고, 004 가
+     * 의존하는 "사용 중"(FR-325) 상태가 003 의 등록 규칙과 어긋날 수 있다.
+     *
+     * @param purpose {@code EXPENSE}(지출용) 또는 {@code INCOME}(소득용). 소득은 소득용
+     *                수단을 써야 한다
+     */
+    protected long createPaymentMethod(String token, String name, String purpose) throws Exception {
+        JsonNode response = postJson("/api/v1/payment-methods", token, """
+                {"name":"%s","type":"CARD","purpose":"%s","inUse":true}
+                """.formatted(name, purpose));
+        if (resCode(response) != 200) {
+            throw new IllegalStateException("수단 등록 실패: " + response);
+        }
+        return response.get("data").get("paymentMethodId").asLong();
+    }
+
+    /** 지출용 수단. 3.1·3.5 가 쓴다. */
+    protected long createExpensePaymentMethod(String token, String name) throws Exception {
+        return createPaymentMethod(token, name, "EXPENSE");
+    }
+
+    /** 소득용 수단. 3.7 이 쓴다. */
+    protected long createIncomePaymentMethod(String token, String name) throws Exception {
+        return createPaymentMethod(token, name, "INCOME");
+    }
+
     /**
      * 테스트가 만든 회원과 그 자식 행을 지운다.
      *

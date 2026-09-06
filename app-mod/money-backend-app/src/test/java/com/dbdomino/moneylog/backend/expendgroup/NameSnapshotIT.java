@@ -23,21 +23,6 @@ import tools.jackson.databind.JsonNode;
  */
 class NameSnapshotIT extends AbstractExpendGroupIT {
 
-    private Long idKeyOf(Member member) {
-        return jdbc.queryForObject(
-                "select id_key from moneylog.tbl_user where user_id = ?",
-                Long.class, member.memberId());
-    }
-
-    /** 수단 1건을 2.1 로 만든다. */
-    private long createPaymentMethod(String token, String name) throws Exception {
-        JsonNode response = postJson("/api/v1/payment-methods", token, """
-                {"name":"%s","type":"CARD","purpose":"EXPENSE","inUse":true}
-                """.formatted(name));
-        assertThat(resCode(response)).isEqualTo(200);
-        return response.get("data").get("paymentMethodId").asLong();
-    }
-
     /** 두 이름을 복사해 담은 지출 1건. */
     private void insertExpense(Member member, long groupId, String groupName,
                                long methodId, String methodName) {
@@ -66,7 +51,7 @@ class NameSnapshotIT extends AbstractExpendGroupIT {
     void renamingDoesNotTouchPastSnapshots() throws Exception {
         Member member = signupAndLogin();
         long groupId = idOf(createGroup(member.token(), "취미", true));
-        long methodId = createPaymentMethod(member.token(), "국민카드");
+        long methodId = createExpensePaymentMethod(member.token(), "국민카드");
         insertExpense(member, groupId, "취미", methodId, "국민카드");
 
         assertThat(resCode(updateGroup(member.token(), groupId, "여가", null))).isEqualTo(200);
@@ -88,7 +73,7 @@ class NameSnapshotIT extends AbstractExpendGroupIT {
     void softDeleteDoesNotTouchPastSnapshots() throws Exception {
         Member member = signupAndLogin();
         long groupId = idOf(createGroup(member.token(), "취미", true));
-        long methodId = createPaymentMethod(member.token(), "국민카드");
+        long methodId = createExpensePaymentMethod(member.token(), "국민카드");
         // 지출이 참조하는 유형은 3106 으로 삭제가 막히므로, 삭제 대상은 수단으로 확인한다.
         insertExpense(member, groupId, "취미", methodId, "국민카드");
 
@@ -103,7 +88,7 @@ class NameSnapshotIT extends AbstractExpendGroupIT {
     void snapshotAndReferenceAreIndependent() throws Exception {
         Member member = signupAndLogin();
         long groupId = idOf(createGroup(member.token(), "취미", true));
-        long methodId = createPaymentMethod(member.token(), "국민카드");
+        long methodId = createExpensePaymentMethod(member.token(), "국민카드");
         insertExpense(member, groupId, "취미", methodId, "국민카드");
 
         assertThat(resCode(updateGroup(member.token(), groupId, "여가", null))).isEqualTo(200);

@@ -41,7 +41,7 @@
 
 | API | `data` | 왜 목록이 아닌가 |
 |---|---|---|
-| 3.5 할부 등록 | `createdCount`만 | 생성 건수다. 지출 목록을 싣지 않는다 |
+| 3.5 할부 등록 | `installmentGroupId`·`createdCount` 두 칸 | 그룹 식별자와 생성 건수다. **지출 목록을 싣지 않는다** — 개별 회차는 3.2 로 읽는다 |
 | 3.12 엑셀 업로드 | `importedCount`·`expenseCount`·`incomeCount`·`message` | 결과 요약이다 |
 
 ---
@@ -135,7 +135,7 @@
 3. seq_installment_group.nextval → groupId
 4. N개 행을 한 트랜잭션에 INSERT
    └ 도중 실패 → 전체 롤백 → 3205
-→ { createdCount: N }
+→ { installmentGroupId: 시퀀스 값, createdCount: N }
 ```
 
 **4번이 전체 롤백**이다(FR-310). 부분 생성되면 재등록 시 앞부분이 중복된다 —

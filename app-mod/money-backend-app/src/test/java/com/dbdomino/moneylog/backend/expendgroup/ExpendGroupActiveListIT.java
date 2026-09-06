@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.dbdomino.moneylog.backend.AbstractApiIT;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
@@ -30,25 +29,6 @@ import tools.jackson.databind.JsonNode;
 class ExpendGroupActiveListIT extends AbstractApiIT {
 
     private static final String ACTIVE_URL = "/api/v1/expend-groups/active";
-
-    /** 가입한 회원. 아이디를 함께 들고 다녀야 그 회원의 유형만 골라 바꿀 수 있다. */
-    private record Member(String memberId, String token) {
-    }
-
-    /** 가입하고 로그인한다. 기본 지출유형 10종과 아이콘이 함께 생긴다. */
-    private Member signupAndLogin() throws Exception {
-        String memberId = TEST_USER_PREFIX + UUID.randomUUID().toString().substring(0, 8);
-        JsonNode signup = postJson("/api/v1/auth/signup", """
-                {"memberId":"%s","password":"%s","passwordConfirm":"%s","nickname":"테스트회원"}
-                """.formatted(memberId, TEST_PASSWORD, TEST_PASSWORD));
-        assertThat(resCode(signup)).isEqualTo(200);
-
-        JsonNode login = postJson("/api/v1/auth/login", """
-                {"memberId":"%s","password":"%s"}
-                """.formatted(memberId, TEST_PASSWORD));
-        assertThat(resCode(login)).isEqualTo(200);
-        return new Member(memberId, login.get("data").get("accessToken").asString());
-    }
 
     /**
      * 그 회원의 지출유형 하나에서 참/거짓 컬럼을 바꾼다.
