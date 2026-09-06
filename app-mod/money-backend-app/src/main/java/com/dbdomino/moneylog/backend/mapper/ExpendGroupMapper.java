@@ -1,6 +1,7 @@
 package com.dbdomino.moneylog.backend.mapper;
 
 import com.dbdomino.moneylog.backend.dto.response.ExpendGroupActiveResponse;
+import com.dbdomino.moneylog.backend.dto.response.ExpendGroupResponse;
 import com.dbdomino.moneylog.data.entity.UserExpendGroup;
 import java.util.List;
 import org.mapstruct.Mapper;
@@ -32,6 +33,14 @@ public interface ExpendGroupMapper {
      * 갈리면 목록이 알려 준 주소로 아이콘을 받을 수 없다.
      */
     String ICON_URL_PREFIX = "/api/v1/expend-groups/icons/";
+
+    /** 등록(2.7)·상세(2.9)·수정(2.11)의 넓은 항목. {@code deleted} 까지 싣는다. */
+    @Mapping(target = "expendGroupId", source = "idx")
+    @Mapping(target = "iconUrl", source = "iconFilename", qualifiedByName = "toIconUrl")
+    ExpendGroupResponse toResponse(UserExpendGroup entity);
+
+    /** 관리 목록(2.8). 순서는 넘겨받은 그대로 유지한다 — 정렬은 Repository 가 정한다. */
+    List<ExpendGroupResponse> toResponses(List<UserExpendGroup> entities);
 
     /** 사용 중 목록(2.13)의 좁은 항목. {@code inUse}·{@code deleted} 는 대상에 없어 버려진다. */
     @Mapping(target = "expendGroupId", source = "idx")
