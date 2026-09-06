@@ -35,6 +35,19 @@ public final class RestResponseDto<T> {
         return new RestResponseDto<>(errorCode.code(), Map.of("message", message));
     }
 
+    /**
+     * 실패 응답의 {@code data} 에 <b>메시지 말고 더 실을 것이 있을 때</b> 쓴다.
+     *
+     * <p>004 의 엑셀 업로드({@code 3502})가 행별 오류 목록을 함께 줘야 프론트가 "표의 N행
+     * M열을 고치세요"를 안내할 수 있다. {@code Map<String,String>} 으로는 배열을 담을 수 없다.
+     *
+     * <p>{@code data} 를 <b>통째로</b> 대신하므로 넘기는 객체가 {@code message} 도 함께
+     * 들고 있어야 한다 — 담지 않은 것은 응답에 나타나지 않는다.
+     */
+    public static <T> RestResponseDto<T> failWith(ErrorCode errorCode, T data) {
+        return new RestResponseDto<>(errorCode.code(), data);
+    }
+
     public int getResCode() {
         return resCode;
     }

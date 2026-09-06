@@ -44,10 +44,24 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    /** 비즈니스·검증 실패. HTTP 200 + 그 코드. */
+    /**
+     * 비즈니스·검증 실패. HTTP 200 + 그 코드.
+     *
+     * <p>{@link DetailedBusinessException} 이면 {@code data} 자리에 그 예외가 들고 온
+     * 객체를 <b>통째로</b> 넣는다. {@code { message }} 한 칸으로는 담을 수 없는 실패가
+     * 하나 있어서다 — 004 의 엑셀 업로드({@code 3502})는 행별 오류 <b>목록</b>을 함께
+     * 줘야 프론트가 위치를 짚어 줄 수 있다.
+     *
+     * <p>그 상세의 실제 타입은 앱 모듈이 소유하고 여기서는 알지 못한다(원칙 I) —
+     * 직렬화는 Jackson 이 실제 타입을 보고 한다.
+     */
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<RestResponseDto<Map<String, String>>> handleBusiness(BusinessException e) {
+    public ResponseEntity<RestResponseDto<?>> handleBusiness(BusinessException e) {
         log.warn("business failure resCode={} message={}", e.getCode(), e.getMessage());
+        if (e instanceof DetailedBusinessException detailed) {
+            return ResponseEntity.ok(
+                    RestResponseDto.failWith(detailed.getErrorCode(), detailed.getDetails()));
+        }
         return ResponseEntity.ok(RestResponseDto.fail(e.getErrorCode(), e.getMessage()));
     }
 
