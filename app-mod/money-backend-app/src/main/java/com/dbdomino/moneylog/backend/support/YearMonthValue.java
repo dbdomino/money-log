@@ -76,15 +76,36 @@ public record YearMonthValue(int year, int month) implements Comparable<YearMont
      * @throws BusinessException 누락이거나 범위 밖
      */
     public static YearMonthValue require(Integer year, Integer month, ErrorCode errorCode) {
+        return require(year, month, errorCode, MIN_YEAR, MAX_YEAR);
+    }
+
+    /**
+     * 연 범위를 <b>호출자가 좁혀서</b> 검증한다.
+     *
+     * <p>005 는 {@link #MIN_YEAR}~{@link #MAX_YEAR}(1900~9999)를 쓰지만 <b>006 은
+     * 2000~2100</b> 이다(FR-525). 006 이 이 값 객체를 재사용하되 자기 범위를 넘긴다.
+     *
+     * <p><b>왜 006 이 더 좁은가</b>: 통계·목표금액은 사용자가 화면에서 고르는 연도라
+     * 범위를 좁혀 오타({@code year=999999})를 잡는 편이 낫다. 005 의 고정지출 적용
+     * 기간은 그보다 넓게 잡을 이유가 있어 두 범위가 갈렸다.
+     *
+     * <p><b>현재 연도 기준 상대 범위를 쓰지 않는다</b> — 경계가 해마다 움직이면 경계
+     * 시험이 시간에 의존한다. 고정 상수라 시험이 안정적이다.
+     *
+     * @param minYear 허용 하한(포함)
+     * @param maxYear 허용 상한(포함)
+     */
+    public static YearMonthValue require(Integer year, Integer month, ErrorCode errorCode,
+                                         int minYear, int maxYear) {
         if (year == null || month == null) {
             throw new BusinessException(errorCode, "year 와 month 는 필수입니다.");
         }
         if (month < 1 || month > 12) {
             throw new BusinessException(errorCode, "month 는 1 에서 12 사이여야 합니다.");
         }
-        if (year < MIN_YEAR || year > MAX_YEAR) {
+        if (year < minYear || year > maxYear) {
             throw new BusinessException(errorCode,
-                    "year 는 %d 에서 %d 사이여야 합니다.".formatted(MIN_YEAR, MAX_YEAR));
+                    "year 는 %d 에서 %d 사이여야 합니다.".formatted(minYear, maxYear));
         }
         return new YearMonthValue(year, month);
     }

@@ -429,6 +429,65 @@ public abstract class AbstractApiIT {
                 """, member.memberId(), fixedExpenseId, year, month);
     }
 
+    // ── 006(목표금액·통계)이 쓰는 헬퍼 ─────────────────────────────────────
+
+    /** 5.3 기본 목표 upsert. */
+    protected JsonNode putDefaultTarget(String token, long expendGroupId, long amount)
+            throws Exception {
+        return patchJson("/api/v1/expend-targets/default/" + expendGroupId, token, """
+                {"targetAmount":%d}
+                """.formatted(amount));
+    }
+
+    /** 5.4 월별 목표 upsert. */
+    protected JsonNode putMonthlyTarget(String token, int year, int month, long expendGroupId,
+                                        long amount) throws Exception {
+        return patchJson("/api/v1/expend-targets/monthly/" + year + "/" + month + "/"
+                + expendGroupId, token, """
+                {"targetAmount":%d}
+                """.formatted(amount));
+    }
+
+    /** 그 회원의 그 연·월 통계 행 수. <b>재저장해도 1건</b>인지 보는 데 쓴다(FR-516). */
+    protected int countStatistics(Member member, int year, int month) {
+        Integer count = jdbc.queryForObject("""
+                select count(*) from moneylog.tbl_statistics s
+                  join moneylog.tbl_user u on u.id_key = s.id_key
+                 where u.user_id = ? and s.year = ? and s.month = ?
+                """, Integer.class, member.memberId(), year, month);
+        return count == null ? 0 : count;
+    }
+
+    /**
+     * 그 연·월 통계의 상세 행 수.
+     *
+     * <p><b>재저장이 "지웠다 다시 넣는지"를 보는 자리다</b> — 갱신으로 구현하면 없어진
+     * 유형의 행이 남아 이 수가 줄지 않는다.
+     *
+     * @param table {@code tbl_statistics_weekly} · {@code tbl_statistics_expend_group} ·
+     *              {@code tbl_statistics_payment_method} 중 하나
+     */
+    protected int countStatisticsDetails(Member member, int year, int month, String table) {
+        Integer count = jdbc.queryForObject("""
+                select count(*) from moneylog.%s d
+                  join moneylog.tbl_statistics s on s.idx = d.statistics_idx
+                  join moneylog.tbl_user u on u.id_key = s.id_key
+                 where u.user_id = ? and s.year = ? and s.month = ?
+                """.formatted(table), Integer.class, member.memberId(), year, month);
+        return count == null ? 0 : count;
+    }
+
+    /** 저장된 통계 행 하나. {@code saved_at} 과 합계 6값을 확인하는 데 쓴다. */
+    protected Map<String, Object> statisticsRowOf(Member member, int year, int month) {
+        return jdbc.queryForMap("""
+                select s.idx, s.saved_at, s.income_total, s.expense_total, s.fixed_amount,
+                       s.regular_amount, s.fixed_percent, s.regular_percent
+                  from moneylog.tbl_statistics s
+                  join moneylog.tbl_user u on u.id_key = s.id_key
+                 where u.user_id = ? and s.year = ? and s.month = ?
+                """, member.memberId(), year, month);
+    }
+
     /**
      * 월별 내역 1행을 JDBC 로 직접 넣는다.
      *
