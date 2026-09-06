@@ -100,16 +100,16 @@ Spring Boot 멀티모듈이다. 저장소 루트 기준 경로를 쓴다.
 
 ### Tests for User Story 2
 
-- [ ] T026 [P] [US2] `.../income/IncomeCreateIT.java` — #15(`purpose=INCOME` 수단으로 등록하면 수단 이름 스냅샷과 함께 저장 — FR-303)·#16(`content` 를 **비우고** 등록해도 성공 — FR-307, 지출과 다르다)·#17(Body 에 `place`·`expendGroupId`·할부 필드를 실어도 **무시**되고 저장·응답 어디에도 없다 — FR-306)·#20(금액 0 이하 → **`3301`**, `3201` 이 **아니다** — FR-305). **#20 이 지출·소득의 코드 대역이 갈린다는 것을 못박는다** — 한 서비스에서 코드를 공유하면 여기서 걸린다
-- [ ] T027 [P] [US2] `.../income/IncomeOwnershipIT.java` — #19(남의 소득 ID 로 조회·수정·삭제 전부 `3302` — SC-307). #18(소득 수단을 바꾸면 이름 스냅샷 갱신)도 여기서 본다. **`3202`(지출)와 섞이지 않는지** 확인한다
+- [X] T026 [P] [US2] `.../income/IncomeCreateIT.java` — #15(`purpose=INCOME` 수단으로 등록하면 수단 이름 스냅샷과 함께 저장 — FR-303)·#16(`content` 를 **비우고** 등록해도 성공 — FR-307, 지출과 다르다)·#17(Body 에 `place`·`expendGroupId`·할부 필드를 실어도 **무시**되고 저장·응답 어디에도 없다 — FR-306)·#20(금액 0 이하 → **`3301`**, `3201` 이 **아니다** — FR-305). **#20 이 지출·소득의 코드 대역이 갈린다는 것을 못박는다** — 한 서비스에서 코드를 공유하면 여기서 걸린다
+- [X] T027 [P] [US2] `.../income/IncomeOwnershipIT.java` — #19(남의 소득 ID 로 조회·수정·삭제 전부 `3302` — SC-307). #18(소득 수단을 바꾸면 이름 스냅샷 갱신)도 여기서 본다. **`3202`(지출)와 섞이지 않는지** 확인한다
 
 ### Implementation for User Story 2
 
-- [ ] T028 [P] [US2] `.../backend/dto/request/IncomeCreateRequest.java` 를 만든다 — `paymentMethodId`·`amount`·`paymentDate`·`content`(**선택**). **`place`·`expendGroupId`·할부 필드를 아예 두지 않는다** — `tbl_income` 에 대응 컬럼이 없다(FR-306). 필드가 없으면 실어 보내도 조용히 무시되며(#17), "비워 두는 것"이 아니라 "**컬럼이 아예 없는 것**"이라는 구조가 타입으로 드러난다
-- [ ] T029 [P] [US2] `.../backend/dto/response/IncomeResponse.java`·`IncomeDeleteResponse.java` 를 만든다 — `incomeId`·`paymentMethodId`·`paymentMethodName`·`amount`·`paymentDate`·`content`. **DB 컬럼은 `payment_date` 지만 응답 필드는 `paymentDate` 다**(입금일을 뜻한다, data-model.md §2) — 이름을 `incomeDate` 로 바꾸지 않는다. 삭제 응답은 설계 명세 `3.10-IncomeDelete.md` 의 표를 따른다
-- [ ] T030 [US2] `.../backend/mapper/IncomeMapper.java` 를 MapStruct 로 만든다 — `idx` → `incomeId`, 연관의 `idx` → `paymentMethodId`. `ExpenseMapper` 를 상속·재사용하지 않는다: 필드 구성이 달라 공통 상위를 만들면 없는 필드를 매핑하려다 막힌다. T029 에 의존
-- [ ] T031 [US2] `.../backend/service/IncomeService.java` 에 3.7~3.10 을 구현한다 — 구조는 `ExpenseService` 와 같지만 **코드가 다르다**: 값 오류 `3301`, 없음·타인 소유 `3302`. 참조 검증·스냅샷은 `ReferenceResolver` 를 그대로 쓰되 **지출유형은 부르지 않는다**. 삭제는 **물리 삭제**. `content` 는 `null` 허용이므로 PATCH 에서 `null` 을 보내면 **비운다**(`PatchFields` 의 omit ≠ null 구분이 여기서 실제로 쓰인다 — 지출의 `content` 는 NOT NULL 이라 그 구분이 없다). T010·T011·T028~T030 에 의존
-- [ ] T032 [US2] `.../backend/controller/IncomeController.java` 를 만들고 3.7~3.10 을 붙인다 — `POST·GET·PATCH·DELETE /api/v1/incomes` 와 `/{incomeId}`. `ExpenseController` 와 **자원을 나눈다** — 구조가 달라 별도 자원으로 다룬다(FR-306). `PUT` 을 쓰지 않는다
+- [X] T028 [P] [US2] `.../backend/dto/request/IncomeCreateRequest.java` 를 만든다 — `paymentMethodId`·`amount`·`paymentDate`·`content`(**선택**). **`place`·`expendGroupId`·할부 필드를 아예 두지 않는다** — `tbl_income` 에 대응 컬럼이 없다(FR-306). 필드가 없으면 실어 보내도 조용히 무시되며(#17), "비워 두는 것"이 아니라 "**컬럼이 아예 없는 것**"이라는 구조가 타입으로 드러난다
+- [X] T029 [P] [US2] `.../backend/dto/response/IncomeResponse.java`·`IncomeDeleteResponse.java` 를 만든다 — `incomeId`·`paymentMethodId`·`paymentMethodName`·`amount`·`paymentDate`·`content`. **DB 컬럼은 `payment_date` 지만 응답 필드는 `paymentDate` 다**(입금일을 뜻한다, data-model.md §2) — 이름을 `incomeDate` 로 바꾸지 않는다. 삭제 응답은 설계 명세 `3.10-IncomeDelete.md` 의 표를 따른다
+- [X] T030 [US2] `.../backend/mapper/IncomeMapper.java` 를 MapStruct 로 만든다 — `idx` → `incomeId`, 연관의 `idx` → `paymentMethodId`. `ExpenseMapper` 를 상속·재사용하지 않는다: 필드 구성이 달라 공통 상위를 만들면 없는 필드를 매핑하려다 막힌다. T029 에 의존
+- [X] T031 [US2] `.../backend/service/IncomeService.java` 에 3.7~3.10 을 구현한다 — 구조는 `ExpenseService` 와 같지만 **코드가 다르다**: 값 오류 `3301`, 없음·타인 소유 `3302`. 참조 검증·스냅샷은 `ReferenceResolver` 를 그대로 쓰되 **지출유형은 부르지 않는다**. 삭제는 **물리 삭제**. `content` 는 `null` 허용이므로 PATCH 에서 `null` 을 보내면 **비운다**(`PatchFields` 의 omit ≠ null 구분이 여기서 실제로 쓰인다 — 지출의 `content` 는 NOT NULL 이라 그 구분이 없다). T010·T011·T028~T030 에 의존
+- [X] T032 [US2] `.../backend/controller/IncomeController.java` 를 만들고 3.7~3.10 을 붙인다 — `POST·GET·PATCH·DELETE /api/v1/incomes` 와 `/{incomeId}`. `ExpenseController` 와 **자원을 나눈다** — 구조가 달라 별도 자원으로 다룬다(FR-306). `PUT` 을 쓰지 않는다
 
 **Checkpoint**: 소득이 독립적으로 동작하고 지출과 코드 대역이 갈린다
 

@@ -65,18 +65,26 @@ public class ReferenceResolver {
     // ── 규칙 1: 새로 거는 참조 ──────────────────────────────────────────────
 
     /**
-     * 등록(3.1·3.5·3.7)이 거는 수단. 없거나 남의 것이거나 사용 중이 아니면 {@code 3003}.
+     * 등록(3.1·3.5·3.7)이 거는 수단. 조건에 하나라도 걸리면 {@code 3003} 이다.
      *
      * <p><b>소유자를 조회 조건에 함께 건다.</b> 먼저 꺼내 놓고 비교하는 방식은 비교를
      * 빠뜨린 자리가 곧 구멍이 된다 — 남의 수단으로 내 지출을 만들 수 있게 된다.
      *
-     * <p>"없음"·"타인 소유"·"사용 안 함"·"삭제 표시"를 <b>같은 코드로 묶는다</b>(FR-325).
-     * 사용자가 취할 조치가 넷 다 "다른 수단을 고른다"로 같고, 코드를 나누면 ID 를 훑는
-     * 것만으로 남의 수단이 존재한다는 사실이 새어 나간다.
+     * <p>"없음"·"타인 소유"·"사용 안 함"·"삭제 표시"·"용도 불일치"를 <b>같은 코드로
+     * 묶는다</b>(FR-325). 사용자가 취할 조치가 다섯 다 "다른 수단을 고른다"로 같고,
+     * 코드를 나누면 ID 를 훑는 것만으로 남의 수단이 존재한다는 사실이 새어 나간다.
+     *
+     * @param purpose 이 자원이 요구하는 용도 — 지출은 {@code EXPENSE}, 소득은
+     *                {@code INCOME}. <b>한 수단은 한쪽만 갖는다</b>(003 FR-033)는 규칙을
+     *                004 가 지키는 자리다. 검사하지 않으면 지출용 카드로 소득을 적을 수
+     *                있게 되고, 그러면 003 이 {@code purpose} 변경을 참조 0건일 때만
+     *                허용하는({@code 3005}) 이유 자체가 무너진다
      */
-    public UserPaymentMethod requireUsablePaymentMethod(AuthPrincipal principal, Long paymentMethodId) {
+    public UserPaymentMethod requireUsablePaymentMethod(AuthPrincipal principal,
+                                                        Long paymentMethodId, String purpose) {
         return paymentMethodRepository.findByIdxAndUserIdKey(paymentMethodId, principal.idKey())
                 .filter(ReferenceResolver::isUsable)
+                .filter(method -> purpose.equals(method.getPurpose()))
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_METHOD_NOT_FOUND));
     }
 
@@ -99,14 +107,25 @@ public class ReferenceResolver {
      *
      * <p>못 찾으면 빈 목록이다. 그 행을 오류로 보는 것도 호출자가 한다 — 엑셀은 실패를
      * 예외로 던지지 않고 {@code errors[]} 에 모아야 하기 때문이다.
+     *
+     * <p><b>용도로 한 번 더 거른다.</b> 양식의 수단 드롭다운은 용도 구분 없이 전부를
+     * 담지만(excel-contract.md §2), 실제로 어느 용도가 필요한지는 그 행의 A열
+     * ({@code EXPENSE}·{@code INCOME})이 정한다 — 지출 행에 소득용 수단을 적었으면
+     * 그 행은 오류다.
+     *
+     * @param purpose 그 행이 요구하는 용도
      */
-    public List<UserPaymentMethod> findUsablePaymentMethodsByName(AuthPrincipal principal, String name) {
+    public List<UserPaymentMethod> findUsablePaymentMethodsByName(AuthPrincipal principal,
+                                                                  String name, String purpose) {
         if (name == null || name.isBlank()) {
             return List.of();
         }
         return paymentMethodRepository
                 .findByUserIdKeyAndNameAndInUseTrueAndDeletedFalseOrderByIdxAsc(
-                        principal.idKey(), name.trim());
+                        principal.idKey(), name.trim())
+                .stream()
+                .filter(method -> purpose.equals(method.getPurpose()))
+                .toList();
     }
 
     /**
@@ -140,14 +159,16 @@ public class ReferenceResolver {
      *                    호출자가 {@code 9001} 로 먼저 막는다 — 이 컬럼은 NOT NULL 이라
      *                    "비운다"는 조작이 없다
      * @param currentId   지금 걸려 있는 참조의 {@code idx}
+     * @param purpose     이 자원이 요구하는 용도. 등록과 같은 값을 넘긴다 — 지출을
+     *                    소득용 수단으로 <b>바꿔치기</b> 할 수 없어야 한다
      * @return 바꿔야 하면 검증을 통과한 새 수단, 그대로 두어야 하면 빈 값
      */
     public Optional<UserPaymentMethod> resolvePaymentMethodChange(
-            AuthPrincipal principal, Long requestedId, Long currentId) {
+            AuthPrincipal principal, Long requestedId, Long currentId, String purpose) {
         if (unchanged(requestedId, currentId)) {
             return Optional.empty();
         }
-        return Optional.of(requireUsablePaymentMethod(principal, requestedId));
+        return Optional.of(requireUsablePaymentMethod(principal, requestedId, purpose));
     }
 
     /** 수정(3.3)에서 지출유형 참조를 바꿔야 하는가. 규칙은 수단과 같고 코드만 {@code 3103} 이다. */

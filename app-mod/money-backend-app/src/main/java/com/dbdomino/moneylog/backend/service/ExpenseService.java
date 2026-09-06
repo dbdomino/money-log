@@ -11,6 +11,7 @@ import com.dbdomino.moneylog.common.error.BusinessException;
 import com.dbdomino.moneylog.common.error.ErrorCode;
 import com.dbdomino.moneylog.data.entity.User;
 import com.dbdomino.moneylog.data.entity.UserExpense;
+import com.dbdomino.moneylog.data.entity.UserPaymentMethod;
 import com.dbdomino.moneylog.data.repository.UserExpenseRepository;
 import com.dbdomino.moneylog.data.repository.UserRepository;
 import java.util.Map;
@@ -89,7 +90,8 @@ public class ExpenseService {
     @Transactional
     public ExpenseCreateResponse create(AuthPrincipal principal, ExpenseCreateRequest request) {
         var paymentMethod =
-                referenceResolver.requireUsablePaymentMethod(principal, request.paymentMethodId());
+                referenceResolver.requireUsablePaymentMethod(
+                        principal, request.paymentMethodId(), UserPaymentMethod.PURPOSE_EXPENSE);
         var expendGroup =
                 referenceResolver.requireUsableExpendGroup(principal, request.expendGroupId());
 
@@ -155,7 +157,7 @@ public class ExpenseService {
         // 참조 변경 — 바뀔 때만 검증하고 스냅샷을 함께 갱신한다(FR-304).
         referenceResolver.resolvePaymentMethodChange(principal,
                         referenceId(fields, "paymentMethodId"),
-                        expense.getPaymentMethod().getIdx())
+                        expense.getPaymentMethod().getIdx(), UserPaymentMethod.PURPOSE_EXPENSE)
                 .ifPresent(method -> {
                     expense.setPaymentMethod(method);
                     expense.setPaymentMethodName(method.getName());
