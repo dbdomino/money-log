@@ -3,15 +3,20 @@ package com.dbdomino.moneylog.backend;
 import com.dbdomino.moneylog.data.entity.User;
 import com.dbdomino.moneylog.data.repository.UserRepository;
 import tools.jackson.databind.ObjectMapper;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import tools.jackson.databind.JsonNode;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
@@ -111,6 +116,75 @@ public abstract class AbstractApiIT {
         user.setRole(role);
         user.setActive(active);
         return userRepository.save(user);
+    }
+
+    /** 로그인해 토큰 한 벌을 받는다. 성공을 전제하며, 실패하면 그 자리에서 터진다. */
+    protected Tokens login(User user) throws Exception {
+        JsonNode data = postJson("/api/v1/auth/login",
+                """
+                {"memberId":"%s","password":"%s"}
+                """.formatted(user.getUserId(), TEST_PASSWORD))
+                .get("data");
+        return new Tokens(data.get("accessToken").asString(), data.get("refreshToken").asString());
+    }
+
+    /** JSON 본문을 POST 하고 응답을 파싱한다. HTTP 상태는 확인하지 않는다 — 규격상 대부분 200 이다. */
+    protected JsonNode postJson(String url, String body) throws Exception {
+        String response = mockMvc.perform(MockMvcRequestBuilders.post(url)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        return objectMapper.readTree(response);
+    }
+
+    /** Bearer 토큰을 실어 GET 한다. 토큰이 {@code null} 이면 헤더를 붙이지 않는다. */
+    protected JsonNode getJson(String url, String accessToken) throws Exception {
+        var request = MockMvcRequestBuilders.get(url);
+        if (accessToken != null) {
+            request = request.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+        }
+        String response = mockMvc.perform(request)
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        return objectMapper.readTree(response);
+    }
+
+    /** Bearer 토큰을 실어 POST 한다(Body 없음). */
+    protected JsonNode postJson(String url, String accessToken, String body) throws Exception {
+        var request = MockMvcRequestBuilders.post(url).contentType(MediaType.APPLICATION_JSON);
+        if (accessToken != null) {
+            request = request.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+        }
+        if (body != null) {
+            request = request.content(body);
+        }
+        String response = mockMvc.perform(request)
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        return objectMapper.readTree(response);
+    }
+
+    /** 응답의 {@code resCode}. 모든 검사가 이 값으로 갈린다. */
+    protected int resCode(JsonNode response) {
+        return response.get("resCode").asInt();
+    }
+
+    /** 회원의 활성 세션 수. 부분 유니크 인덱스가 1건을 강제하는지 확인할 때 쓴다. */
+    protected int countActiveSessions(User user) {
+        Integer count = jdbc.queryForObject(
+                "select count(*) from moneylog.tbl_user_session where id_key = ? and revoked = false",
+                Integer.class, user.getIdKey());
+        return count == null ? 0 : count;
+    }
+
+    /** 회원의 로그인 이력 수. */
+    protected int countLoginHistory(User user) {
+        Integer count = jdbc.queryForObject(
+                "select count(*) from moneylog.tbl_user_login_history where id_key = ?",
+                Integer.class, user.getIdKey());
+        return count == null ? 0 : count;
+    }
+
+    /** 발급받은 토큰 한 벌. */
+    protected record Tokens(String accessToken, String refreshToken) {
     }
 
     /**

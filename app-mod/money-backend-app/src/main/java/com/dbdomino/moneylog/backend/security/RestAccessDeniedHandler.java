@@ -1,13 +1,9 @@
 package com.dbdomino.moneylog.backend.security;
 
-import com.dbdomino.moneylog.common.api.RestResponseDto;
 import com.dbdomino.moneylog.common.error.ErrorCode;
-import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
@@ -22,19 +18,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class RestAccessDeniedHandler implements AccessDeniedHandler {
 
-    private final ObjectMapper objectMapper;
+    private final SecurityResponseWriter responseWriter;
 
-    public RestAccessDeniedHandler(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public RestAccessDeniedHandler(SecurityResponseWriter responseWriter) {
+        this.responseWriter = responseWriter;
     }
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response,
                        AccessDeniedException accessDeniedException) throws IOException {
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        objectMapper.writeValue(response.getWriter(),
-                RestResponseDto.fail(ErrorCode.FORBIDDEN_ADMIN_ONLY));
+        responseWriter.write(response, ErrorCode.FORBIDDEN_ADMIN_ONLY);
     }
 }

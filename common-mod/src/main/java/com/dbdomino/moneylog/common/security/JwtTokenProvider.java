@@ -68,9 +68,17 @@ public class JwtTokenProvider {
                 .subject(memberId)
                 .claim(CLAIM_ROLE, role)
                 .claim(CLAIM_SESSION_ID, sessionId.toString())
+                // 발급마다 달라지는 식별자. 이것이 없으면 같은 초에 두 번 발급했을 때
+                // 클레임이 전부 같아(iat·exp 는 초 단위다) 완전히 동일한 토큰이 나온다.
+                // 갱신(Rotation)이 1초 안에 일어나면 "새 토큰"이 옛 토큰과 같은 값이 되고,
+                // 저장 해시도 같아져 옛 토큰이 계속 통한다.
+                .id(UUID.randomUUID().toString())
                 .issuedAt(Date.from(issuedAt))
                 .expiration(Date.from(expiresAt))
-                .signWith(key)
+                // 알고리즘을 명시한다. signWith(key) 만 쓰면 jjwt 가 키 길이를 보고
+                // HS256·HS384·HS512 중 하나를 고르므로, 키가 길어지는 순간 명세가 정한
+                // HS256 이 조용히 다른 알고리즘으로 바뀐다.
+                .signWith(key, Jwts.SIG.HS256)
                 .compact();
     }
 

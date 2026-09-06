@@ -1,41 +1,41 @@
 package com.dbdomino.moneylog.backend.security;
 
-import com.dbdomino.moneylog.common.api.RestResponseDto;
 import com.dbdomino.moneylog.common.error.ErrorCode;
-import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
 /**
- * 인증 실패({@code 1001})를 {@code { resCode, data }} 규격으로 내보낸다.
+ * 인증 없이 보호 API 에 닿았을 때의 응답.
  *
- * <p>Spring Security 의 기본 응답은 HTTP 401 + 자체 JSON 이다. 그대로 두면 인증이
- * 필요한 API 를 토큰 없이 불렀을 때만 응답 형식이 달라져, 클라이언트가 이 경로 하나를
- * 위해 별도 파싱을 갖게 된다(002 SC-101 · quickstart #37).
+ * <p>Spring Security 의 기본 응답은 HTTP 401 + 자체 JSON 이다. 그대로 두면 이 경로에서만
+ * 응답 형식이 달라져, 클라이언트가 여기 하나를 위해 별도 파싱을 갖게 된다
+ * (SC-101 · quickstart #37).
  *
- * <p>비즈니스 실패와 마찬가지로 <b>HTTP 200</b>으로 내보낸다.
+ * <h2>코드는 필터가 정한 것을 쓴다</h2>
+ *
+ * <p>토큰이 아예 없으면 {@code 1001} 이지만, 토큰은 있는데 세션이 무효면 {@code 1006},
+ * 계정이 비활성이면 {@code 1004} 다. 그 판정은 DB 를 본 {@link TokenAuthenticationFilter}
+ * 만 할 수 있으므로, 필터가 요청 속성에 담아 둔 코드를 여기서 꺼내 쓴다. 없으면
+ * "토큰이 오지 않았다"는 뜻이라 {@code 1001} 이다.
  */
 @Component
 public class RestAuthEntryPoint implements AuthenticationEntryPoint {
 
-    private final ObjectMapper objectMapper;
+    private final SecurityResponseWriter responseWriter;
 
-    public RestAuthEntryPoint(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public RestAuthEntryPoint(SecurityResponseWriter responseWriter) {
+        this.responseWriter = responseWriter;
     }
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        objectMapper.writeValue(response.getWriter(), RestResponseDto.fail(ErrorCode.UNAUTHORIZED));
+        Object attribute = request.getAttribute(TokenAuthenticationFilter.AUTH_ERROR_ATTRIBUTE);
+        ErrorCode errorCode = attribute instanceof ErrorCode code ? code : ErrorCode.UNAUTHORIZED;
+        responseWriter.write(response, errorCode);
     }
 }

@@ -2,6 +2,7 @@ package com.dbdomino.moneylog.backend.config;
 
 import com.dbdomino.moneylog.backend.security.RestAccessDeniedHandler;
 import com.dbdomino.moneylog.backend.security.RestAuthEntryPoint;
+import com.dbdomino.moneylog.backend.security.TokenAuthenticationFilter;
 import com.dbdomino.moneylog.common.security.JwtTokenProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +12,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
  * 인가 경계와 보안 빈.
@@ -23,9 +25,10 @@ import org.springframework.security.web.SecurityFilterChain;
  * 경로를 빠뜨려도 열리지 않는다. 반대로 두면(기본 {@code permitAll} + 보호 경로 열거)
  * 빠뜨린 API 가 조용히 공개된다.
  *
- * <p>토큰 검증 필터는 US1({@code TokenAuthenticationFilter})에서 이 체인에 끼운다.
- * 그전까지 보호 경로는 인증 정보 없이 {@link RestAuthEntryPoint}로 떨어져
- * {@code 1001}을 돌려준다 — 형식은 이미 규격을 지킨다.
+ * <p>{@link TokenAuthenticationFilter}가 {@code SecurityContext}를 채우고, 이 체인이
+ * 그 결과로 인가를 판정한다. 검증에 실패한 요청은 인증 정보가 없는 상태로 내려오므로
+ * 보호 경로에서는 {@link RestAuthEntryPoint}가, 권한이 모자라면
+ * {@link RestAccessDeniedHandler}가 규격 응답을 만든다.
  *
  * @see <a href="../../../../../../../../specs/002-backend-member-auth/contracts/api-contract.md">api-contract.md §1</a>
  */
@@ -45,9 +48,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    RestAuthEntryPoint authEntryPoint,
-                                                   RestAccessDeniedHandler accessDeniedHandler)
+                                                   RestAccessDeniedHandler accessDeniedHandler,
+                                                   TokenAuthenticationFilter tokenFilter)
             throws Exception {
         return http
+                // 토큰 검증을 인가 판정보다 먼저 세운다. 이 필터가 SecurityContext 를
+                // 채워야 authenticated·hasRole 이 볼 것이 생긴다. 검증 실패는 응답으로
+                // 만들지 않고 코드만 남기므로, permitAll 경로는 그대로 통과한다.
+                .addFilterBefore(tokenFilter, UsernamePasswordAuthenticationFilter.class)
                 // 토큰 기반이라 세션 쿠키가 없다. CSRF 토큰을 쓸 자리도 없다.
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->

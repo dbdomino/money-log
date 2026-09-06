@@ -198,7 +198,7 @@
 
 - 저장 구조는 `001-backend-db-schema`에서 이미 만들어졌다. 이 기능은 그 위에 API를 얹는다
 - API가 주고받는 `memberId`는 `tbl_user.user_id` 값이다. 인증 필터가 토큰의 `sub`를 `id_key`로 환산해 `SecurityContext`에 함께 싣는 것을 전제한다
-- JWT 알고리즘은 HS256, 클레임은 `sub`(memberId)·`role`·`sid`(sessionId)·`exp`·`iat`다
+- JWT 알고리즘은 HS256, 클레임은 `sub`(memberId)·`role`·`sid`(sessionId)·`jti`·`exp`·`iat`다. `jti`는 발급마다 새로 만드는 UUID이며, 없으면 같은 초에 두 번 발급한 토큰이 완전히 동일해진다(`iat`·`exp`가 초 단위다) — 갱신이 1초 안에 일어나면 "새 토큰"이 옛 토큰과 같은 값이 되어 옛 토큰이 계속 통한다
 - Refresh Token은 JWT가 아닌 불투명 랜덤 문자열이다
 - 비밀번호 해싱은 Spring Security `BCryptPasswordEncoder`(또는 동등 라이브러리)를 쓴다
 - 이메일 발송·SMS 인증 같은 외부 채널 연동은 이 기능의 범위 밖이다. 아이디 찾기의 본인 확인 수단은 가입 이메일 대조, 비밀번호 찾기·재설정의 본인 확인 수단은 `memberId`+`nickname` 대조이며 둘 다 외부 채널을 쓰지 않는다
