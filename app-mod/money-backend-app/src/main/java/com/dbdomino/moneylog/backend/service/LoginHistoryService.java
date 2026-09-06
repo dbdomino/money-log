@@ -1,5 +1,6 @@
 package com.dbdomino.moneylog.backend.service;
 
+import com.dbdomino.moneylog.backend.config.SelfAuditorContext;
 import com.dbdomino.moneylog.data.entity.User;
 import com.dbdomino.moneylog.data.entity.UserLoginHistory;
 import com.dbdomino.moneylog.data.repository.UserLoginHistoryRepository;
@@ -36,9 +37,10 @@ public class LoginHistoryService {
     /**
      * 이력 1건을 남긴다.
      *
-     * <p>감사 컬럼을 직접 채운다. 로그인은 인증 <b>이전</b>이라 {@code SecurityContext} 가
-     * 비어 있어 {@code AuditorAware} 가 값을 주지 못하는데, 이 테이블의 감사 컬럼은
-     * NOT NULL 이다. 넣을 값은 시도한 그 회원의 {@code id_key} 다.
+     * <p>로그인은 인증 <b>이전</b>이라 {@code SecurityContext} 가 비어 있는데 이 테이블의
+     * 감사 컬럼은 NOT NULL 이다. 그래서 시도한 회원을 감사자로 실어 두고 저장한다 —
+     * 값을 채우는 것은 여전히 {@code AuditingEntityListener} 이며, 엔티티 세터로 직접
+     * 쓰지 않는다({@link SelfAuditorContext}).
      *
      * @param user    시도한 회원. 아이디가 실재할 때만 넘어온다
      * @param loginIp 요청 IP. 확보하지 못하면 {@code null}
@@ -51,9 +53,7 @@ public class LoginHistoryService {
         history.setLoginAt(OffsetDateTime.now());
         history.setLoginIp(loginIp);
         history.setSuccess(success);
-        history.setCreatedBy(user.getIdKey());
-        history.setUpdatedBy(user.getIdKey());
-        historyRepository.save(history);
+        SelfAuditorContext.runAs(user.getIdKey(), () -> historyRepository.saveAndFlush(history));
     }
 
     /**

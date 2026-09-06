@@ -32,11 +32,14 @@ public class BackendAuditorAware implements AuditorAware<Long> {
     @Override
     public Optional<Long> getCurrentAuditor() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return Optional.empty();
+        if (authentication != null && authentication.isAuthenticated()
+                && authentication.getPrincipal() instanceof AuthPrincipal principal
+                && principal.idKey() != null) {
+            return Optional.of(principal.idKey());
         }
-        return authentication.getPrincipal() instanceof AuthPrincipal principal
-                ? Optional.ofNullable(principal.idKey())
-                : Optional.empty();
+        // 인증 이전에 도는 경로(로그인·가입·갱신)가 실어 둔 값. 없으면 빈 값이다.
+        // SecurityContext 를 먼저 보는 순서가 중요하다 — 관리자가 남의 세션을 폐기한
+        // 기록이 회원 본인으로 둔갑하면 감사 기록의 뜻이 뒤집힌다.
+        return SelfAuditorContext.current();
     }
 }

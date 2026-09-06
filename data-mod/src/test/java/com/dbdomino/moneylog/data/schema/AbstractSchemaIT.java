@@ -105,7 +105,6 @@ public abstract class AbstractSchemaIT {
         user.setUserId(userId);
         user.setPw("$2a$12$0123456789012345678901234567890123456789012345678901");
         user.setNickname("테스트회원");
-        stampAudit(user);
         return user;
     }
 
@@ -122,7 +121,6 @@ public abstract class AbstractSchemaIT {
         method.setType(UserPaymentMethod.TYPE_CARD);
         method.setPurpose(UserPaymentMethod.PURPOSE_EXPENSE);
         method.setCardExpiry("2028-12");
-        stampAudit(method, user.getIdKey());
         return method;
     }
 
@@ -131,7 +129,6 @@ public abstract class AbstractSchemaIT {
         UserExpendGroup group = new UserExpendGroup();
         group.setUser(user);
         group.setName(name);
-        stampAudit(group, user.getIdKey());
         return group;
     }
 
@@ -154,7 +151,6 @@ public abstract class AbstractSchemaIT {
         expense.setPaymentDate(paymentDate);
         expense.setPlace("동네식당");
         expense.setContent("점심");
-        stampAudit(expense, user.getIdKey());
         return expense;
     }
 
@@ -179,7 +175,6 @@ public abstract class AbstractSchemaIT {
         fixed.setStartMonth(11);
         fixed.setEndYear(2027);
         fixed.setEndMonth(2);
-        stampAudit(fixed, user.getIdKey());
         return fixed;
     }
 
@@ -201,7 +196,6 @@ public abstract class AbstractSchemaIT {
         monthly.setContent(fixed.getContent());
         monthly.setPaymentMethod(fixed.getPaymentMethod());
         monthly.setExpendGroup(fixed.getExpendGroup());
-        stampAudit(monthly, fixed.getUser().getIdKey());
         return monthly;
     }
 
@@ -229,7 +223,6 @@ public abstract class AbstractSchemaIT {
         statistics.setRegularAmount(600_000L);
         statistics.setFixedPercent(new BigDecimal("40.00"));
         statistics.setRegularPercent(new BigDecimal("60.00"));
-        stampAudit(statistics, user.getIdKey());
         return statistics;
     }
 
@@ -243,7 +236,6 @@ public abstract class AbstractSchemaIT {
         weekly.setWeekStart(weekStart);
         weekly.setWeekEnd(weekEnd);
         weekly.setAmount(150_000L);
-        stampAudit(weekly, statistics.getUser().getIdKey());
         return weekly;
     }
 
@@ -264,7 +256,6 @@ public abstract class AbstractSchemaIT {
         group.setTargetAmount(300_000L);
         group.setUsageRate(new BigDecimal("83.33"));
         group.setStatus(UserStatisticsExpendGroup.STATUS_UNDER);
-        stampAudit(group, statistics.getUser().getIdKey());
         return group;
     }
 
@@ -278,7 +269,6 @@ public abstract class AbstractSchemaIT {
         method.setPaymentMethodIdx(paymentMethodIdx);
         method.setPaymentMethodName(name);
         method.setAmount(250_000L);
-        stampAudit(method, statistics.getUser().getIdKey());
         return method;
     }
 
@@ -292,36 +282,6 @@ public abstract class AbstractSchemaIT {
     protected Long nextInstallmentGroupId() {
         return inTx(() -> jdbc.queryForObject(
                 "SELECT nextval('" + UserExpense.INSTALLMENT_GROUP_SEQUENCE + "')", Long.class));
-    }
-
-    /**
-     * 감사 컬럼을 직접 채운다.
-     *
-     * <p>{@code AuditorAware}가 아직 임시 구현(빈 {@code Optional})이라
-     * {@code created_by}/{@code updated_by}가 자동으로 채워지지 않는다. 회원 외의
-     * 저장 단위는 두 컬럼이 NOT NULL이므로 테스트가 값을 넣어야 저장된다.
-     *
-     * <p>백엔드 Phase 1에서 {@code AuditorAware}가 실제 {@code id_key}를 공급하게
-     * 되면 이 헬퍼의 {@code createdBy}/{@code updatedBy} 부분은 필요 없어진다.
-     */
-    protected void stampAudit(BaseAuditEntity entity) {
-        stampAudit(entity, PLACEHOLDER_AUDITOR_ID_KEY);
-    }
-
-    /**
-     * 임시 감사자 {@code id_key}. 실재하지 않는 값이며, 감사 컬럼에 FK를 걸지 않기로 한
-     * 덕에 통과한다. {@code AuditorAware}가 실제 값을 공급하게 되는 Phase 1에서
-     * {@code stampAudit}과 함께 사라진다.
-     */
-    protected static final Long PLACEHOLDER_AUDITOR_ID_KEY = 0L;
-
-    /** 감사 컬럼을 지정한 {@code id_key}로 채운다. */
-    protected void stampAudit(BaseAuditEntity entity, Long auditorIdKey) {
-        OffsetDateTime now = OffsetDateTime.now();
-        entity.setCreatedAt(now);
-        entity.setUpdatedAt(now);
-        entity.setCreatedBy(auditorIdKey);
-        entity.setUpdatedBy(auditorIdKey);
     }
 
     /** 한 트랜잭션에서 실행하고 결과를 돌려준다. 예외는 그대로 올라온다. */

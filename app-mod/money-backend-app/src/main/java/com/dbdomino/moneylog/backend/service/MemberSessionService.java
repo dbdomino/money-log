@@ -1,6 +1,7 @@
 package com.dbdomino.moneylog.backend.service;
 
 import com.dbdomino.moneylog.backend.config.JwtProperties;
+import com.dbdomino.moneylog.backend.config.SelfAuditorContext;
 import com.dbdomino.moneylog.common.security.JwtTokenProvider;
 import com.dbdomino.moneylog.data.entity.User;
 import com.dbdomino.moneylog.data.entity.UserSession;
@@ -95,12 +96,10 @@ public class MemberSessionService {
         session.setRefreshTokenHash(hash(refreshToken));
         session.setAccessExpiresAt(accessExpiresAt);
         session.setRefreshExpiresAt(refreshExpiresAt);
-        // 감사 컬럼을 직접 채운다. 로그인은 인증 "이전"이라 SecurityContext 가 비어 있어
-        // AuditorAware 가 값을 주지 못하는데 이 테이블의 두 컬럼은 NOT NULL 이다
-        // (nullable 예외는 tbl_user 하나뿐이다). 넣을 값은 세션 주인의 id_key 다.
-        session.setCreatedBy(user.getIdKey());
-        session.setUpdatedBy(user.getIdKey());
-        sessionRepository.saveAndFlush(session);
+        // 로그인은 인증 "이전"이라 SecurityContext 가 비어 있는데 이 테이블의 감사 컬럼은
+        // NOT NULL 이다. 세션 주인을 감사자로 실어 두고 저장한다 — 값을 채우는 것은 여전히
+        // AuditingEntityListener 이며 엔티티 세터로 직접 쓰지 않는다.
+        SelfAuditorContext.runAs(user.getIdKey(), () -> sessionRepository.saveAndFlush(session));
 
         return new IssuedTokens(accessToken, refreshToken, sessionId,
                 accessExpiresAt, refreshExpiresAt);
@@ -133,8 +132,8 @@ public class MemberSessionService {
         managed.setRefreshTokenHash(hash(refreshToken));
         managed.setAccessExpiresAt(accessExpiresAt);
         managed.setRefreshExpiresAt(refreshExpiresAt);
-        stampUpdater(managed);
-        sessionRepository.saveAndFlush(managed);
+        SelfAuditorContext.runAs(managed.getUser().getIdKey(),
+                () -> sessionRepository.saveAndFlush(managed));
 
         return new IssuedTokens(accessToken, refreshToken, managed.getSessionId(),
                 accessExpiresAt, refreshExpiresAt);
@@ -147,21 +146,11 @@ public class MemberSessionService {
         // 한쪽만 하는 실수를 구조로 막아 둔 메서드다. 세터는 일부러 닫혀 있다.
         UserSession managed = sessionRepository.findById(session.getIdx()).orElseThrow();
         managed.revoke();
-        stampUpdater(managed);
-        sessionRepository.saveAndFlush(managed);
-    }
-
-    /**
-     * {@code updated_by} 의 기본값을 세션 주인으로 채운다.
-     *
-     * <p>세션을 고치는 경로 중 <b>로그인·갱신은 인증 이전</b>이라 {@code AuditorAware} 가
-     * 빈 값을 돌려주는데 이 컬럼은 NOT NULL 이다. 인증된 요청(로그아웃·관리자 정지)에서는
-     * 감사 리스너가 실제 행위자의 {@code id_key} 로 이 값을 덮어쓰므로, 여기서 넣는 값은
-     * "행위자를 알 수 없을 때의 바닥값" 역할만 한다 — 관리자가 남의 세션을 폐기한 기록이
-     * 회원 본인으로 둔갑하지 않는다.
-     */
-    private static void stampUpdater(UserSession session) {
-        session.setUpdatedBy(session.getUser().getIdKey());
+        // 감사자를 정하지 못하는 경로(로그인 중 기존 세션 폐기, 갱신)를 위해 세션 주인을
+        // 바닥값으로 깐다. 인증된 요청(로그아웃·관리자 정지)에서는 SecurityContext 가
+        // 우선하므로 실제 행위자가 기록된다.
+        SelfAuditorContext.runAs(managed.getUser().getIdKey(),
+                () -> sessionRepository.saveAndFlush(managed));
     }
 
     /** 회원의 활성 세션이 있으면 폐기한다. 없으면 아무 일도 하지 않는다. */

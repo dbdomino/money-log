@@ -2,6 +2,7 @@ package com.dbdomino.moneylog.data.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.dbdomino.moneylog.data.TestAuditorAware;
 import com.dbdomino.moneylog.data.entity.User;
 import com.dbdomino.moneylog.data.entity.UserExpendGroup;
 import com.dbdomino.moneylog.data.entity.UserFixedExpense;
@@ -122,7 +123,9 @@ class FixedExpenseMonthlyConcurrencyIT extends AbstractSchemaIT {
                 fixed.getContent(),
                 fixed.getPaymentMethod().getIdx(),
                 fixed.getExpendGroup().getIdx(),
-                PLACEHOLDER_AUDITOR_ID_KEY);
+                // 네이티브 INSERT 라 AuditingEntityListener 가 돌지 않는다. 감사 컬럼은
+                // NOT NULL 이므로 테스트 감사자와 같은 값을 직접 넘긴다.
+                TestAuditorAware.DEFAULT_AUDITOR_ID_KEY);
     }
 
     /** 회원·수단·유형·고정지출을 저장하고 고정지출을 돌려준다. */

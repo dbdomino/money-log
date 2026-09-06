@@ -190,14 +190,14 @@ description: "Task list for 002-backend-member-auth"
 
 **Purpose**: 임시 조치 제거와 전체 규격 검증. quickstart.md §3의 "회귀"·"응답 규격" 절과 §4 완료 판정에 대응한다
 
-- [ ] T066 `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/BaseAuditEntity.java`에서 임시 `@Setter`와 그 TODO 주석 블록을 제거한다(quickstart #40). 감사 값은 `AuditingEntityListener`만 채워야 하며, 공개 세터가 열려 있으면 `created_by`를 임의로 덮어쓸 수 있어 감사 기록의 신뢰도가 떨어진다(`@Column(updatable=false)`는 UPDATE만 막고 INSERT 시점 위조는 못 막는다). T019가 먼저 끝나 있어야 한다
-- [ ] T067 `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/AbstractSchemaIT.java`의 `stampAudit()`과 그 호출부를 전부 제거한다(quickstart #41) — `newExpendGroup`·`newPaymentMethod` 등 헬퍼 여러 곳에서 부른다. T019에서 넣은 테스트용 `AuditorAware`가 값을 공급하므로 더는 직접 채울 필요가 없다. T066과 한 묶음이다(세터가 사라지면 컴파일이 깨진다)
-- [ ] T068 `./gradlew :data-mod:test`를 돌려 기존 스키마 IT(quickstart 기준 **77건**)가 전부 통과하는지 확인한다(quickstart #39). 통과해야 `AuditorAware` 실 구현이 제 역할을 한다는 뜻이다. **`./gradlew test`(전체)는 쓰지 않는다** — `money-app`의 레거시 테스트 3건이 `init` 커밋부터 깨져 있다(테스트용 `application.yml`이 메인 설정을 덮어쓰는데 datasource가 없다)
-- [ ] T069 로그 마스킹을 **실측**한다(quickstart #34) — 로그인·갱신을 호출한 뒤 `logback-spring.xml`이 만든 로그 파일에서 `password`·`accessToken`·`refreshToken`·`Authorization` 값이 `***`인지 확인한다. 단위 테스트로는 Aspect가 실제 요청 경로에 걸렸는지까지 보이지 않는다
-- [ ] T070 응답 규격을 전수 확인한다(quickstart #35~#38) — 16건 전부 성공은 HTTP 200 + `resCode 200`, 비즈니스·검증 실패는 **HTTP 200** + 4자리 코드, 서버 오류만 HTTP 500 + `9000`(SC-101). 목록(1.13)만 `data.list` 형태이고 `page`·`totalPages`가 없다
-- [ ] T071 `git diff sql/schema-moneylogdb.sql`이 **비어 있는지** 확인한다 — 이 기능은 스키마를 바꾸지 않는다. 덤프가 바뀌었다면 의도치 않게 Entity를 건드린 것이므로 원인을 찾는다(원칙 VI의 이 기능판이다). 덤프 파일을 손으로 편집하지 않는다
-- [ ] T072 `./gradlew :app-mod:money-backend-app:test`로 이 기능의 테스트를 전부 돌리고, quickstart.md §3의 시나리오 **41건**이 모두 대응되는지 `#N` 번호로 대조한다. 빠진 번호가 있으면 그 시나리오가 검증되지 않은 것이다
-- [ ] T073 커밋 전 자가 점검(CLAUDE.md) — ① 응답이 `{ resCode, data }`인가, ② **Entity가 API·화면에 노출되지 않는가**(Controller 시그니처와 응답 DTO를 훑는다), ③ 명세 표의 설명 칸이 비어 있지 않은가, ④ DB 구조가 바뀌지 않았는가(T071), ⑤ `System.out.println`이 없는가, ⑥ Controller가 Repository를 직접 부르지 않는가, ⑦ `PUT`이 0건인가
+- [X] T066 `data-mod/src/main/java/com/dbdomino/moneylog/data/entity/BaseAuditEntity.java`에서 임시 `@Setter`와 그 TODO 주석 블록을 제거한다(quickstart #40). 감사 값은 `AuditingEntityListener`만 채워야 하며, 공개 세터가 열려 있으면 `created_by`를 임의로 덮어쓸 수 있어 감사 기록의 신뢰도가 떨어진다(`@Column(updatable=false)`는 UPDATE만 막고 INSERT 시점 위조는 못 막는다). T019가 먼저 끝나 있어야 한다
+- [X] T067 `data-mod/src/test/java/com/dbdomino/moneylog/data/schema/AbstractSchemaIT.java`의 `stampAudit()`과 그 호출부를 전부 제거한다(quickstart #41) — `newExpendGroup`·`newPaymentMethod` 등 헬퍼 여러 곳에서 부른다. T019에서 넣은 테스트용 `AuditorAware`가 값을 공급하므로 더는 직접 채울 필요가 없다. T066과 한 묶음이다(세터가 사라지면 컴파일이 깨진다)
+- [X] T068 `./gradlew :data-mod:test`를 돌려 기존 스키마 IT(quickstart 기준 **77건**)가 전부 통과하는지 확인한다(quickstart #39). 통과해야 `AuditorAware` 실 구현이 제 역할을 한다는 뜻이다. **`./gradlew test`(전체)는 쓰지 않는다** — `money-app`의 레거시 테스트 3건이 `init` 커밋부터 깨져 있다(테스트용 `application.yml`이 메인 설정을 덮어쓰는데 datasource가 없다)
+- [X] T069 로그 마스킹을 **실측**한다(quickstart #34) — 로그인·갱신을 호출한 뒤 `logback-spring.xml`이 만든 로그 파일에서 `password`·`accessToken`·`refreshToken`·`Authorization` 값이 `***`인지 확인한다. 단위 테스트로는 Aspect가 실제 요청 경로에 걸렸는지까지 보이지 않는다
+- [X] T070 응답 규격을 전수 확인한다(quickstart #35~#38) — 16건 전부 성공은 HTTP 200 + `resCode 200`, 비즈니스·검증 실패는 **HTTP 200** + 4자리 코드, 서버 오류만 HTTP 500 + `9000`(SC-101). 목록(1.13)만 `data.list` 형태이고 `page`·`totalPages`가 없다
+- [X] T071 `git diff sql/schema-moneylogdb.sql`이 **비어 있는지** 확인한다 — 이 기능은 스키마를 바꾸지 않는다. 덤프가 바뀌었다면 의도치 않게 Entity를 건드린 것이므로 원인을 찾는다(원칙 VI의 이 기능판이다). 덤프 파일을 손으로 편집하지 않는다
+- [X] T072 `./gradlew :app-mod:money-backend-app:test`로 이 기능의 테스트를 전부 돌리고, quickstart.md §3의 시나리오 **41건**이 모두 대응되는지 `#N` 번호로 대조한다. 빠진 번호가 있으면 그 시나리오가 검증되지 않은 것이다
+- [X] T073 커밋 전 자가 점검(CLAUDE.md) — ① 응답이 `{ resCode, data }`인가, ② **Entity가 API·화면에 노출되지 않는가**(Controller 시그니처와 응답 DTO를 훑는다), ③ 명세 표의 설명 칸이 비어 있지 않은가, ④ DB 구조가 바뀌지 않았는가(T071), ⑤ `System.out.println`이 없는가, ⑥ Controller가 Repository를 직접 부르지 않는가, ⑦ `PUT`이 0건인가
 
 ---
 

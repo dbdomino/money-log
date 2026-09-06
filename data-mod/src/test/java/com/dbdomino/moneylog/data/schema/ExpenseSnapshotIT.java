@@ -205,7 +205,6 @@ class ExpenseSnapshotIT extends AbstractSchemaIT {
         income.setPaymentMethodName(method.getName());
         income.setAmount(amount);
         income.setPaymentDate(paymentDate);
-        stampAudit(income, user.getIdKey());
         return income;
     }
 }

@@ -219,7 +219,6 @@ class ExpendTargetIT extends AbstractSchemaIT {
         target.setUser(user);
         target.setExpendGroup(group);
         target.setTargetAmount(targetAmount);
-        stampAudit(target, user.getIdKey());
         return target;
     }
 
@@ -231,7 +230,6 @@ class ExpendTargetIT extends AbstractSchemaIT {
         target.setYear(year);
         target.setMonth(month);
         target.setTargetAmount(targetAmount);
-        stampAudit(target, user.getIdKey());
         return target;
     }
 }

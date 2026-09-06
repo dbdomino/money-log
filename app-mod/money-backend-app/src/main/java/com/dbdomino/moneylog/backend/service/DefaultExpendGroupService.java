@@ -1,5 +1,6 @@
 package com.dbdomino.moneylog.backend.service;
 
+import com.dbdomino.moneylog.backend.config.SelfAuditorContext;
 import com.dbdomino.moneylog.backend.storage.IconStorage;
 import com.dbdomino.moneylog.data.entity.User;
 import com.dbdomino.moneylog.data.entity.UserExpendGroup;
@@ -53,24 +54,27 @@ public class DefaultExpendGroupService {
      */
     @Transactional
     public void createDefaults(User user) {
-        for (String name : DEFAULT_NAMES) {
-            UserExpendGroup group = new UserExpendGroup();
-            group.setUser(user);
-            group.setName(name);
-            group.setInUse(true);
-            group.setDefaultGroup(true);
-            group.setDeleted(false);
-            group.setCreatedBy(user.getIdKey());
-            group.setUpdatedBy(user.getIdKey());
+        // 감사자를 그 회원으로 두고 10건을 만든다. 가입은 인증 이전이라 SecurityContext 가
+        // 비어 있고 이 테이블의 감사 컬럼은 NOT NULL 이다 — 값을 채우는 것은 여전히
+        // AuditingEntityListener 이며 엔티티 세터로 직접 쓰지 않는다.
+        SelfAuditorContext.runAs(user.getIdKey(), () -> {
+            for (String name : DEFAULT_NAMES) {
+                UserExpendGroup group = new UserExpendGroup();
+                group.setUser(user);
+                group.setName(name);
+                group.setInUse(true);
+                group.setDefaultGroup(true);
+                group.setDeleted(false);
 
-            // ① PK 를 받는다. 파일명이 이 값을 필요로 한다.
-            UserExpendGroup saved = expendGroupRepository.saveAndFlush(group);
-            // ② 시드를 회원별 복사본으로 만든다.
-            String filename = iconStorage.copyFromSeed(name, user.getIdKey(), saved.getIdx());
-            // ③ 파일명만 저장한다. 조회 경로·Base URL 은 응답을 만들 때 앞에 붙인다.
-            saved.setIconFilename(filename);
-            expendGroupRepository.saveAndFlush(saved);
-        }
+                // ① PK 를 받는다. 파일명이 이 값을 필요로 한다.
+                UserExpendGroup saved = expendGroupRepository.saveAndFlush(group);
+                // ② 시드를 회원별 복사본으로 만든다.
+                String filename = iconStorage.copyFromSeed(name, user.getIdKey(), saved.getIdx());
+                // ③ 파일명만 저장한다. 조회 경로·Base URL 은 응답을 만들 때 앞에 붙인다.
+                saved.setIconFilename(filename);
+                expendGroupRepository.saveAndFlush(saved);
+            }
+        });
     }
 
     /** 기본 유형 이름 10종. 테스트와 003 이 같은 목록을 참조하도록 열어 둔다. */
