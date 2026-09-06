@@ -1,21 +1,26 @@
 package com.dbdomino.moneylog.backend.controller;
 
+import com.dbdomino.moneylog.backend.dto.request.StatisticsSaveRequest;
 import com.dbdomino.moneylog.backend.dto.request.StatisticsViewQuery;
 import com.dbdomino.moneylog.backend.dto.response.StatisticsResponse;
+import com.dbdomino.moneylog.backend.dto.response.StatisticsSaveResponse;
 import com.dbdomino.moneylog.backend.security.AuthPrincipal;
 import com.dbdomino.moneylog.backend.service.StatisticsQueryService;
+import com.dbdomino.moneylog.backend.service.StatisticsSaveService;
 import com.dbdomino.moneylog.backend.support.StatisticsYearMonth;
 import com.dbdomino.moneylog.common.api.RestResponseDto;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 통계 API — 5.5 조회.
+ * 통계 API — 5.5 조회 · 5.6 저장.
  *
  * <p>목표금액(5.1~5.4)은 다른 컨트롤러가 맡는다. 목표금액은 <b>사용자가 정하는 설정</b>이고
  * 통계는 <b>그 설정과 거래에서 나오는 결과</b>다.
@@ -40,9 +45,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class StatisticsController {
 
     private final StatisticsQueryService statisticsQueryService;
+    private final StatisticsSaveService statisticsSaveService;
 
-    public StatisticsController(StatisticsQueryService statisticsQueryService) {
+    public StatisticsController(StatisticsQueryService statisticsQueryService,
+                                StatisticsSaveService statisticsSaveService) {
         this.statisticsQueryService = statisticsQueryService;
+        this.statisticsSaveService = statisticsSaveService;
     }
 
     /**
@@ -60,5 +68,27 @@ public class StatisticsController {
             @RequestParam(name = "view", required = false) String view) {
         return RestResponseDto.ok(statisticsQueryService.get(principal,
                 StatisticsYearMonth.require(year, month), StatisticsViewQuery.of(view)));
+    }
+
+    /**
+     * 5.6 월별 통계 저장.
+     *
+     * <p><b>연·월을 Body 로만 받는다</b>(FR-524). 5.5 가 Path 로 받는 것과 나뉘는 이유는
+     * 메서드가 달라서다 — GET 은 자원을 가리키고 POST 는 행위를 보낸다.
+     *
+     * <p><b>{@code required = false} 로 받는다.</b> 몸통을 아예 안 보낸 요청도
+     * {@code {}} 를 보낸 요청과 같은 {@code 3603} 이어야 "Body 로만 받는다"가 한 가지
+     * 결과로 드러난다 — 필수로 두면 앞은 {@code 9001}, 뒤는 {@code 3603} 이 되어 같은
+     * 실수가 두 코드로 갈린다.
+     *
+     * <p><b>Query 를 읽지 않는다.</b> 읽어 주면 입력 경로가 둘이 되고, 둘이 다른 값을
+     * 담았을 때 어느 쪽을 따르는지가 구현에 숨는다.
+     */
+    @PostMapping(value = "/monthly/save", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public RestResponseDto<StatisticsSaveResponse> save(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @RequestBody(required = false) StatisticsSaveRequest request) {
+        return RestResponseDto.ok(statisticsSaveService.save(principal,
+                StatisticsSaveRequest.yearMonthOf(request)));
     }
 }

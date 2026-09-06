@@ -137,22 +137,22 @@ Spring Boot 멀티모듈이다. 저장소 루트 기준 경로를 쓴다.
 
 ### 테스트
 
-- [ ] T043 [P] [US3] `.../backend/statistics/StatisticsSaveIT.java` — quickstart #37·#38. 저장 응답에 **`savedAt`·`source=SAVED`** 가 실려 재조회 없이 화면을 갱신할 수 있다(FR-415 와 같은 성격). 저장 후 기본 조회가 `source=SAVED` 다
-- [ ] T044 [P] [US3] `.../backend/statistics/StatisticsImmutableIT.java` — quickstart #39·#43·#44 (SC-506·SC-508). **저장본 불변의 세 갈래다** — 원본 **지출**을 고쳐도, 참조한 **지출유형**을 삭제 표시해도, **목표금액**을 바꿔도 저장본은 그대로다. 셋 다 걸어야 FR-518 이 확인된다
-- [ ] T045 [P] [US3] `.../backend/statistics/StatisticsResaveIT.java` — quickstart #40·#41·#42 (SC-505). **#46-2 도 여기서 건다** — 상세 3종에 유니크 제약이 있어(`ux_stat_group`·`ux_stat_method`·`ux_stat_weekly`) 삭제와 삽입의 순서가 어긋나면 두 번째 저장이 `9000` 이 된다. 같은 달을 10번 저장해도 통계 행은 **1건**이고 `savedAt` 이 갱신된다. **재저장은 상세를 지웠다 다시 넣는다**(FR-517) — **#42 가 핵심이다**: 갱신으로 구현하면 재저장 전후로 유형별 행 수가 줄었을 때 **없어진 유형의 행이 남는다**
-- [ ] T046 [P] [US3] `.../backend/statistics/StatisticsFutureMonthIT.java` — quickstart #45·#46 (FR-527). **미래 월**은 `3604`, **이번 달은 성공**이다. 경계가 `>` 이며 `>=` 로 잡으면 이번 달 저장이 막힌다. 비교는 `연 × 12 + 월` 합성값으로 한다
-- [ ] T046a [P] [US3] `.../backend/statistics/StatisticsSaveMethodIT.java` — quickstart **#46-1** (FR-524). 5.6 은 연·월을 **Body 로만** 받는다. Query·Path 로 보내면 Body 가 비어 **`3603`** 이고, Body 와 Query 를 함께 보내면 **Body 를 따른다**. 조용히 Query 를 읽어 주면 입력 경로가 둘이 되고 둘이 다른 값을 담았을 때 어느 쪽을 따르는지가 구현에 숨는다. `GET`·`PATCH`·`PUT` 으로는 부를 수 없다 — **HTTP 상태가 아니라 `resCode` 로 단언한다**(이 앱은 실패도 HTTP 200 이다)
-- [ ] T047 [P] [US3] `.../backend/statistics/StatisticsEmptyMonthIT.java` — quickstart #47·#48·#49 (SC-511·FR-528). 지출·소득이 **한 건도 없는 달**도 저장할 수 있고, 합계·비율 6값이 전부 **0** 이며 유형별 상세는 **빈 배열**이다. 저장 후 조회하면 `source=SAVED` 다
+- [X] T043 [P] [US3] `.../backend/statistics/StatisticsSaveIT.java` — quickstart #37·#38. 저장 응답에 **`savedAt`·`source=SAVED`** 가 실려 재조회 없이 화면을 갱신할 수 있다(FR-415 와 같은 성격). 저장 후 기본 조회가 `source=SAVED` 다
+- [X] T044 [P] [US3] `.../backend/statistics/StatisticsImmutableIT.java` — quickstart #39·#43·#44 (SC-506·SC-508). **저장본 불변의 세 갈래다** — 원본 **지출**을 고쳐도, 참조한 **지출유형**을 삭제 표시해도, **목표금액**을 바꿔도 저장본은 그대로다. 셋 다 걸어야 FR-518 이 확인된다
+- [X] T045 [P] [US3] `.../backend/statistics/StatisticsResaveIT.java` — quickstart #40·#41·#42 (SC-505). **#46-2 도 여기서 건다** — 상세 3종에 유니크 제약이 있어(`ux_stat_group`·`ux_stat_method`·`ux_stat_weekly`) 삭제와 삽입의 순서가 어긋나면 두 번째 저장이 `9000` 이 된다. 같은 달을 10번 저장해도 통계 행은 **1건**이고 `savedAt` 이 갱신된다. **재저장은 상세를 지웠다 다시 넣는다**(FR-517) — **#42 가 핵심이다**: 갱신으로 구현하면 재저장 전후로 유형별 행 수가 줄었을 때 **없어진 유형의 행이 남는다**
+- [X] T046 [P] [US3] `.../backend/statistics/StatisticsFutureMonthIT.java` — quickstart #45·#46 (FR-527). **미래 월**은 `3604`, **이번 달은 성공**이다. 경계가 `>` 이며 `>=` 로 잡으면 이번 달 저장이 막힌다. 비교는 `연 × 12 + 월` 합성값으로 한다
+- [X] T046a [P] [US3] `.../backend/statistics/StatisticsSaveMethodIT.java` — quickstart **#46-1** (FR-524). 5.6 은 연·월을 **Body 로만** 받는다. Query·Path 로 보내면 Body 가 비어 **`3603`** 이고, Body 와 Query 를 함께 보내면 **Body 를 따른다**. 조용히 Query 를 읽어 주면 입력 경로가 둘이 되고 둘이 다른 값을 담았을 때 어느 쪽을 따르는지가 구현에 숨는다. `GET`·`PATCH`·`PUT` 으로는 부를 수 없다 — **HTTP 상태가 아니라 `resCode` 로 단언한다**(이 앱은 실패도 HTTP 200 이다)
+- [X] T047 [P] [US3] `.../backend/statistics/StatisticsEmptyMonthIT.java` — quickstart #47·#48·#49 (SC-511·FR-528). 지출·소득이 **한 건도 없는 달**도 저장할 수 있고, 합계·비율 6값이 전부 **0** 이며 유형별 상세는 **빈 배열**이다. 저장 후 조회하면 `source=SAVED` 다
 
 ### 구현
 
-- [ ] T048 [P] [US3] `.../backend/dto/request/StatisticsSaveRequest.java` — 5.6 의 `year`·`month`. **Body 로 받는다**(FR-524) — POST 는 Path·Query 를 쓰지 않는다. `Integer` 로 받아 누락을 `3603` 으로 거절한다(원시 타입이면 Jackson 이 `0` 을 채워 "보내지 않았다"를 가릴 수 없다)
-- [ ] T049 [P] [US3] `.../backend/dto/response/StatisticsSaveResponse.java` — `savedAt` · `source=SAVED` + 저장한 통계 본문. **재조회가 필요 없어야** 화면이 한 번의 왕복으로 끝난다(api-contract §8)
-- [ ] T050 [US3] `.../backend/service/StatisticsSaveService.java` — 5.6. **T009 의 계산기를 그대로 쓴다** — 5.5 와 다른 계산기를 쓰면 "지금 보이는 값"과 "저장된 값"이 달라진다
-- [ ] T051 [US3] T050 에 **미래 월 거절**을 넣는다(FR-527) — 현재 연월을 **초과**하면 `3604` 다. **이번 달은 저장할 수 있다**. 판정 순서는 `3603`(연·월 범위) → `3604`(미래) 다(api-contract §7)
-- [ ] T052 [US3] T050 의 **재저장을 "상세 삭제 후 삽입"으로** 한다(FR-517) — 통계 행은 upsert 하되 상세 3종은 `deleteByStatisticsIdx` 로 지우고 새로 넣는다. **한 트랜잭션**이며, 갱신으로 구현하면 없어진 유형의 행이 남는다
-- [ ] T052a [US3] **삭제와 삽입 사이에 `flush()` 를 명시한다.** 상세 3종에 유니크 제약이 있고(`ux_stat_group (statistics_idx, expend_group_idx)` · `ux_stat_method` · `ux_stat_weekly`, 덤프 확인), **Hibernate 의 `ActionQueue` 는 한 flush 안에서 INSERT 를 DELETE 보다 먼저 실행한다.** 그래서 "지우고 새로 넣기"를 그대로 쓰면 같은 키의 INSERT 가 먼저 나가 **유니크 위반이 `9000`** 으로 새어 나간다 — 같은 달을 두 번 저장할 때만 터지므로 첫 저장만 거는 시험으로는 드러나지 않는다. 삭제 직후 `flush()` 하거나 파생 삭제 대신 `@Modifying` 벌크 DELETE 를 쓴다. **005 의 4.9 가 같은 자리에서 다른 방식으로 터졌다** — 그쪽은 지운 Entity 를 `save` 대상에 넣어 `ObjectDeletedException` 이 났다. 파생 삭제와 삽입이 만나는 지점은 두 번 다 문제였다
-- [ ] T053 [US3] `.../backend/controller/StatisticsController.java` 에 5.6 을 더한다 — `POST /api/v1/statistics/monthly/save`. 연·월을 **Body 로만** 받는다
+- [X] T048 [P] [US3] `.../backend/dto/request/StatisticsSaveRequest.java` — 5.6 의 `year`·`month`. **Body 로 받는다**(FR-524) — POST 는 Path·Query 를 쓰지 않는다. `Integer` 로 받아 누락을 `3603` 으로 거절한다(원시 타입이면 Jackson 이 `0` 을 채워 "보내지 않았다"를 가릴 수 없다)
+- [X] T049 [P] [US3] `.../backend/dto/response/StatisticsSaveResponse.java` — `year` · `month` · `savedAt` · `source=SAVED` · `message` **다섯 필드뿐**이다(5.6 필드 표 · api-contract §8). 통계 본문을 싣지 않는다 — 사용자가 5.5 를 보다가 저장을 누르는 흐름이라 화면에 숫자가 이미 있고, 필요한 것은 "저장됨 · 그 시각" 배지를 바꾸는 것뿐이다. 본문까지 실으면 같은 값이 두 응답에 흩어져 갈릴 여지만 생긴다
+- [X] T050 [US3] `.../backend/service/StatisticsSaveService.java` — 5.6. **T009 의 계산기를 그대로 쓴다** — 5.5 와 다른 계산기를 쓰면 "지금 보이는 값"과 "저장된 값"이 달라진다
+- [X] T051 [US3] T050 에 **미래 월 거절**을 넣는다(FR-527) — 현재 연월을 **초과**하면 `3604` 다. **이번 달은 저장할 수 있다**. 판정 순서는 `3603`(연·월 범위) → `3604`(미래) 다(api-contract §7)
+- [X] T052 [US3] T050 의 **재저장을 "상세 삭제 후 삽입"으로** 한다(FR-517) — 통계 행은 upsert 하되 상세 3종은 `deleteByStatisticsIdx` 로 지우고 새로 넣는다. **한 트랜잭션**이며, 갱신으로 구현하면 없어진 유형의 행이 남는다
+- [X] T052a [US3] **삭제와 삽입 사이에 `flush()` 를 명시한다.** 상세 3종에 유니크 제약이 있고(`ux_stat_group (statistics_idx, expend_group_idx)` · `ux_stat_method` · `ux_stat_weekly`, 덤프 확인), **Hibernate 의 `ActionQueue` 는 한 flush 안에서 INSERT 를 DELETE 보다 먼저 실행한다.** 그래서 "지우고 새로 넣기"를 그대로 쓰면 같은 키의 INSERT 가 먼저 나가 **유니크 위반이 `9000`** 으로 새어 나간다 — 같은 달을 두 번 저장할 때만 터지므로 첫 저장만 거는 시험으로는 드러나지 않는다. 삭제 직후 `flush()` 하거나 파생 삭제 대신 `@Modifying` 벌크 DELETE 를 쓴다. **005 의 4.9 가 같은 자리에서 다른 방식으로 터졌다** — 그쪽은 지운 Entity 를 `save` 대상에 넣어 `ObjectDeletedException` 이 났다. 파생 삭제와 삽입이 만나는 지점은 두 번 다 문제였다
+- [X] T053 [US3] `.../backend/controller/StatisticsController.java` 에 5.6 을 더한다 — `POST /api/v1/statistics/monthly/save`. 연·월을 **Body 로만** 받는다
 
 **Checkpoint**: 과거 월이 스냅샷으로 보존되고 이후 원본 변경에 흔들리지 않는다
 

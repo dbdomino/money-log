@@ -69,14 +69,21 @@ abstract class AbstractStatisticsIT extends AbstractApiIT {
                 defaultGroupId(member, "식비"));
     }
 
-    /** 그 날짜에 지출 1건. */
-    protected void addExpense(Fixture fixture, String paymentDate, long amount,
+    /**
+     * 그 날짜에 지출 1건.
+     *
+     * <p><b>만든 지출의 PK 를 돌려준다.</b> 004 에는 지출 목록 API 가 없고(단건 조회만
+     * 있다) 목록은 005 의 가계부(4.8)가 맡으므로, 나중에 그 지출을 지우거나 고치려면
+     * 여기서 받아 두는 것이 유일한 길이다.
+     */
+    protected long addExpense(Fixture fixture, String paymentDate, long amount,
                               long expendGroupId) throws Exception {
-        assertThat(resCode(postJson(EXPENSE_URL, fixture.token(), """
+        JsonNode response = postJson(EXPENSE_URL, fixture.token(), """
                 {"paymentMethodId":%d,"expendGroupId":%d,"amount":%d,
                  "paymentDate":"%s","place":"편의점","content":"지출"}
-                """.formatted(fixture.expenseMethodId(), expendGroupId, amount, paymentDate))))
-                .isEqualTo(200);
+                """.formatted(fixture.expenseMethodId(), expendGroupId, amount, paymentDate));
+        assertThat(resCode(response)).isEqualTo(200);
+        return response.get("data").get("expenseId").asLong();
     }
 
     /** 그 날짜에 소득 1건. */
