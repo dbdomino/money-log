@@ -16,6 +16,17 @@ spring:
     active: postgresql
   application:
     name: money-backend-app
+  servlet:
+    multipart:
+      # 아이콘 업로드(2.7·2.11)의 1차 방어선. 애플리케이션 검사(ExpendGroupIconService)만
+      # 두면 1MB 초과 파일이 일단 전부 업로드된 뒤에 거절된다.
+      #
+      # 여기서 걸린 요청은 Controller 에 닿기 전에 MaxUploadSizeExceededException 으로
+      # 끝나므로, GlobalExceptionHandler 가 그 예외를 3102 로 바꾼다 — 매핑이 없으면
+      # 9000 + HTTP 500 이 나가 SC-211("1MB 초과 100% 3102")이 깨진다.
+      max-file-size: 1MB
+      # 요청 전체 한도. 아이콘 1개 + 폼 필드 몇 개라 파일 한도보다 조금만 크면 된다.
+      max-request-size: 2MB
 
 server:
   port: 8081
@@ -39,6 +50,10 @@ jwt:
 icon:
   storage:
     dir: ${ICON_STORAGE_DIR}
+    # 업로드 아이콘의 최대 크기(FR-219). 위 spring.servlet.multipart.max-file-size 와
+    # 같은 값이어야 한다 — 서블릿이 먼저 막고 애플리케이션이 한 번 더 확인하는 구조라,
+    # 두 값이 어긋나면 어느 한쪽만 통과하는 크기 구간이 생긴다.
+    max-file-size: 1MB
 
 # common-mod 의 웹 공용 빈(GlobalExceptionHandler·ApiLoggingAspect) 활성화 스위치.
 #

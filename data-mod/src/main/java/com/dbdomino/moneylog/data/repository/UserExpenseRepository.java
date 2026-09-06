@@ -46,6 +46,18 @@ public interface UserExpenseRepository extends JpaRepository<UserExpense, Long> 
      */
     boolean existsByExpendGroupIdx(Long expendGroupIdx);
 
+    /**
+     * 이 수단을 쓴 지출이 하나라도 있는가. 수단의 {@code purpose} 변경 판정({@code 3005})이 쓴다.
+     *
+     * <p><b>{@code count} 가 아니라 {@code exists} 다.</b> 필요한 답이 "있느냐"인데 세면 전
+     * 행을 훑고, 오래 쓴 회원일수록 느려진다.
+     *
+     * <p>참조 검사는 <b>네 테이블 전부</b>를 본다(FR-205) — 지출·소득·고정지출·월별 고정지출.
+     * 하나라도 빠뜨리면 "소득 수단으로 낸 지출"이 만들어져 월별 집계와 통계 수단별 요약이
+     * 어긋난다.
+     */
+    boolean existsByPaymentMethodIdx(Long paymentMethodIdx);
+
     /** 소유자 확인을 겸한 단건 조회. 남의 지출을 집어오지 않도록 회원까지 함께 건다. */
     Optional<UserExpense> findByIdxAndUserIdKey(Long idx, Long idKey);
 }

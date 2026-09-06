@@ -22,7 +22,7 @@ public interface UserPaymentMethodRepository extends JpaRepository<UserPaymentMe
      * <p>세 조건을 모두 걸어야 한다(FR-032). {@code ix_user_payment_method_active}가
      * 이 조합을 그대로 덮는다.
      */
-    List<UserPaymentMethod> findByUserIdKeyAndPurposeAndInUseTrueAndDeletedFalse(
+    List<UserPaymentMethod> findByUserIdKeyAndPurposeAndInUseTrueAndDeletedFalseOrderByIdxAsc(
             Long idKey, String purpose);
 
     /** 소유자 확인을 겸한 단건 조회. 남의 수단을 집어오지 않도록 회원까지 함께 건다. */

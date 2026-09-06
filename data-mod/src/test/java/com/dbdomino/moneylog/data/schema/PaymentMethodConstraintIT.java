@@ -80,7 +80,7 @@ class PaymentMethodConstraintIT extends AbstractSchemaIT {
         });
 
         List<UserPaymentMethod> active = inTx(() ->
-                paymentMethodRepository.findByUserIdKeyAndPurposeAndInUseTrueAndDeletedFalse(
+                paymentMethodRepository.findByUserIdKeyAndPurposeAndInUseTrueAndDeletedFalseOrderByIdxAsc(
                         user.getIdKey(), UserPaymentMethod.PURPOSE_EXPENSE));
 
         assertThat(active).extracting(UserPaymentMethod::getName).containsExactly("국민카드");

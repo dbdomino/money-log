@@ -16,7 +16,7 @@ public interface UserExpendGroupRepository extends JpaRepository<UserExpendGroup
     List<UserExpendGroup> findByUserIdKeyOrderByIdxAsc(Long idKey);
 
     /** 사용 중 목록(2.13) — 사용 중이고 삭제되지 않은 것만. */
-    List<UserExpendGroup> findByUserIdKeyAndInUseTrueAndDeletedFalse(Long idKey);
+    List<UserExpendGroup> findByUserIdKeyAndInUseTrueAndDeletedFalseOrderByIdxAsc(Long idKey);
 
     /**
      * 이름 중복 검사({@code 3101}).

@@ -12,10 +12,12 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 요청~응답 AOP 로깅(헌장 원칙 IV).
@@ -85,8 +87,23 @@ public class ApiLoggingAspect {
         StringJoiner joiner = new StringJoiner(", ", "[", "]");
         Arrays.stream(args)
                 .filter(ApiLoggingAspect::isLoggable)
-                .forEach(arg -> joiner.add(SensitiveMasker.describe(arg)));
+                .forEach(arg -> joiner.add(describeArg(arg)));
         return joiner.toString();
+    }
+
+    /**
+     * 인자 하나를 로그용으로 옮긴다.
+     *
+     * <p><b>업로드 파일은 내용을 찍지 않는다.</b> {@code SensitiveMasker} 는 리플렉션으로
+     * 필드를 훑으므로 {@code MultipartFile} 을 그대로 넘기면 바이트 배열이 통째로 로그에
+     * 들어간다 — 로그 파일이 깨지고 용량이 폭증한다. 이름·크기만 남긴다.
+     */
+    private static String describeArg(Object arg) {
+        if (arg instanceof MultipartFile file) {
+            return "MultipartFile{name=" + file.getOriginalFilename()
+                    + ", size=" + file.getSize() + "}";
+        }
+        return SensitiveMasker.describe(arg);
     }
 
     /** 서블릿·바인딩 객체는 찍어도 읽을 것이 없고 크기만 크다. */
@@ -111,11 +128,23 @@ public class ApiLoggingAspect {
         return joiner.toString();
     }
 
-    /** 응답에서 {@code resCode}만 꺼낸다. 본문 전체를 찍으면 토큰이 그대로 남는다. */
+    /**
+     * 응답에서 {@code resCode}만 꺼낸다. 본문 전체를 찍으면 토큰이 그대로 남는다.
+     *
+     * <p><b>바이너리 응답은 크기만 남긴다.</b> 아이콘 조회(2.10)는 이 프로젝트에서
+     * {@code { resCode, data }} 래퍼를 쓰지 않는 유일한 API 라 반환값이 이미지 바이트다 —
+     * 그대로 문자열로 만들면 로그가 깨지고 용량이 커진다.
+     */
     private static Object resCodeOf(Object result) {
         Object body = result instanceof ResponseEntity<?> entity ? entity.getBody() : result;
         if (body instanceof RestResponseDto<?> response) {
             return response.getResCode();
+        }
+        if (body instanceof byte[] bytes) {
+            return "binary(" + bytes.length + "B)";
+        }
+        if (body instanceof Resource resource) {
+            return "binary(" + resource.getClass().getSimpleName() + ")";
         }
         return body == null ? "-" : "?";
     }

@@ -4,6 +4,7 @@ import com.dbdomino.moneylog.data.entity.User;
 import com.dbdomino.moneylog.data.repository.UserRepository;
 import tools.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -217,10 +218,33 @@ public abstract class AbstractApiIT {
         tx.executeWithoutResult(status -> {
             String owner = "select id_key from moneylog.tbl_user where user_id like ?";
             String pattern = TEST_USER_PREFIX + "%";
-            jdbc.update("delete from moneylog.tbl_user_login_history where id_key in (" + owner + ")", pattern);
-            jdbc.update("delete from moneylog.tbl_user_session where id_key in (" + owner + ")", pattern);
-            jdbc.update("delete from moneylog.tbl_user_expend_group where id_key in (" + owner + ")", pattern);
+            for (String table : TABLES_IN_DELETE_ORDER) {
+                jdbc.update("delete from moneylog." + table + " where id_key in (" + owner + ")",
+                        pattern);
+            }
             jdbc.update("delete from moneylog.tbl_user where user_id like ?", pattern);
         });
     }
+
+    /**
+     * 정리 순서. <b>자식 → 부모</b>이며 바꾸면 FK 위반으로 정리가 통째로 실패한다.
+     *
+     * <p>맨 앞 여섯은 `tbl_user_payment_method(idx)`·`tbl_user_expend_group(idx)` 를 참조한다.
+     * 003 의 참조 검사 시험(수단의 {@code purpose} 변경·유형 삭제 차단)이 그 행들을
+     * Repository 로 직접 만들기 때문에, 부모부터 지우면 남은 자식이 FK 로 버틴다.
+     *
+     * <p>정리가 실패해도 예외는 다음 테스트의 엉뚱한 자리에서 터지므로 원인을 찾기 어렵다.
+     * 새 테이블에 행을 만드는 시험을 추가하면 <b>이 목록도 함께 늘린다</b>.
+     */
+    private static final List<String> TABLES_IN_DELETE_ORDER = List.of(
+            "tbl_expense",
+            "tbl_income",
+            "tbl_fixed_expense_monthly",
+            "tbl_fixed_expense",
+            "tbl_expend_target_monthly",
+            "tbl_expend_target_default",
+            "tbl_user_payment_method",
+            "tbl_user_expend_group",
+            "tbl_user_session",
+            "tbl_user_login_history");
 }

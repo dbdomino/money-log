@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import org.springframework.util.unit.DataSize;
 
 /**
  * 지출유형 아이콘의 저장 위치.
@@ -26,11 +27,23 @@ public class IconProperties {
     /** 회원별 아이콘 복사본을 두는 디렉터리. */
     private String dir;
 
+    /**
+     * 업로드 아이콘의 최대 크기(FR-219). 기본 1MB.
+     *
+     * <p>{@code spring.servlet.multipart.max-file-size} 와 <b>같은 값이어야 한다.</b>
+     * 서블릿이 1차로 막고 애플리케이션이 한 번 더 확인하는 구조라, 두 값이 어긋나면
+     * 한쪽만 통과하는 크기 구간이 생겨 같은 파일이 요청 경로에 따라 다른 코드로 거절된다.
+     */
+    private DataSize maxFileSize = DataSize.ofMegabytes(1);
+
     @PostConstruct
     void validate() throws IOException {
         if (dir == null || dir.isBlank()) {
             throw new IllegalStateException(
                     "icon.storage.dir 이 비어 있다. ICON_STORAGE_DIR 환경변수를 주입해야 한다.");
+        }
+        if (maxFileSize == null || maxFileSize.toBytes() <= 0) {
+            throw new IllegalStateException("icon.storage.max-file-size 는 0보다 커야 한다.");
         }
         // 없으면 만든다. 있는데 파일이면 여기서 걸린다 — 첫 가입 요청에서 터지는 것보다 낫다.
         Files.createDirectories(Path.of(dir));
@@ -42,6 +55,19 @@ public class IconProperties {
 
     public void setDir(String dir) {
         this.dir = dir;
+    }
+
+    public DataSize getMaxFileSize() {
+        return maxFileSize;
+    }
+
+    public void setMaxFileSize(DataSize maxFileSize) {
+        this.maxFileSize = maxFileSize;
+    }
+
+    /** 업로드 허용 최대 바이트. 크기 검사는 디코딩보다 먼저 한다. */
+    public long maxFileSizeBytes() {
+        return maxFileSize.toBytes();
     }
 
     /** 저장 디렉터리 경로. */

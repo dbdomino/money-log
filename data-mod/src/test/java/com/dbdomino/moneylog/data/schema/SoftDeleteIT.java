@@ -63,7 +63,7 @@ class SoftDeleteIT extends AbstractSchemaIT {
 
         // 사용 중 목록에서는 빠진다
         assertThat(inTx(() ->
-                paymentMethodRepository.findByUserIdKeyAndPurposeAndInUseTrueAndDeletedFalse(
+                paymentMethodRepository.findByUserIdKeyAndPurposeAndInUseTrueAndDeletedFalseOrderByIdxAsc(
                         user.getIdKey(), UserPaymentMethod.PURPOSE_EXPENSE)))
                 .isEmpty();
     }
@@ -99,7 +99,7 @@ class SoftDeleteIT extends AbstractSchemaIT {
 
         // 사용 중 목록에서는 빠진다
         assertThat(inTx(() ->
-                expendGroupRepository.findByUserIdKeyAndInUseTrueAndDeletedFalse(user.getIdKey())))
+                expendGroupRepository.findByUserIdKeyAndInUseTrueAndDeletedFalseOrderByIdxAsc(user.getIdKey())))
                 .isEmpty();
     }
 }
