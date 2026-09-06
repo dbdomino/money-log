@@ -143,23 +143,23 @@ spec.md 의 스토리 순서(US1~US5)가 아니라 **우선순위 순서**(P1 �
 
 ### 테스트
 
-- [ ] T043 [P] [US5] `.../backend/ledger/LedgerAssembleIT.java` — quickstart #39·#40·#49·#52 (SC-408). 네 종류가 각 1건인 달을 조회하면 **4건**이 한 목록에 나오고 `type` 이 정확하다. #40 은 그 달 고정지출 내역이 없을 때 **4.5 와 같은 규칙으로 만들어 저장한 뒤** 목록에 넣는다. #49 는 `year`·`month`·`expenseTotal`·`incomeTotal` 이 `list` 와 **같은 레벨**, #52 는 페이징 필드가 **하나도 없다**(FR-422)
-- [ ] T044 [P] [US5] `.../backend/ledger/LedgerNameRulesIT.java` — quickstart #42·#43·#44 (SC-409 의 4.8 몫). **#44 가 이 목록에서 가장 헷갈리는 지점**이다: 수단 이름을 바꾸고 같은 달을 재조회하면 **`FIXED` 행만 새 이름**이고 `EXPENSE`·`INCOME` 은 옛 이름이다. **한 응답에 두 이름 규칙이 섞인다**(FR-419·FR-425)
-- [ ] T045 [P] [US5] `.../backend/ledger/LedgerFilterSortIT.java` — quickstart #45·#46·#47·#48. #45 는 `type=EXPENSE,INSTALLMENT` **콤마 복수 지정**, #46 은 `dateFrom`·`dateTo` 가 그 달 **안에서** 좁힌다, #47 은 `expendGroupId` 필터가 걸리면 **`INCOME` 행이 전부 빠진다**(소득에 지출유형이 없다), #48 은 `sort`·`order` 를 생략하면 `paymentDate` `desc`
-- [ ] T046 [P] [US5] `.../backend/ledger/LedgerTotalsIT.java` — quickstart #50. `expenseTotal` 은 **일반 + 할부 + 고정** 합계다. T002 에서 확정한 대로 **`type` 필터가 걸려 있어도 전체 기준**임을 함께 단언한다
-- [ ] T047 [P] [US5] `.../backend/ledger/LedgerItemIdIT.java` — quickstart #41·#51. `expense:{id}` · `income:{id}` · `fixed:{id}:{year}:{month}` 형식이고 원본 PK 는 `sourceId` 로 따로 실린다. **`FIXED` 만 세 조각인 이유**는 `fixedExpenseId` 만으로는 월별 1행이 특정되지 않기 때문이다(FR-424). #41 은 할부 행이 `type=INSTALLMENT` 이고 할부 그룹 식별자를 갖는다
-- [ ] T048 [P] [US5] `.../backend/ledger/LedgerBoundaryIT.java` — quickstart #53·#54. **#53 이 lazy 생성의 경계를 드러낸다**: 이미 연 달에 고정지출을 **새로 등록**하고 재조회해도 **자동으로 따라오지 않는다**(4.9 를 먼저 불러야 한다). #54 는 연·월 오류가 **`3501`** 이다 — 4.5·4.6·4.9 의 `3403` 과 다르며 자원별 대역 규칙(`34xx` 고정지출 / `35xx` 가계부)의 결과다
+- [X] T043 [P] [US5] `.../backend/ledger/LedgerAssembleIT.java` — quickstart #39·#40·#49·#52 (SC-408). 네 종류가 각 1건인 달을 조회하면 **4건**이 한 목록에 나오고 `type` 이 정확하다. #40 은 그 달 고정지출 내역이 없을 때 **4.5 와 같은 규칙으로 만들어 저장한 뒤** 목록에 넣는다. #49 는 `year`·`month`·`expenseTotal`·`incomeTotal` 이 `list` 와 **같은 레벨**, #52 는 페이징 필드가 **하나도 없다**(FR-422)
+- [X] T044 [P] [US5] `.../backend/ledger/LedgerNameRulesIT.java` — quickstart #42·#43·#44 (SC-409 의 4.8 몫). **#44 가 이 목록에서 가장 헷갈리는 지점**이다: 수단 이름을 바꾸고 같은 달을 재조회하면 **`FIXED` 행만 새 이름**이고 `EXPENSE`·`INCOME` 은 옛 이름이다. **한 응답에 두 이름 규칙이 섞인다**(FR-419·FR-425)
+- [X] T045 [P] [US5] `.../backend/ledger/LedgerFilterSortIT.java` — quickstart #45·#46·#47·#48. #45 는 `type=EXPENSE,INSTALLMENT` **콤마 복수 지정**, #46 은 `dateFrom`·`dateTo` 가 그 달 **안에서** 좁힌다, #47 은 `expendGroupId` 필터가 걸리면 **`INCOME` 행이 전부 빠진다**(소득에 지출유형이 없다), #48 은 `sort`·`order` 를 생략하면 `paymentDate` `desc`
+- [X] T046 [P] [US5] `.../backend/ledger/LedgerTotalsIT.java` — quickstart #50. `expenseTotal` 은 **일반 + 할부 + 고정** 합계다. T002 에서 확정한 대로 **`type` 필터가 걸려 있어도 전체 기준**임을 함께 단언한다
+- [X] T047 [P] [US5] `.../backend/ledger/LedgerItemIdIT.java` — quickstart #41·#51. `expense:{id}` · `income:{id}` · `fixed:{id}:{year}:{month}` 형식이고 원본 PK 는 `sourceId` 로 따로 실린다. **`FIXED` 만 세 조각인 이유**는 `fixedExpenseId` 만으로는 월별 1행이 특정되지 않기 때문이다(FR-424). #41 은 할부 행이 `type=INSTALLMENT` 이고 할부 그룹 식별자를 갖는다
+- [X] T048 [P] [US5] `.../backend/ledger/LedgerBoundaryIT.java` — quickstart #53·#54. **#53 이 lazy 생성의 경계를 드러낸다**: 이미 연 달에 고정지출을 **새로 등록**하고 재조회해도 **자동으로 따라오지 않는다**(4.9 를 먼저 불러야 한다). #54 는 연·월 오류가 **`3501`** 이다 — 4.5·4.6·4.9 의 `3403` 과 다르며 자원별 대역 규칙(`34xx` 고정지출 / `35xx` 가계부)의 결과다
 
 ### 구현
 
-- [ ] T049 [P] [US5] `.../backend/dto/request/LedgerMonthlyListQuery.java` — `year`·`month` 필수(범위 오류는 **`3501`**), `type`(콤마 복수) · `paymentMethodId` · `expendGroupId` · `dateFrom` · `dateTo` · `keyword` · `sort`(`paymentDate`|`amount`, 기본 `paymentDate`) · `order`(`asc`|`desc`, 기본 `desc`)
-- [ ] T050 [P] [US5] `.../backend/dto/response/LedgerItemResponse.java` — `ledgerItemId` · `type` · `sourceId` · `paymentDate` · `amount` · `paymentMethodName` · `expendGroupName` · `place` · `content` · 할부 식별자. **출처마다 없는 칸이 있다**(소득은 지출유형·장소가 없다)
-- [ ] T051 [P] [US5] `.../backend/dto/response/LedgerMonthlyListResponse.java` — `list` + `year` · `month` · `expenseTotal` · `incomeTotal` 을 **형제 필드**로 둔다. **페이징 필드를 넣지 않는다**
-- [ ] T052 [US5] `.../backend/service/ledger/LedgerItemFactory.java` — 네 종류를 각각 `LedgerItemResponse` 로 바꾸고 `ledgerItemId` 를 만든다. **이름 규칙이 여기서 갈린다**: `FIXED` 는 연관에서 현재 이름을, `EXPENSE`·`INSTALLMENT`·`INCOME` 은 Entity 의 이름 컬럼(스냅샷)을 읽는다
-- [ ] T053 [US5] `.../backend/service/ledger/LedgerAssembler.java` — 네 출처를 **각각 조회한 뒤 애플리케이션에서 합친다**. SQL `UNION` 을 쓰지 않는다 — 컬럼 구성이 달라 없는 칸을 `NULL` 로 채우면 "값이 없다"와 "컬럼이 아예 없다"가 구분되지 않고, 고정지출 행의 이름은 조인해서 현재 값을 읽어야 한다(research §8). 일반 지출과 할부는 `installment_group_id` 의 유무로 가른다
-- [ ] T054 [US5] `.../backend/service/ledger/LedgerAssembler.java` 에 필터·정렬을 더한다 — **조립 후에 적용한다**. `expendGroupId` 는 `INCOME` 행을 전부 떨어뜨리고, `keyword` 는 장소·내용을 보되 **소득에는 장소가 없으므로 내용만** 보며 **대소문자를 무시한다**(T002 확정). 정렬 기본은 `paymentDate desc`
-- [ ] T055 [US5] `.../backend/service/LedgerService.java` — **lazy 생성을 먼저 전부 끝낸 뒤** 조립한다(FR-418, ledger-list §2). T040 의 서비스를 재사용하며 **필터가 생성 대상을 좁히지 않는다**. 합계는 T002 확정대로 **필터 무관 전체 기준**으로 낸다
-- [ ] T056 [US5] `.../backend/controller/LedgerController.java` — 4.8 `GET /api/v1/ledger/monthly`
+- [X] T049 [P] [US5] `.../backend/dto/request/LedgerMonthlyListQuery.java` — `year`·`month` 필수(범위 오류는 **`3501`**), `type`(콤마 복수) · `paymentMethodId` · `expendGroupId` · `dateFrom` · `dateTo` · `keyword` · `sort`(`paymentDate`|`amount`, 기본 `paymentDate`) · `order`(`asc`|`desc`, 기본 `desc`)
+- [X] T050 [P] [US5] `.../backend/dto/response/LedgerItemResponse.java` — `ledgerItemId` · `type` · `sourceId` · `paymentDate` · `amount` · `paymentMethodName` · `expendGroupName` · `place` · `content` · 할부 식별자. **출처마다 없는 칸이 있다**(소득은 지출유형·장소가 없다)
+- [X] T051 [P] [US5] `.../backend/dto/response/LedgerMonthlyListResponse.java` — `list` + `year` · `month` · `expenseTotal` · `incomeTotal` 을 **형제 필드**로 둔다. **페이징 필드를 넣지 않는다**
+- [X] T052 [US5] `.../backend/service/ledger/LedgerItemFactory.java` — 네 종류를 각각 `LedgerItemResponse` 로 바꾸고 `ledgerItemId` 를 만든다. **이름 규칙이 여기서 갈린다**: `FIXED` 는 연관에서 현재 이름을, `EXPENSE`·`INSTALLMENT`·`INCOME` 은 Entity 의 이름 컬럼(스냅샷)을 읽는다
+- [X] T053 [US5] `.../backend/service/ledger/LedgerAssembler.java` — 네 출처를 **각각 조회한 뒤 애플리케이션에서 합친다**. SQL `UNION` 을 쓰지 않는다 — 컬럼 구성이 달라 없는 칸을 `NULL` 로 채우면 "값이 없다"와 "컬럼이 아예 없다"가 구분되지 않고, 고정지출 행의 이름은 조인해서 현재 값을 읽어야 한다(research §8). 일반 지출과 할부는 `installment_group_id` 의 유무로 가른다
+- [X] T054 [US5] `.../backend/service/ledger/LedgerAssembler.java` 에 필터·정렬을 더한다 — **조립 후에 적용한다**. `expendGroupId` 는 `INCOME` 행을 전부 떨어뜨리고, `keyword` 는 장소·내용을 보되 **소득에는 장소가 없으므로 내용만** 보며 **대소문자를 무시한다**(T002 확정). 정렬 기본은 `paymentDate desc`
+- [X] T055 [US5] `.../backend/service/LedgerService.java` — **lazy 생성을 먼저 전부 끝낸 뒤** 조립한다(FR-418, ledger-list §2). T040 의 서비스를 재사용하며 **필터가 생성 대상을 좁히지 않는다**. 합계는 T002 확정대로 **필터 무관 전체 기준**으로 낸다
+- [X] T056 [US5] `.../backend/controller/LedgerController.java` — 4.8 `GET /api/v1/ledger/monthly`
 
 **Checkpoint**: 사용자가 실제로 여는 화면이 선다. **P1 세 스토리가 여기서 끝난다**
 
