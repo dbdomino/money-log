@@ -114,6 +114,16 @@ project(':app-mod:money-backend-app') {
 
 		implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.0'
 		runtimeOnly 'org.postgresql:postgresql'
+
+		// 엑셀 양식 생성(3.11)·업로드 파싱(3.12). 버전을 문자열로 고정한다 —
+		// Spring Boot BOM 이 POI 를 관리하지 않아 안 적으면 해석이 갈린다.
+		//
+		// poi-ooxml 만 넣고 poi(구형 .xls)는 넣지 않는다. FR-319 가 .xlsx 만 허용하므로
+		// 의존성이 줄고, 실수로 .xls 가 파싱되는 일도 없다.
+		//
+		// common-mod 가 아니라 여기 둔다 — 프론트 money-app 이 common-mod 를 의존하므로
+		// 거기 넣으면 프론트 빌드가 엑셀 라이브러리를 통째로 끌고 간다.
+		implementation 'org.apache.poi:poi-ooxml:5.5.1'
 	}
 
 	clean {

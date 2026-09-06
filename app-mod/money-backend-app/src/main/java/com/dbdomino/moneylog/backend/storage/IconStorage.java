@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.nio.file.StandardCopyOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +68,75 @@ public class IconStorage {
             log.error("seed icon copy failed seed={} target={}", seedName, target, e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * 업로드된 아이콘을 저장하고 파일명을 돌려준다.
+     *
+     * <p>같은 유형이면 파일명이 같으므로 <b>기존 파일을 덮어쓴다</b>. 확장자가 바뀌면
+     * (png → jpg) 옛 파일이 남지만 {@code icon_filename} 이 새 이름을 가리키므로
+     * 참조되지 않는 고아 파일이 된다 — 지울지는 정하지 않았다(icon-storage.md § 남은 판단).
+     *
+     * <p><b>행을 먼저 저장해 {@code expendGroupId} 를 받아야 부를 수 있다.</b> 파일명에 그
+     * 값이 들어가기 때문이다.
+     *
+     * @param extension {@code ImageTypeDetector} 가 <b>내용으로</b> 판정한 확장자.
+     *                  업로드 파일명의 확장자를 그대로 넘기지 않는다
+     * @return 저장된 파일명. 이 값만 DB 에 넣는다
+     */
+    public String save(Long idKey, Long expendGroupId, String extension, byte[] bytes) {
+        String filename = filename(idKey, expendGroupId, extension);
+        try {
+            Files.write(properties.directory().resolve(filename), bytes);
+            return filename;
+        } catch (IOException e) {
+            log.error("icon save failed filename={}", filename, e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * 저장된 아이콘을 읽는다. 없으면 빈 값이다({@code 3104} 판정은 호출자가 한다).
+     *
+     * <p><b>경로 정규화를 반드시 거친다.</b> {@code filename} 은 조회 API(2.10)의 Path
+     * Variable 이라 {@code ../../etc/passwd} 같은 값이 올 수 있다 — 서버가 <b>만드는</b>
+     * 파일명이 ID 기반인 것(FR-224)과 조회 요청의 값을 믿는 것은 다른 문제다.
+     */
+    public Optional<byte[]> read(String filename) {
+        return resolveInsideRoot(filename)
+                .filter(Files::isRegularFile)
+                .flatMap(path -> {
+                    try {
+                        return Optional.of(Files.readAllBytes(path));
+                    } catch (IOException e) {
+                        log.error("icon read failed path={}", path, e);
+                        throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
+                    }
+                });
+    }
+
+    /** 저장된 아이콘이 있는가. 경로 정규화는 {@link #read(String)} 과 같다. */
+    public boolean exists(String filename) {
+        return resolveInsideRoot(filename).filter(Files::isRegularFile).isPresent();
+    }
+
+    /**
+     * 요청받은 파일명을 저장 루트 안의 경로로 바꾼다. <b>루트를 벗어나면 빈 값이다.</b>
+     *
+     * <p>{@code normalize()} 로 {@code ..} 를 접은 뒤 루트로 시작하는지 확인한다 —
+     * 접기 전에 문자열만 보고 판단하면 {@code a/../../b} 같은 입력을 놓친다.
+     */
+    private Optional<Path> resolveInsideRoot(String filename) {
+        if (filename == null || filename.isBlank()) {
+            return Optional.empty();
+        }
+        Path root = properties.directory().toAbsolutePath().normalize();
+        Path target = root.resolve(filename).normalize();
+        if (!target.startsWith(root)) {
+            log.warn("icon path escapes storage root filename={}", filename);
+            return Optional.empty();
+        }
+        return Optional.of(target);
     }
 
     /** 파일명 규칙. 이 조립을 다른 곳에서 반복하지 않는다. */

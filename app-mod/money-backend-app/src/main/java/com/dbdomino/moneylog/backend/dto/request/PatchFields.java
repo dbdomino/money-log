@@ -81,4 +81,65 @@ public final class PatchFields {
         }
         return text.isBlank() ? text : text.trim();
     }
+
+    /**
+     * 정수 값. 보내지 않았으면 {@code null} 이므로 {@link #has(String)} 로 먼저 가른다.
+     *
+     * <p><b>{@code Integer} 와 {@code Long} 을 모두 받는다.</b> Jackson 은 JSON 숫자를 크기에
+     * 따라 둘 중 하나로 만드는데, 그 차이가 호출부까지 새어 나가면 "작은 금액은 되고 큰
+     * 금액은 안 되는" 판정이 생긴다.
+     *
+     * <p>소수점·문자는 여기서 {@code 9001} 이 아니라 <b>호출자가 정한 코드</b>로 거절해야
+     * 하는 경우가 있어(지출 {@code 3201} · 소득 {@code 3301}) {@link #hasNonIntegerNumber}
+     * 로 미리 가려낼 수 있게 했다.
+     *
+     * @throws BusinessException {@code 9001} — 숫자가 아닌 값이 왔다
+     */
+    public Long longNumber(String name) {
+        Object value = fields.get(name);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Integer number) {
+            return number.longValue();
+        }
+        if (value instanceof Long number) {
+            return number;
+        }
+        throw new BusinessException(ErrorCode.BAD_REQUEST, name + " 은(는) 정수여야 합니다.");
+    }
+
+    /**
+     * 이 필드에 <b>정수가 아닌 숫자·문자</b>가 들어 있는가.
+     *
+     * <p>금액처럼 실패 코드가 API 마다 다른 필드는 {@link #longNumber} 가 던지는
+     * {@code 9001} 대신 호출자의 코드({@code 3201}·{@code 3301})로 거절해야 한다. 그때
+     * 먼저 이걸로 가른다.
+     */
+    public boolean hasNonIntegerNumber(String name) {
+        Object value = fields.get(name);
+        return value != null && !(value instanceof Integer) && !(value instanceof Long);
+    }
+
+    /**
+     * 참/거짓 값. 보내지 않았으면 {@code null} 이므로 {@link #has(String)} 로 먼저 가른다.
+     *
+     * <p><b>{@code "true"} 같은 문자열을 받아 주지 않는다.</b> 관대하게 해석하면 오타
+     * ({@code "ture"})가 조용히 {@code false} 가 되어 "껐는데 안 꺼진다"가 된다.
+     *
+     * @throws BusinessException {@code 9001} — 참/거짓이 아닌 값이 왔다.
+     *                           {@code null} 은 여기서 걸리지 않으므로 nullable 이 아닌
+     *                           필드는 호출자가 따로 막는다
+     */
+    public Boolean bool(String name) {
+        Object value = fields.get(name);
+        if (value == null) {
+            return null;
+        }
+        if (!(value instanceof Boolean flag)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST,
+                    name + " 은(는) true 또는 false 여야 합니다.");
+        }
+        return flag;
+    }
 }

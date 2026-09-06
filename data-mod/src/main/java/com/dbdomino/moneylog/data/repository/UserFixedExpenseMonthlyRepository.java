@@ -74,4 +74,12 @@ public interface UserFixedExpenseMonthlyRepository
                        @Param("paymentMethodIdx") Long paymentMethodIdx,
                        @Param("expendGroupIdx") Long expendGroupIdx,
                        @Param("auditorIdKey") Long auditorIdKey);
+
+    /**
+     * 이 수단을 쓴 월별 고정지출 내역이 하나라도 있는가. 수단의 {@code purpose} 변경 판정({@code 3005})이 쓴다.
+     *
+     * <p><b>{@code count} 가 아니라 {@code exists} 다.</b> 필요한 답이 "있느냐"인데 세면 전
+     * 행을 훑는다. 참조 검사는 네 테이블 전부를 봐야 하므로(FR-205) 네 곳에 같은 메서드가 있다.
+     */
+    boolean existsByPaymentMethodIdx(Long paymentMethodIdx);
 }

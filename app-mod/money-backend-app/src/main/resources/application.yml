@@ -16,6 +16,22 @@ spring:
     active: postgresql
   application:
     name: money-backend-app
+  servlet:
+    multipart:
+      # 업로드를 받는 API 가 둘이다 — 003 의 아이콘(2.7·2.11)과 004 의 엑셀(3.12).
+      # 한도는 둘 중 큰 쪽인 엑셀에 맞춘다.
+      #
+      # **이 값을 올려도 아이콘의 1MB 판정은 그대로다.** 아이콘은 서블릿이 아니라
+      # 애플리케이션(ExpendGroupIconService)이 icon.storage.max-file-size 로 좁히므로,
+      # 1MB 를 넘는 아이콘은 Controller 까지 들어와 3102 로 거절된다(003 SC-211 유지).
+      # 서블릿 한도가 아이콘의 방어선이라고 읽으면 안 된다.
+      #
+      # 엑셀도 실제 방어선은 여기가 아니라 애플리케이션의 300행 판정(FR-319)이다.
+      # 300행짜리 .xlsx 는 수십 KB 라 10MB 는 넉넉한 상한이고, 여기서 걸리는 것은
+      # 사실상 "엑셀이 아닌 거대한 파일"뿐이다.
+      max-file-size: 10MB
+      # 요청 전체 한도. 파일 1개 + 폼 필드 몇 개라 파일 한도보다 조금만 크면 된다.
+      max-request-size: 12MB
 
 server:
   port: 8081
@@ -39,6 +55,10 @@ jwt:
 icon:
   storage:
     dir: ${ICON_STORAGE_DIR}
+    # 업로드 아이콘의 최대 크기(FR-219). 위 spring.servlet.multipart.max-file-size 와
+    # 같은 값이어야 한다 — 서블릿이 먼저 막고 애플리케이션이 한 번 더 확인하는 구조라,
+    # 두 값이 어긋나면 어느 한쪽만 통과하는 크기 구간이 생긴다.
+    max-file-size: 1MB
 
 # common-mod 의 웹 공용 빈(GlobalExceptionHandler·ApiLoggingAspect) 활성화 스위치.
 #

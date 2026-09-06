@@ -24,4 +24,12 @@ public interface UserIncomeRepository extends JpaRepository<UserIncome, Long> {
 
     /** 소유자 확인을 겸한 단건 조회. */
     Optional<UserIncome> findByIdxAndUserIdKey(Long idx, Long idKey);
+
+    /**
+     * 이 수단을 쓴 소득이 하나라도 있는가. 수단의 {@code purpose} 변경 판정({@code 3005})이 쓴다.
+     *
+     * <p><b>{@code count} 가 아니라 {@code exists} 다.</b> 필요한 답이 "있느냐"인데 세면 전
+     * 행을 훑는다. 참조 검사는 네 테이블 전부를 봐야 하므로(FR-205) 네 곳에 같은 메서드가 있다.
+     */
+    boolean existsByPaymentMethodIdx(Long paymentMethodIdx);
 }
