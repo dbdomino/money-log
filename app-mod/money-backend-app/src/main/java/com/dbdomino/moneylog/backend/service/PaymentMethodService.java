@@ -2,6 +2,7 @@ package com.dbdomino.moneylog.backend.service;
 
 import com.dbdomino.moneylog.backend.dto.request.PatchFields;
 import com.dbdomino.moneylog.backend.dto.request.PaymentMethodCreateRequest;
+import com.dbdomino.moneylog.backend.dto.response.PaymentMethodActiveResponse;
 import com.dbdomino.moneylog.backend.dto.response.PaymentMethodDeleteResponse;
 import com.dbdomino.moneylog.backend.dto.response.PaymentMethodListResponse;
 import com.dbdomino.moneylog.backend.dto.response.PaymentMethodResponse;
@@ -24,7 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 지출·소득 수단 관리 — 등록(2.1)·관리 목록(2.2)·상세(2.3)·수정(2.4)·삭제 표시(2.5).
+ * 지출·소득 수단 — 등록(2.1)·관리 목록(2.2)·상세(2.3)·수정(2.4)·삭제 표시(2.5)·
+ * 사용 중 목록(2.6).
  *
  * <h2>소유자는 토큰이 정한다</h2>
  *
@@ -115,9 +117,31 @@ public class PaymentMethodService {
      * <p>페이징을 두지 않는다(FR-217) — 본인 보유 수단은 수가 제한적이다.
      */
     @Transactional(readOnly = true)
-    public PaymentMethodListResponse list(AuthPrincipal principal) {
-        return new PaymentMethodListResponse(paymentMethodMapper.toResponses(
+    public PaymentMethodListResponse<PaymentMethodResponse> list(AuthPrincipal principal) {
+        return new PaymentMethodListResponse<>(paymentMethodMapper.toResponses(
                 paymentMethodRepository.findByUserIdKeyOrderByIdxAsc(principal.idKey())));
+    }
+
+    /**
+     * 2.6 사용 중 목록. 지출·소득 입력 화면이 고를 수 있는 것만 돌려준다.
+     *
+     * <p><b>세 조건을 모두 건다</b>(FR-207): {@code purpose} 일치 · {@code in_use=true} ·
+     * {@code deleted=false}. 하나만 빠져도 지출 입력 화면에 소득 수단이나 삭제된 수단이
+     * 섞여 나온다. 인덱스 {@code ix_user_payment_method_active} 가 이 조합을 그대로 덮는다.
+     *
+     * <p>{@code purpose} 가 허용 값 밖이면 {@code 3001} 이다. 이 값은 <b>Path Variable</b>
+     * 이므로({@code /payment-methods/active/{purpose}}) Query 로 받는 경로가 따로 없다.
+     *
+     * <p>응답 항목이 관리 목록(2.2)보다 좁다 — 명세가 그렇게 정했다. 셋을 실어도
+     * 필터가 이미 값을 정해 놓아 읽을 것이 없다.
+     */
+    @Transactional(readOnly = true)
+    public PaymentMethodListResponse<PaymentMethodActiveResponse> listActive(
+            AuthPrincipal principal, String purpose) {
+        return new PaymentMethodListResponse<>(paymentMethodMapper.toActiveResponses(
+                paymentMethodRepository
+                        .findByUserIdKeyAndPurposeAndInUseTrueAndDeletedFalseOrderByIdxAsc(
+                                principal.idKey(), requirePurpose(purpose))));
     }
 
     /** 2.3 상세 조회. 삭제 표시된 수단도 보인다 — 관리 화면이 읽는다. */

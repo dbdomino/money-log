@@ -1,5 +1,6 @@
 package com.dbdomino.moneylog.backend.mapper;
 
+import com.dbdomino.moneylog.backend.dto.response.PaymentMethodActiveResponse;
 import com.dbdomino.moneylog.backend.dto.response.PaymentMethodResponse;
 import com.dbdomino.moneylog.data.entity.UserPaymentMethod;
 import java.util.List;
@@ -24,6 +25,18 @@ public interface PaymentMethodMapper {
     @Mapping(target = "paymentMethodId", source = "idx")
     PaymentMethodResponse toResponse(UserPaymentMethod entity);
 
-    /** 관리 목록(2.2)·사용 중 목록(2.6)이 함께 쓴다. 순서는 넘겨받은 그대로 유지한다. */
+    /** 관리 목록(2.2). 순서는 넘겨받은 그대로 유지한다 — 정렬은 Repository 가 정한다. */
     List<PaymentMethodResponse> toResponses(List<UserPaymentMethod> entities);
+
+    /**
+     * 사용 중 목록(2.6)의 좁은 항목.
+     *
+     * <p>{@code purpose}·{@code inUse}·{@code deleted} 를 <b>버린다</b>. 대상 타입에 그
+     * 필드가 없어 매핑할 자리도 없다 — 2.6 은 필터가 세 값을 이미 정해 놓은 목록이다.
+     */
+    @Mapping(target = "paymentMethodId", source = "idx")
+    PaymentMethodActiveResponse toActiveResponse(UserPaymentMethod entity);
+
+    /** 사용 중 목록(2.6). 순서는 넘겨받은 그대로 유지한다. */
+    List<PaymentMethodActiveResponse> toActiveResponses(List<UserPaymentMethod> entities);
 }

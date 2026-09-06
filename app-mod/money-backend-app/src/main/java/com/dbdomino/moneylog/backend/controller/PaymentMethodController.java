@@ -1,6 +1,7 @@
 package com.dbdomino.moneylog.backend.controller;
 
 import com.dbdomino.moneylog.backend.dto.request.PaymentMethodCreateRequest;
+import com.dbdomino.moneylog.backend.dto.response.PaymentMethodActiveResponse;
 import com.dbdomino.moneylog.backend.dto.response.PaymentMethodDeleteResponse;
 import com.dbdomino.moneylog.backend.dto.response.PaymentMethodListResponse;
 import com.dbdomino.moneylog.backend.dto.response.PaymentMethodResponse;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 지출·소득 수단 API — 2.1~2.5.
+ * 지출·소득 수단 API — 2.1~2.6.
  *
  * <p>경로에 회원 식별자를 두지 않는다. 대상 회원은 토큰이 정하며 요청이 지정할 수
  * 없다(FR-201). 경로가 지시하는 것은 <b>수단</b>뿐이고, 그 수단이 본인 것인지는 서비스가
@@ -53,9 +54,27 @@ public class PaymentMethodController {
 
     /** 2.2 관리 목록. 삭제 표시된 수단도 포함한다. */
     @GetMapping
-    public RestResponseDto<PaymentMethodListResponse> list(
+    public RestResponseDto<PaymentMethodListResponse<PaymentMethodResponse>> list(
             @AuthenticationPrincipal AuthPrincipal principal) {
         return RestResponseDto.ok(paymentMethodService.list(principal));
+    }
+
+    /**
+     * 2.6 사용 중 목록. 지출·소득 입력 화면이 고를 수 있는 수단만 돌려준다.
+     *
+     * <p><b>{@code /active/{purpose}} 와 {@code /{paymentMethodId}} 는 충돌하지 않는다.</b>
+     * 앞은 두 마디, 뒤는 한 마디라 스프링이 {@code active} 를 수단 ID 로 볼 자리가 없다.
+     * 같은 깊이였다면 {@code Long} 변환 실패가 {@code 9000} 으로 나갔을 것이다 —
+     * 2.13({@code /expend-groups/active})은 실제로 같은 깊이라 그쪽에서 다시 다룬다.
+     *
+     * <p>{@code purpose} 는 <b>Path Variable</b> 이다. Query 로도 받는 경로를 두지 않는다 —
+     * 같은 목록을 부르는 방법이 둘이면 캐시 키와 접근 로그가 갈린다.
+     */
+    @GetMapping("/active/{purpose}")
+    public RestResponseDto<PaymentMethodListResponse<PaymentMethodActiveResponse>> listActive(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @PathVariable String purpose) {
+        return RestResponseDto.ok(paymentMethodService.listActive(principal, purpose));
     }
 
     /** 2.3 상세 조회. */
