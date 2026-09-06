@@ -1,7 +1,9 @@
 package com.dbdomino.moneylog.data.repository;
 
 import com.dbdomino.moneylog.data.entity.User;
+import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -49,4 +51,43 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("select u from User u where u.email is not null and u.email = :email")
     Optional<User> findByEmail(@Param("email") String email);
+
+    /**
+     * 관리자 회원 목록(1.13). 아이디·닉네임 <b>부분 일치</b> 검색이며 둘 다 주어지면 AND 다.
+     *
+     * <p><b>검색어가 없으면 빈 문자열을 넘긴다.</b> {@code null} 을 넘기고
+     * {@code :memberId is null or ...} 로 분기하면 PostgreSQL 이 파라미터 타입을 정하지
+     * 못해 {@code function lower(bytea) does not exist} 로 실패한다 — 드라이버가 타입 없는
+     * {@code null} 을 보내기 때문이다. 빈 문자열이면 {@code like '%%'} 가 되어 모든 행이
+     * 걸리므로 "검색하지 않음"과 뜻이 같고, 분기 자체가 사라진다({@code user_id}·
+     * {@code nickname} 은 NOT NULL 이라 빠지는 행도 없다).
+     *
+     * <p>정렬을 고정한다({@code id_key} 오름차순). 정렬이 없으면 PostgreSQL 이 페이지마다
+     * 다른 순서를 줄 수 있어 같은 행이 두 페이지에 나오거나 아예 빠진다.
+     *
+     * <p>{@code Pageable} 을 받지만 <b>Controller 에서 자동 바인딩하지 않는다</b>. 계약이
+     * {@code offset}·{@code limit} 이고 기본값이 없어서(둘 다 필수, 없으면 {@code 9001}),
+     * 자동 바인딩을 쓰면 값이 빠졌을 때 기본값으로 조용히 통과한다.
+     */
+    @Query("""
+            select u from User u
+             where lower(u.userId) like lower(concat('%', :memberId, '%'))
+               and lower(u.nickname) like lower(concat('%', :nickname, '%'))
+             order by u.idKey asc
+            """)
+    List<User> search(@Param("memberId") String memberId,
+                      @Param("nickname") String nickname,
+                      Pageable pageable);
+
+    /**
+     * 위 검색 조건에 걸리는 <b>전체 건수</b>. 응답의 {@code totalCount} 다.
+     *
+     * <p>현재 페이지 건수가 아니다 — 화면이 마지막 페이지를 계산하려면 전체가 필요하다.
+     */
+    @Query("""
+            select count(u) from User u
+             where lower(u.userId) like lower(concat('%', :memberId, '%'))
+               and lower(u.nickname) like lower(concat('%', :nickname, '%'))
+            """)
+    long countSearch(@Param("memberId") String memberId, @Param("nickname") String nickname);
 }

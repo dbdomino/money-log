@@ -164,6 +164,20 @@ public abstract class AbstractApiIT {
         return objectMapper.readTree(response);
     }
 
+    /** Bearer 토큰을 실어 PATCH 한다. {@code body} 가 {@code null} 이면 본문을 붙이지 않는다. */
+    protected JsonNode patchJson(String url, String accessToken, String body) throws Exception {
+        var request = MockMvcRequestBuilders.patch(url).contentType(MediaType.APPLICATION_JSON);
+        if (accessToken != null) {
+            request = request.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+        }
+        if (body != null) {
+            request = request.content(body);
+        }
+        String response = mockMvc.perform(request)
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        return objectMapper.readTree(response);
+    }
+
     /** 응답의 {@code resCode}. 모든 검사가 이 값으로 갈린다. */
     protected int resCode(JsonNode response) {
         return response.get("resCode").asInt();
