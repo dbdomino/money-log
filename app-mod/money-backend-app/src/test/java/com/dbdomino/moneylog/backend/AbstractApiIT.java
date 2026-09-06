@@ -179,6 +179,22 @@ public abstract class AbstractApiIT {
         return objectMapper.readTree(response);
     }
 
+    /**
+     * Bearer 토큰을 실어 DELETE 한다.
+     *
+     * <p>이 프로젝트의 DELETE 는 <b>본문이 없고 삭제 표시만 한다</b>(2.5·2.12). 실패도
+     * HTTP 200 에 실려 오므로 상태 코드가 아니라 {@code resCode} 로 갈린다.
+     */
+    protected JsonNode deleteJson(String url, String accessToken) throws Exception {
+        var request = MockMvcRequestBuilders.delete(url);
+        if (accessToken != null) {
+            request = request.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+        }
+        String response = mockMvc.perform(request)
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        return objectMapper.readTree(response);
+    }
+
     /** 응답의 {@code resCode}. 모든 검사가 이 값으로 갈린다. */
     protected int resCode(JsonNode response) {
         return response.get("resCode").asInt();

@@ -81,4 +81,26 @@ public final class PatchFields {
         }
         return text.isBlank() ? text : text.trim();
     }
+
+    /**
+     * 참/거짓 값. 보내지 않았으면 {@code null} 이므로 {@link #has(String)} 로 먼저 가른다.
+     *
+     * <p><b>{@code "true"} 같은 문자열을 받아 주지 않는다.</b> 관대하게 해석하면 오타
+     * ({@code "ture"})가 조용히 {@code false} 가 되어 "껐는데 안 꺼진다"가 된다.
+     *
+     * @throws BusinessException {@code 9001} — 참/거짓이 아닌 값이 왔다.
+     *                           {@code null} 은 여기서 걸리지 않으므로 nullable 이 아닌
+     *                           필드는 호출자가 따로 막는다
+     */
+    public Boolean bool(String name) {
+        Object value = fields.get(name);
+        if (value == null) {
+            return null;
+        }
+        if (!(value instanceof Boolean flag)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST,
+                    name + " 은(는) true 또는 false 여야 합니다.");
+        }
+        return flag;
+    }
 }
