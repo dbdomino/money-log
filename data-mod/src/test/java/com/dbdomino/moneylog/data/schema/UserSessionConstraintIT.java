@@ -78,7 +78,6 @@ class UserSessionConstraintIT extends AbstractSchemaIT {
         session.setRefreshTokenHash("refresh-hash-" + UUID.randomUUID());
         session.setAccessExpiresAt(OffsetDateTime.now().plusDays(1));
         session.setRefreshExpiresAt(OffsetDateTime.now().plusDays(7));
-        stampAudit(session, user.getIdKey());
         return session;
     }
 

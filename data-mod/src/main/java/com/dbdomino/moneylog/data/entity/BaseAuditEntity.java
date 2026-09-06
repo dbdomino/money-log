@@ -5,7 +5,6 @@ import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import java.time.OffsetDateTime;
 import lombok.Getter;
-import lombok.Setter;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -34,14 +33,13 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @Getter
-// TODO 이 @Setter 는 임시다. 감사 값은 원래 AuditingEntityListener 만 채워야 하며,
-// 공개 세터가 열려 있으면 created_by 를 임의로 덮어쓸 수 있어 감사 기록의 신뢰도가
-// 떨어진다(@Column(updatable=false)는 UPDATE만 막고 INSERT 시점 위조는 못 막는다).
-// 지금은 AuditorAware 가 빈 Optional 을 돌려주는 임시 구현이라 테스트가
-// AbstractSchemaIT.stampAudit() 으로 직접 채우고 있어 세터가 필요하다.
-// JpaAuditingConfig.auditorAware() 의 TODO 와 한 묶음이다 — Phase 1(회원·인증)에서
-// AuditorAware 가 실제 id_key 를 공급하게 되면 이 @Setter 와 stampAudit 을 함께 없앤다.
-@Setter
+// 세터를 두지 않는다. 감사 값은 AuditingEntityListener 만 채운다 — 공개 세터가 열려
+// 있으면 created_by 를 임의로 덮어쓸 수 있어 감사 기록의 신뢰도가 떨어진다
+// (@Column(updatable=false)는 UPDATE 만 막고 INSERT 시점 위조는 못 막는다).
+//
+// 인증 이전에 도는 경로(로그인·가입·토큰 갱신)도 세터 없이 값을 채운다. 그 요청이
+// 다루는 회원을 SelfAuditorContext 에 실어 두면 AuditorAware 가 꺼내 쓴다 —
+// money-backend-app 의 BackendAuditorAware, 이 모듈의 테스트는 TestAuditorAware 다.
 public abstract class BaseAuditEntity {
 
     /** 행 생성 시각. */

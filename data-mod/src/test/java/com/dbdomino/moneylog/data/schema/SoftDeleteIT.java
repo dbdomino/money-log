@@ -45,7 +45,6 @@ class SoftDeleteIT extends AbstractSchemaIT {
             method.setType(UserPaymentMethod.TYPE_CARD);
             method.setPurpose(UserPaymentMethod.PURPOSE_EXPENSE);
             method.setCardExpiry("2028-12");
-            stampAudit(method, user.getIdKey());
             return paymentMethodRepository.saveAndFlush(method);
         });
 
@@ -80,7 +79,6 @@ class SoftDeleteIT extends AbstractSchemaIT {
             group.setName("식비");
             group.setDefaultGroup(true);
             group.setIconFilename(user.getUserId() + "_식비.png");
-            stampAudit(group, user.getIdKey());
             return expendGroupRepository.saveAndFlush(group);
         });
 

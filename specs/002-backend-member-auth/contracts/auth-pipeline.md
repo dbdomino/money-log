@@ -16,7 +16,7 @@
 |---|---|---|
 | 형식 | JWT (HS256) | 불투명 랜덤 문자열 |
 | 생성 | `JwtTokenProvider` (`common-mod`) | `SecureRandom` 32바이트 → Base64URL (43자) |
-| 클레임 | `sub`(memberId) · `role` · `sid`(sessionId UUID) · `exp` · `iat` | 없음 |
+| 클레임 | `sub`(memberId) · `role` · `sid`(sessionId UUID) · `jti`(발급마다 새 UUID) · `exp` · `iat` | 없음 |
 | 기본 수명 | 1일 (86400초) | 7일 (604800초) |
 | DB 저장 | `access_token_hash` | `refresh_token_hash` |
 | 저장 형태 | **SHA-256 hex 소문자 64자** | 동일 |

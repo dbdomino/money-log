@@ -5,7 +5,6 @@ import java.util.Optional;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.auditing.DateTimeProvider;
-import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 /**
@@ -30,21 +29,10 @@ public class JpaAuditingConfig {
         return () -> Optional.of(OffsetDateTime.now());
     }
 
-    /**
-     * {@code created_by}/{@code updated_by}에 넣을 회원 {@code id_key}를 공급한다.
-     *
-     * <p><b>임시 구현이다.</b> 인증 필터가 아직 없어 {@code SecurityContext}에서
-     * 꺼낼 값이 없으므로 빈 {@code Optional}을 돌려준다. 두 컬럼은 NOT NULL이라
-     * (회원 테이블 제외) 이 상태에서는 호출자가 값을 직접 넣어야 저장된다.
-     *
-     * <p>TODO 백엔드 Phase 1(회원·인증) 구현 시: 인증 필터가
-     * {@code SecurityContext}에 실어 둔 {@code id_key}를 꺼내 돌려주도록 교체한다.
-     * 로그인 없이 도는 경로(회원가입 등)는 여전히 빈 값이 될 수 있다.
-     * {@link com.dbdomino.moneylog.data.entity.BaseAuditEntity}의 {@code @Setter}와
-     * {@code AbstractSchemaIT.stampAudit()}이 같은 임시 조치이므로 함께 걷어낸다.
-     */
-    @Bean
-    public AuditorAware<Long> auditorAware() {
-        return Optional::empty;
-    }
+    // created_by/updated_by 를 공급하는 AuditorAware 는 이 모듈에 두지 않는다.
+    //
+    // 값의 출처가 "현재 요청의 인증 주체"라 SecurityContext 를 봐야 하는데, data-mod 는
+    // 웹 계층을 모르는 라이브러리 모듈이다. 운영 앱은 money-backend-app 의
+    // BackendAuditorAware 가, data-mod 의 테스트는 DataModTestApplication 의 테스트 전용
+    // 빈이 각각 공급한다. 여기에 하나 더 두면 빈이 둘이 되어 기동이 실패한다.
 }

@@ -108,6 +108,10 @@ project(':app-mod:money-backend-app') {
 		implementation 'org.springframework.boot:spring-boot-starter-aspectj'
 		implementation 'org.springframework.boot:spring-boot-starter-validation'
 
+		// 인증·인가. BCryptPasswordEncoder·SecurityContext·SecurityFilterChain 을 쓴다.
+		// JWT 라이브러리는 common-mod 쪽에 있다 — JwtTokenProvider 가 거기 있어서다.
+		implementation 'org.springframework.boot:spring-boot-starter-security'
+
 		implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.0'
 		runtimeOnly 'org.postgresql:postgresql'
 	}
@@ -125,6 +129,22 @@ project(':common-mod') {
 		implementation 'org.springframework.boot:spring-boot-starter-aspectj'
 		implementation 'org.springframework.boot:spring-boot-starter-web'
 		implementation 'com.fasterxml.jackson.core:jackson-annotations'
+
+		// GlobalExceptionHandler 가 ConstraintViolationException 을 잡는 데만 쓴다.
+		// compileOnly 인 이유: starter-validation 을 implementation 으로 넣으면
+		// hibernate-validator 가 common-mod 를 의존하는 data-mod 의 런타임까지 따라가고,
+		// Bean Validation 이 클래스패스에 있으면 Hibernate 가 자체 nullability 검사를
+		// 꺼 버린다(그 검사를 BV 가 대신한다고 보기 때문이다). 그러면 감사 컬럼 누락 같은
+		// 매핑 위반이 DB 까지 내려가서야 잡혀 실패 지점이 한 겹 늦어진다.
+		// 실행 시점의 구현체는 이 클래스를 쓰는 앱 모듈이 각자 갖고 있다.
+		compileOnly 'jakarta.validation:jakarta.validation-api'
+
+		// JWT. Spring Boot BOM 이 관리하지 않아 버전을 명시한다.
+		// api 만 컴파일 표면에 두고 impl·jackson 은 런타임에만 둔다.
+		implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+		runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+		runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
 		testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	}
 
