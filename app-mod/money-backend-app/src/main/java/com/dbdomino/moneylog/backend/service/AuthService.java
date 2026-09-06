@@ -1,10 +1,14 @@
 package com.dbdomino.moneylog.backend.service;
 
 import com.dbdomino.moneylog.backend.dto.request.LoginRequest;
+import com.dbdomino.moneylog.backend.dto.request.MemberFieldRules;
+import com.dbdomino.moneylog.backend.dto.request.SignupRequest;
 import com.dbdomino.moneylog.backend.dto.response.LoginResponse;
 import com.dbdomino.moneylog.backend.dto.response.MessageResponse;
+import com.dbdomino.moneylog.backend.dto.response.SignupResponse;
 import com.dbdomino.moneylog.backend.dto.response.TokenResponse;
 import com.dbdomino.moneylog.backend.dto.response.TokenValidateResponse;
+import com.dbdomino.moneylog.backend.mapper.MemberMapper;
 import com.dbdomino.moneylog.backend.security.AuthPrincipal;
 import com.dbdomino.moneylog.backend.service.MemberSessionService.IssuedTokens;
 import com.dbdomino.moneylog.common.error.BusinessException;
@@ -40,15 +44,95 @@ public class AuthService {
     private final MemberSessionService sessionService;
     private final LoginHistoryService loginHistoryService;
     private final PasswordEncoder passwordEncoder;
+    private final DefaultExpendGroupService defaultExpendGroupService;
+    private final MemberMapper memberMapper;
 
     public AuthService(UserRepository userRepository,
                        MemberSessionService sessionService,
                        LoginHistoryService loginHistoryService,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       DefaultExpendGroupService defaultExpendGroupService,
+                       MemberMapper memberMapper) {
         this.userRepository = userRepository;
         this.sessionService = sessionService;
         this.loginHistoryService = loginHistoryService;
         this.passwordEncoder = passwordEncoder;
+        this.defaultExpendGroupService = defaultExpendGroupService;
+        this.memberMapper = memberMapper;
+    }
+
+    /**
+     * 1.2 회원가입.
+     *
+     * <p>검증 순서가 곧 응답 코드다 — 확인 불일치 {@code 2005}, 비밀번호 규칙
+     * {@code 2004}, 아이디 중복 {@code 2002}, 이메일 중복 {@code 2003}. 형식 오류는
+     * Bean Validation 이 걸러 {@code 9001} 로 나간다.
+     *
+     * <p><b>중복은 선검사와 유니크 위반 처리를 양쪽 다 둔다.</b> 선검사만으로는 두 요청이
+     * 같은 순간 "없음"을 보는 창을 닫지 못한다 — DB 의 유니크 제약이 최종 방어선이고,
+     * 그 위반을 잡아 같은 코드로 바꿔 준다.
+     *
+     * <p>권한은 {@code 3} 고정이다. 요청에 {@code role} 필드가 없어 지정할 방법 자체가
+     * 없다(FR-105).
+     *
+     * <p>만든 {@code tbl_user} 행의 {@code created_by}/{@code updated_by} 는
+     * <b>{@code null}</b> 이다 — 가입은 자기 자신을 만드는 행위라 INSERT 시점에 자기
+     * {@code id_key} 가 없고, 그래서 이 테이블만 두 컬럼이 nullable 이다(FR-121).
+     *
+     * <p>기본 지출유형 10종을 <b>같은 트랜잭션에서</b> 만든다. 갈라 두면 "회원은 생겼는데
+     * 유형이 없는" 상태가 가능해진다.
+     */
+    @Transactional
+    public SignupResponse signup(SignupRequest request) {
+        if (!request.password().equals(request.passwordConfirm())) {
+            throw new BusinessException(ErrorCode.PASSWORD_CONFIRM_MISMATCH);
+        }
+        if (!MemberFieldRules.isValidPassword(request.password())) {
+            throw new BusinessException(ErrorCode.PASSWORD_RULE_VIOLATION);
+        }
+        if (userRepository.existsByUserId(request.memberId())) {
+            throw new BusinessException(ErrorCode.MEMBER_ID_DUPLICATED);
+        }
+        String email = blankToNull(request.email());
+        if (email != null && userRepository.existsByEmail(email)) {
+            throw new BusinessException(ErrorCode.EMAIL_DUPLICATED);
+        }
+
+        User user = new User();
+        user.setUserId(request.memberId());
+        user.setPw(passwordEncoder.encode(request.password()));
+        user.setNickname(request.nickname().trim());
+        user.setEmail(email);
+        user.setPhone(blankToNull(request.phone()));
+        user.setIntro(blankToNull(request.intro()));
+        user.setRole(User.ROLE_MEMBER);
+        user.setActive(true);
+
+        User saved;
+        try {
+            saved = userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException e) {
+            // 선검사를 통과한 뒤 다른 요청이 먼저 커밋한 경우다. 어느 제약이 걸렸는지는
+            // 메시지로 가른다 — 사용자에게는 "중복"이라는 같은 사실이므로 코드도 같다.
+            throw new BusinessException(duplicateCodeOf(e));
+        }
+
+        defaultExpendGroupService.createDefaults(saved);
+        return memberMapper.toSignupResponse(saved);
+    }
+
+    /** 유니크 위반이 아이디 쪽인지 이메일 쪽인지 가린다. */
+    private static ErrorCode duplicateCodeOf(DataIntegrityViolationException e) {
+        String message = e.getMostSpecificCause().getMessage();
+        if (message != null && message.contains("ux_user_email")) {
+            return ErrorCode.EMAIL_DUPLICATED;
+        }
+        return ErrorCode.MEMBER_ID_DUPLICATED;
+    }
+
+    /** 빈 문자열은 {@code null} 로 저장한다 — 선택 항목의 "값 없음"을 한 가지로 통일한다. */
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     /**

@@ -2,8 +2,10 @@ package com.dbdomino.moneylog.backend.controller;
 
 import com.dbdomino.moneylog.backend.dto.request.LoginRequest;
 import com.dbdomino.moneylog.backend.dto.request.RefreshRequest;
+import com.dbdomino.moneylog.backend.dto.request.SignupRequest;
 import com.dbdomino.moneylog.backend.dto.response.LoginResponse;
 import com.dbdomino.moneylog.backend.dto.response.MessageResponse;
+import com.dbdomino.moneylog.backend.dto.response.SignupResponse;
 import com.dbdomino.moneylog.backend.dto.response.TokenResponse;
 import com.dbdomino.moneylog.backend.dto.response.TokenValidateResponse;
 import com.dbdomino.moneylog.backend.security.AuthPrincipal;
@@ -37,6 +39,17 @@ public class AuthController {
 
     public AuthController(AuthService authService) {
         this.authService = authService;
+    }
+
+    /**
+     * 1.2 회원가입. 성공하면 아이디·닉네임·권한을 돌려준다.
+     *
+     * <p>토큰을 함께 주지 않는다 — 가입과 로그인은 별개의 요청이고, 가입 응답에 토큰을
+     * 실으면 "가입 직후 자동 로그인"을 서버가 강제하는 셈이 된다.
+     */
+    @PostMapping(value = "/signup", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public RestResponseDto<SignupResponse> signup(@Valid @RequestBody SignupRequest request) {
+        return RestResponseDto.ok(authService.signup(request));
     }
 
     /** 1.3 로그인. 성공하면 토큰 한 벌과 회원 식별 정보를 돌려준다. */

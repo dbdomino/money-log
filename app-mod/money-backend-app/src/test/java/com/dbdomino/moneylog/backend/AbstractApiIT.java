@@ -49,7 +49,9 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 @SpringBootTest(properties = {
         // 테스트 전용 키. 운영 키와 절대 같은 값을 쓰지 않는다. HS256 이라 32바이트 이상이어야 한다.
-        "jwt.secret=test-only-secret-not-for-any-real-environment-0123456789"
+        "jwt.secret=test-only-secret-not-for-any-real-environment-0123456789",
+        // 아이콘 복사본을 둘 임시 디렉터리. 운영은 ICON_STORAGE_DIR 로 주입한다.
+        "icon.storage.dir=${java.io.tmpdir}/moneylog-it-icons"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("postgresql")

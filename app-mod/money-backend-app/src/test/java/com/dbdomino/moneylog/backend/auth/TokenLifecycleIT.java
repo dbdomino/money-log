@@ -37,8 +37,11 @@ class TokenLifecycleIT extends AbstractApiIT {
         // 남은 초는 설정값(1일·7일)에서 발급 처리 시간만큼만 줄어 있어야 한다.
         assertThat(data.get("expiresIn").asLong()).isBetween(86_000L, 86_400L);
         assertThat(data.get("refreshExpiresIn").asLong()).isBetween(604_400L, 604_800L);
-        // 비밀번호는 어떤 형태로도 응답에 실리지 않는다(SC-107).
-        assertThat(response.toString()).doesNotContain(TEST_PASSWORD).doesNotContain("pw");
+        // 비밀번호는 응답에 실리지 않는다(SC-107). 필드가 없는지로 본다 —
+        // 토큰은 Base64 라 "pw" 같은 짧은 문자열이 우연히 들어갈 수 있어 문자열 검사는 못 쓴다.
+        assertThat(data.has("pw")).isFalse();
+        assertThat(data.has("password")).isFalse();
+        assertThat(response.toString()).doesNotContain(TEST_PASSWORD);
 
         assertThat(countActiveSessions(user)).isEqualTo(1);
     }

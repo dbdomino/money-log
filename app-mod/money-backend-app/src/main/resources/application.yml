@@ -31,6 +31,15 @@ jwt:
   access-token-validity-seconds: 86400    # 1일
   refresh-token-validity-seconds: 604800  # 7일
 
+# 지출유형 아이콘의 회원별 복사본을 두는 디렉터리.
+#
+# 기본값을 두지 않는다 — 빠뜨린 채 기동하면 임시 디렉터리 같은 곳에 파일이 쌓이고
+# 재기동하면 사라지는 사고가 조용히 난다. 클래스패스 안(resources/)을 가리킬 수도 없다:
+# 배포하면 jar 내부가 되어 쓸 수 없다. 시드 원본만 읽기 전용으로 클래스패스에 있다.
+icon:
+  storage:
+    dir: ${ICON_STORAGE_DIR}
+
 # common-mod 의 웹 공용 빈(GlobalExceptionHandler·ApiLoggingAspect) 활성화 스위치.
 #
 # 두 빈은 common-mod 에 있고 money-app(프론트)도 common-mod 를 의존한다. 프론트의
