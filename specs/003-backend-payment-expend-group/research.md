@@ -97,7 +97,7 @@ Spring의 `spring.servlet.multipart.max-file-size`도 함께 걸어 서블릿 �
 ## 4. 아이콘 저장 위치와 설정
 
 **결정**: 저장 디렉터리를 `application.yml`의 `icon.storage.dir`로 외부화하고
-`IconStorageProperties`로 바인딩한다. 기본값은 두지 않고 **없으면 기동에서 막는다**.
+`IconProperties`로 바인딩한다(002 가 만든 클래스에 `maxFileSize` 를 더한다). 기본값은 두지 않고 **없으면 기동에서 막는다**.
 
 **근거**: 클래스패스 안(`resources/`)에 쓸 수 없다 — 배포 시 jar 내부가 되어 쓰기가 불가능하다.
 시드 원본(`resources/seed/expend-group-icons/`)은 **읽기 전용**이고, 회원별 복사본은
