@@ -89,8 +89,9 @@ Constitution v1.1.0 기준 게이트.
 - [x] **III. 응답 규격** — PASS(예외 1건 명시). 12건은 `{ resCode, data }`, 2.10은 FR-216이
       **명세에 적어 둔** 예외다. 원칙 III의 "성공·실패 모두 이 형태"를 어기는 것이 아니라
       명세가 승인한 단일 예외이므로 Complexity Tracking에 근거를 기록했다. `PUT` 0건.
-- [x] **IV. 로깅** — PASS. `002`가 만든 AOP 로깅을 그대로 쓴다. **2.10의 응답 본문은 로그에
-      찍지 않는다**(이미지 바이너리다) — 그 처리를 계약에 명시했다.
+- [x] **IV. 로깅** — PASS. `002`가 만든 AOP 로깅을 쓰되 **한 곳을 보강한다** — 반환값이 바이너리
+      (`byte[]`·`Resource`)이거나 파라미터가 `MultipartFile`이면 크기·파일명만 남긴다.
+      **2.10의 응답 본문은 로그에 찍지 않는다**(이미지 바이너리다) — 그 처리를 계약에 명시했다.
 - [x] **V. 명세 우선** — PASS(선행 조건 있음). `phase2-수단-지출유형/` 13건이 있고
       커밋 `84ad88c`에서 개정됐다. **착수 전 개정 1건**이 남아 있다 → 아래 참고.
 - [x] **VI. 스키마 덤프** — PASS. `sql/schema-moneylogdb.sql`로 확인했고 **스키마 변경 없음**이다.
@@ -98,7 +99,10 @@ Constitution v1.1.0 기준 게이트.
 
 **Phase 1 이후 (재평가)**
 
-- [x] **I** — 설계 결과 `common-mod` 추가분은 `ErrorCode` 상수 11개뿐이다. 역방향 의존 0건.
+- [x] **I** — PASS. `common-mod`를 세 곳 고친다 — `ErrorCode`(30xx·31xx **13개**는 002가 선반영해
+      확인만 한다), `GlobalExceptionHandler`(업로드 크기 초과 → `3102`), `ApiLoggingAspect`
+      (바이너리·파일 파라미터 로깅 제외). 셋 다 **DB를 모르는 코드**라 `common-mod → data-mod`
+      역방향 의존은 0건이다.
 - [x] **II** — [contracts/](./contracts/)의 13건 모두 Controller가 Service만 부른다.
       파일 I/O는 `IconStorage`에만 있다.
 - [x] **III** — 13건의 성공·실패 응답을 코드까지 적었다. 2.10의 예외 처리 경로를
@@ -115,11 +119,21 @@ Constitution v1.1.0 기준 게이트.
 | 2 | `2.12-ExpendGroupDelete.md` 실패 표 | `3108` 추가 | **완료** |
 | 3 | `2.8`·`2.9` 응답 필드 표 | `deleted` 추가 | **완료** |
 | 4 | `2.10`·`1.2` 아이콘 파일명 | ID 기반 규칙 | **완료** |
-| 5 | `2.7`·`2.11` 요청 표 | `iconFile` 파트의 **허용 형식·최대 크기**(png·jpg·gif · 1MB) 명시 | **남아 있다** |
+| 5 | `2.7`·`2.11` 요청 표 | `iconFile` 파트의 **허용 형식·최대 크기**(png·jpg·gif · 1MB) 명시 | **남아 있다** (tasks T001-1) |
+| 6 | `2.2`·`2.3`·`2.7`·`2.8`·`2.13` 응답 표 | **빈 설명 칸 8곳**을 채운다 | **남아 있다** (tasks T001-2) |
 
-5번만 남았다. clarify에서 규격을 확정했지만(`003` FR-219) 설계 명세의 `2.7`·`2.11` 요청 표는
-아직 `iconFile | file | ❌ | 아이콘 이미지 (png, jpg, gif 등)`로 "등"을 열어 둔 상태다.
-헌장 원칙 V의 "설명 칸은 그 칸만 보고 의미가 읽혀야 한다"에 걸린다.
+두 건이 남았다.
+
+5번은 두 파일의 현재 문구가 **서로 다르다** — `2.7`은 `아이콘 이미지 (png, jpg, gif 등)`로 "등"을
+열어 두었고, `2.11`은 `새 아이콘 (교체)`라 형식·크기를 아예 적지 않았다. clarify에서 규격을
+확정했으므로(FR-219) 둘 다 "`png`·`jpg`·`gif` 세 형식, 1MB 이하. 형식은 파일 내용으로 판정한다"로
+고친다.
+
+6번은 응답 표의 설명 칸 8곳이 비어 있는 것이다 — `2.2:54`, `2.3:53·54·55`, `2.7:55`, `2.8:51`,
+`2.13:51·52`.
+
+둘 다 헌장 원칙 V("설명 칸은 그 칸만 보고 의미가 읽혀야 한다. **빈 칸은 누락으로 본다**")에
+걸린다. 코드보다 먼저 고친다.
 
 ## Project Structure
 
@@ -140,17 +154,28 @@ specs/003-backend-payment-expend-group/
 
 ### Source Code (repository root)
 
-`+`는 신규, `~`는 수정이다. **`002`가 만드는 것에 의존하되 고치지 않는다.**
+`+`는 신규, `~`는 수정이다.
+
+**`002`가 만든 파일 다섯을 고친다.** 대부분은 002 것에 의존만 하지만 아래 다섯은 직접 손댄다 —
+`IconStorage`·`IconProperties`(연산·설정 추가), `ApiLoggingAspect`(바이너리·파일 파라미터 제외),
+`GlobalExceptionHandler`(업로드 크기 초과 매핑), `RestAuthEntryPoint`(2.10의 401 예외).
+앞의 둘은 002의 **가입 흐름(1.2, 기본 유형 10종 + 시드 아이콘 복사)** 이 직접 쓰므로 회귀 위험이
+가장 크다 — 그래서 003의 검증은 002 테스트와 **함께** 돌려야 한다.
 
 ```text
 common-mod/src/main/java/com/dbdomino/moneylog/common/
-└── error/
-    └── ErrorCode.java                          ~ 30xx·31xx 코드 11개 추가
+├── error/
+│   ├── ErrorCode.java                          ~ 30xx·31xx 코드 13개 (002 가 선반영 — 확인만)
+│   └── GlobalExceptionHandler.java             ~ MaxUploadSizeExceededException → 3102
+└── logging/
+    └── ApiLoggingAspect.java                   ~ 바이너리 응답·MultipartFile 파라미터 제외
 
 app-mod/money-backend-app/src/main/
 ├── java/com/dbdomino/moneylog/backend/
 │   ├── config/
-│   │   └── IconStorageProperties.java          + 저장 디렉터리·최대 크기 바인딩
+│   │   └── IconProperties.java                 ~ 최대 크기(maxFileSize) 바인딩 추가 (002 가 만든 클래스)
+│   ├── security/
+│   │   └── RestAuthEntryPoint.java             ~ 2.10 만 래퍼 없는 401 로 나가는 예외
 │   ├── controller/
 │   │   ├── PaymentMethodController.java        + 2.1~2.6
 │   │   ├── ExpendGroupController.java          + 2.7~2.9·2.11~2.13
@@ -160,7 +185,7 @@ app-mod/money-backend-app/src/main/
 │   │   ├── ExpendGroupService.java             + 지출유형 6건
 │   │   └── ExpendGroupIconService.java         + 아이콘 저장·조회 유스케이스
 │   ├── storage/
-│   │   ├── IconStorage.java                    + 파일 I/O 를 가두는 유일한 지점
+│   │   ├── IconStorage.java                    ~ save·read·exists 추가 (002 가 만든 파일)
 │   │   └── ImageTypeDetector.java              + 내용 기반 형식 판정
 │   ├── dto/
 │   │   ├── request/                            + 등록·수정 Request DTO
