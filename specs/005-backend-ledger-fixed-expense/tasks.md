@@ -217,13 +217,13 @@ spec.md 의 스토리 순서(US1~US5)가 아니라 **우선순위 순서**(P1 �
 
 **Purpose**: 규격·로그·스키마와 문서의 최종 정합
 
-- [ ] T073 [P] `.../backend/LedgerFixedExpenseResponseContractIT.java` — quickstart #55 (SC-401). **9건 전부가 `{ resCode, data }` 이고 래퍼 예외가 하나도 없다**. 003 은 아이콘(2.10), 004 는 엑셀 양식(3.11)이 예외였지만 **005 에는 없다** — 파일을 돌려주는 API 도, 본문 없는 응답도 없다. 004 의 `ExpenseIncomeResponseContractIT` 를 본떠 만들되 "예외를 인정하는 시험"은 두지 않는다. **토큰 없이 9건을 부르면 전부 `1001` 이고 그것도 래퍼**임을 함께 단언한다 — quickstart 에 미인증 시나리오가 따로 없어 여기가 유일한 자리다
-- [ ] T074 [P] AOP 요청~응답 로깅이 005 의 3개 컨트롤러에 걸리는지 확인한다 — **제외 대상이 없다**(api-contract §9). 003·004 와 달리 바이너리 응답이 없어 로깅에서 뺄 API 가 하나도 없다. 컨트롤러마다 진입/종료 로그를 수동으로 쓰지 않는다(헌장 원칙 IV)
-- [ ] T075 [P] `specs/005-backend-ledger-fixed-expense/plan.md` § Source Code 의 파일 목록이 **실제로 만든 클래스와 일치하는지** 확인한다 — `/speckit-analyze` 가 `FixedExpenseFieldRules`·`FixedExpenseMonthlyFactory`·query DTO 3종·`ReferenceResolver` 수정 표시를 이미 더했고 `FixedExpenseSyncService` 설명도 "자동 반영 + 재작성"으로 고쳤다. **구현하며 클래스를 더 쪼갰거나 이름을 바꿨다면 그 차이를 여기 반영한다** — plan 의 파일 목록이 실제와 갈리면 다음 기능의 착수 조사가 틀린 그림에서 시작한다
-- [ ] T076 `git diff --stat sql/schema-moneylogdb.sql` 이 **비어 있는지** 확인한다 — 이 기능은 스키마를 바꾸지 않는다(헌장 원칙 VI). 덤프가 바뀌었다면 원인을 찾는다. 특히 **T001 의 명세 개정을 빠뜨려 `tbl_fixed_expense` 에 이름 컬럼을 추가하려는 시도가 있었는지** 본다 — 그건 이 기능의 전제를 깨는 변경이다
-- [ ] T077 `./gradlew :data-mod:test` 를 돌려 **77건**이 그대로 통과하는지 확인한다 — 005 는 `data-mod` 의 Entity·제약을 바꾸지 않으므로 건수가 줄면 무언가를 건드린 것이다
-- [ ] T078 `./gradlew :app-mod:money-backend-app:test` 를 돌려 **002~004 기존 시험과 005 신규 시험이 모두** 통과하는지 확인한다. **`./gradlew test`(전체)는 쓰지 않는다** — `money-app` 의 레거시 시험 3건이 `init` 커밋부터 깨져 있다
-- [ ] T079 quickstart.md §4 완료 판정 표의 전 항목과 plan.md § Constitution Check 의 헌장 게이트 6개를 훑는다 — 시나리오 1~55 와 22-1·22-2(**57건**), SC-401~409, 동시성(#15 의 뒷부분), 말일 보정(#18·#19 윤년), SC-409 의 세 다리(#9·**#22-1**·#44), 참조 사후 무효화(**#22-2**), 자동 반영 4갈래(#30~#33), 재작성 4처리(#34·#35·#37), 두 이름 규칙 공존(#44). **Complexity Tracking 에 적을 위반이 없다** — 005 에는 래퍼 예외도 로깅 제외도 없다
+- [X] T073 [P] `.../backend/LedgerFixedExpenseResponseContractIT.java` — quickstart #55 (SC-401). **9건 전부가 `{ resCode, data }` 이고 래퍼 예외가 하나도 없다**. 003 은 아이콘(2.10), 004 는 엑셀 양식(3.11)이 예외였지만 **005 에는 없다** — 파일을 돌려주는 API 도, 본문 없는 응답도 없다. 004 의 `ExpenseIncomeResponseContractIT` 를 본떠 만들되 "예외를 인정하는 시험"은 두지 않는다. **토큰 없이 9건을 부르면 전부 `1001` 이고 그것도 래퍼**임을 함께 단언한다 — quickstart 에 미인증 시나리오가 따로 없어 여기가 유일한 자리다
+- [X] T074 [P] AOP 요청~응답 로깅이 005 의 3개 컨트롤러에 걸리는지 확인한다 — **제외 대상이 없다**(api-contract §9). 003·004 와 달리 바이너리 응답이 없어 로깅에서 뺄 API 가 하나도 없다. 컨트롤러마다 진입/종료 로그를 수동으로 쓰지 않는다(헌장 원칙 IV)
+- [X] T075 [P] `specs/005-backend-ledger-fixed-expense/plan.md` § Source Code 의 파일 목록이 **실제로 만든 클래스와 일치하는지** 확인한다 — `/speckit-analyze` 가 `FixedExpenseFieldRules`·`FixedExpenseMonthlyFactory`·query DTO 3종·`ReferenceResolver` 수정 표시를 이미 더했고 `FixedExpenseSyncService` 설명도 "자동 반영 + 재작성"으로 고쳤다. **구현하며 클래스를 더 쪼갰거나 이름을 바꿨다면 그 차이를 여기 반영한다** — plan 의 파일 목록이 실제와 갈리면 다음 기능의 착수 조사가 틀린 그림에서 시작한다
+- [X] T076 `git diff --stat sql/schema-moneylogdb.sql` 이 **비어 있는지** 확인한다 — 이 기능은 스키마를 바꾸지 않는다(헌장 원칙 VI). 덤프가 바뀌었다면 원인을 찾는다. 특히 **T001 의 명세 개정을 빠뜨려 `tbl_fixed_expense` 에 이름 컬럼을 추가하려는 시도가 있었는지** 본다 — 그건 이 기능의 전제를 깨는 변경이다
+- [X] T077 `./gradlew :data-mod:test` 를 돌려 **80건**이 그대로 통과하는지 확인한다 — 005 는 `data-mod` 의 Entity·제약·시험을 바꾸지 않고 **Repository 메서드 2건만** 더하므로, 건수가 줄면 무언가를 건드린 것이다(기준 수치는 004 까지의 결과다)
+- [X] T078 `./gradlew :app-mod:money-backend-app:test` 를 돌려 **002~004 기존 시험과 005 신규 시험이 모두** 통과하는지 확인한다. **`./gradlew test`(전체)는 쓰지 않는다** — `money-app` 의 레거시 시험 3건이 `init` 커밋부터 깨져 있다
+- [X] T079 quickstart.md §4 완료 판정 표의 전 항목과 plan.md § Constitution Check 의 헌장 게이트 6개를 훑는다 — 시나리오 1~55 와 22-1·22-2(**57건**), SC-401~409, 동시성(#15 의 뒷부분), 말일 보정(#18·#19 윤년), SC-409 의 세 다리(#9·**#22-1**·#44), 참조 사후 무효화(**#22-2**), 자동 반영 4갈래(#30~#33), 재작성 4처리(#34·#35·#37), 두 이름 규칙 공존(#44). **Complexity Tracking 에 적을 위반이 없다** — 005 에는 래퍼 예외도 로깅 제외도 없다
 
 ---
 

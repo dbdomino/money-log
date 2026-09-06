@@ -158,11 +158,18 @@ app-mod/money-backend-app/src/main/
 │   ├── support/
 │   │   └── YearMonthValue.java                   + 연×12+월 합성 비교를 가두는 값 객체
 │   ├── dto/
-│   │   ├── request/                              + 등록·수정·재작성 Request DTO
+│   │   ├── request/                              + FixedExpenseCreateRequest(4.1)
 │   │   │                                           + FixedExpenseListQuery(4.2 페이징 9001)
-│   │   │                                           + FixedExpenseMonthlyListQuery(3403)
-│   │   │                                           + LedgerMonthlyListQuery(3501·필터·정렬)
-│   │   └── response/                             + FixedExpenseDto·MonthlyDto·LedgerItemDto
+│   │   │                                           + FixedExpenseMonthlyListQuery(4.5 · 3403)
+│   │   │                                           + FixedExpenseMonthlyUpdateRequest(4.6)
+│   │   │                                           + FixedExpenseMonthlySyncRequest(4.9)
+│   │   │                                           + LedgerMonthlyListQuery(4.8 · 3501·필터·정렬)
+│   │   │                                           ~ PatchFields 는 004 것을 그대로 쓴다(4.4·4.6)
+│   │   └── response/                             + FixedExpenseResponse·ListResponse·DeleteResponse
+│   │                                               + FixedExpenseMonthlyResponse·ListResponse
+│   │                                               + FixedExpenseMonthlySyncResponse
+│   │                                               + LedgerItemResponse·LedgerMonthlyListResponse
+│   │                                               (이름은 `*Response` 다 — `*Dto` 를 쓰지 않는다)
 │   └── mapper/
 │       ├── FixedExpenseMapper.java               + Entity ↔ DTO (현재 이름 조립)
 │       └── FixedExpenseMonthlyMapper.java        + Entity ↔ DTO
