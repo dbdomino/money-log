@@ -88,12 +88,13 @@
     <div class="modal-header"><h2>회원 추가</h2><button type="button" class="modal-close" data-modal-close aria-label="닫기">&times;</button></div>
     <div class="modal-body">
       <form id="f-mem-c" onsubmit="return false;">
-        <div class="form-group"><label>아이디</label><input class="input" name="loginId" value="leeyj" required></div>
+        <div class="form-group"><label>아이디</label><input class="input" name="memberId" value="leeyj" required></div>
         <div class="form-group"><label>비밀번호</label><input class="input" type="password" name="password" value="TempPass1!" required></div>
         <div class="form-group"><label>닉네임</label><input class="input" name="nickname" value="이윤주" required></div>
         <div class="form-group"><label>이메일</label><input class="input" type="email" name="email" value="leeyj@example.com"></div>
         <div class="form-group"><label>폰</label><input class="input" name="phone" value="01098765432" inputmode="numeric"></div>
-        <div class="form-group"><label>역할</label><select class="select" name="role"><option selected>USER</option><option>ADMIN</option></select></div>
+        <div class="form-group"><label>소개</label><textarea class="textarea" name="intro"></textarea></div>
+        <div class="form-group"><label>권한</label><select class="select" name="role"><option value="3" selected>일반 (3)</option><option value="1">관리자 (1)</option></select></div>
       </form>
     </div>
     <div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>취소</button><button type="submit" form="f-mem-c" class="btn btn-primary">저장</button></div>
@@ -109,8 +110,10 @@
         <div class="form-group"><label>닉네임</label><input class="input" name="nickname" value="홍길동"></div>
         <div class="form-group"><label>이메일</label><input class="input" type="email" name="email" value="hong@example.com"></div>
         <div class="form-group"><label>폰</label><input class="input" name="phone" value="01012345678"></div>
-        <div class="form-group"><label>역할</label><select class="select" name="role"><option selected>USER</option><option>ADMIN</option></select></div>
-        <div class="form-group"><label>상태</label><select class="select" name="status"><option selected>정상</option><option>정지</option></select></div>
+        <div class="form-group"><label>소개</label><textarea class="textarea" name="intro"></textarea></div>
+        <div class="form-group"><label>권한</label><select class="select" name="role"><option value="3" selected>일반 (3)</option><option value="1">관리자 (1)</option></select></div>
+        <div class="form-group"><label>새 비밀번호</label><input class="input" type="password" name="password" placeholder="변경할 때만 입력"></div>
+        <p class="form-hint form-hint--block">계정 정지는 이 폼이 아니라 목록의 「정지」 버튼으로 합니다 — 별도 API 이며 로그아웃과도 다릅니다.</p>
       </form>
     </div>
     <div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>취소</button><button type="submit" form="f-mem-e" class="btn btn-primary">저장</button></div>

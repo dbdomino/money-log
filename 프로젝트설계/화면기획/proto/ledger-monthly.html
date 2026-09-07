@@ -266,7 +266,7 @@
           </div>
           <div class="form-group">
             <label>결제일</label>
-            <input class="input" type="date" name="paidAt" value="2026-07-19">
+            <input class="input" type="date" name="paymentDate" value="2026-07-19">
           </div>
         </div>
         <div class="form-row">
@@ -301,10 +301,27 @@
           </div>
           <div class="form-group">
             <label>내용</label>
-            <input class="input" name="memo" value="저녁 식사">
+            <input class="input" name="content" value="저녁 식사">
           </div>
         </div>
-        <p class="form-hint">할부 선택 시 개월 수·월 납부액·시작 연월 필드가 표시됩니다 (프로토타입 생략).</p>
+        <div class="form-row" data-when-paytype="INSTALLMENT">
+          <div class="form-group">
+            <label>할부 개월</label>
+            <input class="input" type="number" name="installmentMonths" min="2" value="3">
+          </div>
+          <div class="form-group">
+            <label>월 납부액</label>
+            <input class="input" type="number" name="monthlyAmount" value="50000">
+          </div>
+        </div>
+        <div class="form-row" data-when-paytype="INSTALLMENT">
+          <div class="form-group">
+            <label>시작 연월</label>
+            <input class="input" type="month" name="startYearMonth" value="2026-07">
+          </div>
+          <div class="form-group"></div>
+        </div>
+        <p class="form-hint">할부를 고르면 위 세 칸이 보이고 <code>amount</code> 대신 <code>monthlyAmount</code>를 보냅니다. 일시불은 <code>ExpenseCreate</code>, 할부는 <code>ExpenseCreateInstallment</code>로 <b>API 자체가 갈립니다</b>. 시작 연월만 문자열 <code>YYYY-MM</code>이며 고정지출은 연·월 정수 네 칸을 씁니다.</p>
       </form>
     </div>
     <div class="modal-footer">
@@ -327,7 +344,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>결제일</label>
-            <input class="input" type="date" name="paidAt" value="2026-07-02">
+            <input class="input" type="date" name="paymentDate" value="2026-07-02">
           </div>
           <div class="form-group">
             <label>수단</label>
@@ -356,8 +373,9 @@
         </div>
         <div class="form-group">
           <label>내용</label>
-          <input class="input" name="memo" value="회사 근처 김치찌개">
+          <input class="input" name="content" value="회사 근처 김치찌개">
         </div>
+        <p class="form-hint">할부 건은 <b>개월 수와 시작 연월을 바꿀 수 없습니다</b>(<code>3203</code>). 바꾸려면 삭제 후 다시 등록하세요. 남은 회차를 한 번에 정리하려면 목록에서 「중도상환」을 누릅니다.</p>
       </form>
     </div>
     <div class="modal-footer">
@@ -389,11 +407,11 @@
         </div>
         <div class="form-group">
           <label>결제일</label>
-          <input class="input" type="date" name="paidAt" value="2026-07-19">
+          <input class="input" type="date" name="paymentDate" value="2026-07-19">
         </div>
         <div class="form-group">
           <label>내용</label>
-          <input class="input" name="memo" value="중고 판매">
+          <input class="input" name="content" value="중고 판매">
         </div>
       </form>
     </div>
@@ -425,11 +443,11 @@
         </div>
         <div class="form-group">
           <label>결제일</label>
-          <input class="input" type="date" name="paidAt" value="2026-07-05">
+          <input class="input" type="date" name="paymentDate" value="2026-07-05">
         </div>
         <div class="form-group">
           <label>내용</label>
-          <input class="input" name="memo" value="7월 급여">
+          <input class="input" name="content" value="7월 급여">
         </div>
       </form>
     </div>

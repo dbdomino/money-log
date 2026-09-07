@@ -107,14 +107,22 @@
           <div class="form-group"><label>금액</label><input class="input" name="amount" type="number" value="69000" required></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>주기</label><select class="select" name="cycle"><option selected>매월</option><option>매주</option></select></div>
-          <div class="form-group"><label>결제일</label><input class="input" name="payDay" type="number" min="1" max="31" value="10"></div>
+          <div class="form-group"><label>수단</label><select class="select" name="paymentMethodId" required><option value="1" selected>국민카드</option><option value="2">우리은행 통장</option></select></div>
+          <div class="form-group"><label>지출유형</label><select class="select" name="expendGroupId" required><option value="2" selected>주거</option><option value="1">식비</option></select></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>시작 연월</label><input class="input" name="startYm" type="month" value="2026-08"></div>
-          <div class="form-group"><label>종료 연월 (선택)</label><input class="input" name="endYm" type="month" value="2027-07"></div>
+          <div class="form-group"><label>결제일</label><input class="input" name="paymentDayOfMonth" type="number" min="1" max="31" value="10" required></div>
+          <div class="form-group"></div>
         </div>
-        <div class="form-group"><label>메모</label><textarea class="textarea" name="memo">연간 회원권 월 분할</textarea></div>
+        <div class="form-row">
+          <div class="form-group"><label>시작 연도</label><input class="input" name="startYear" type="number" min="1900" max="9999" value="2026" required></div>
+          <div class="form-group"><label>시작 월</label><input class="input" name="startMonth" type="number" min="1" max="12" value="8" required></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>종료 연도</label><input class="input" name="endYear" type="number" min="1900" max="9999" value="2027" required></div>
+          <div class="form-group"><label>종료 월</label><input class="input" name="endMonth" type="number" min="1" max="12" value="7" required></div>
+        </div>
+        <div class="form-group"><label>내용</label><textarea class="textarea" name="content">연간 회원권 월 분할</textarea></div>
       </form>
     </div>
     <div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>취소</button><button type="submit" form="f-fx-c" class="btn btn-primary">저장</button></div>
@@ -128,18 +136,18 @@
       <dl class="detail-dl">
         <dt>이름</dt><dd>월세</dd>
         <dt>금액</dt><dd>800,000원</dd>
-        <dt>주기</dt><dd>매월 1일</dd>
-        <dt>기간</dt><dd>2024-01 ~ (종료 없음)</dd>
-        <dt>다음 결제일</dt><dd>2026-08-01</dd>
-        <dt>상태</dt><dd>진행</dd>
-        <dt>메모</dt><dd>전세→월세 전환분</dd>
+        <dt>수단</dt><dd>국민카드</dd>
+        <dt>지출유형</dt><dd>주거</dd>
+        <dt>결제일</dt><dd>매달 1일</dd>
+        <dt>적용 기간</dt><dd>2024년 1월 ~ 2026년 12월</dd>
+        <dt>내용</dt><dd>전세→월세 전환분</dd>
       </dl>
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-secondary" data-modal-close>닫기</button>
       <button type="button" class="btn btn-ghost" data-modal-open="modal-fx-edit">수정</button>
-      <button type="button" class="btn btn-ghost" data-modal-open="modal-fx-monthly">월별 수정</button>
-      <button type="button" class="btn btn-danger" data-modal-open="modal-confirm">중도상환</button>
+      <button type="button" class="btn btn-ghost" data-modal-open="modal-fx-monthly">월별 내역</button>
+      <button type="button" class="btn btn-danger" data-modal-open="modal-confirm">삭제</button>
     </div>
   </div>
 </div>
@@ -148,11 +156,29 @@
   <div class="modal-panel modal-panel--wide">
     <div class="modal-header"><h2>고정지출 수정</h2><button type="button" class="modal-close" data-modal-close aria-label="닫기">&times;</button></div>
     <div class="modal-body">
-      <div class="alert alert-info">기본값 수정 시 「월별 미수정 달」에 반영됩니다. 이미 월별 덮어쓴 달은 유지됩니다.</div>
+      <div class="alert alert-info">바꾼 값은 <b>미래 달 중 월별로 직접 고치지 않은 내역</b>에만 자동 반영됩니다. 지난 달·이번 달과 직접 고친 달은 그대로이며, 지난 달을 맞추려면 월별 내역에서 「고정지출 반영」을 누르세요.</div>
       <form id="f-fx-e" onsubmit="return false;">
-        <div class="form-group"><label>이름</label><input class="input" name="name" value="월세"></div>
-        <div class="form-group"><label>금액</label><input class="input" name="amount" type="number" value="800000"></div>
-        <div class="form-group"><label>메모</label><textarea class="textarea" name="memo">전세→월세 전환분</textarea></div>
+        <div class="form-row">
+          <div class="form-group"><label>이름</label><input class="input" name="name" value="월세"></div>
+          <div class="form-group"><label>금액</label><input class="input" name="amount" type="number" value="800000"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>수단</label><select class="select" name="paymentMethodId"><option value="1" selected>국민카드</option><option value="2">우리은행 통장</option></select></div>
+          <div class="form-group"><label>지출유형</label><select class="select" name="expendGroupId"><option value="2" selected>주거</option><option value="1">식비</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>결제일</label><input class="input" name="paymentDayOfMonth" type="number" min="1" max="31" value="1"></div>
+          <div class="form-group"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>시작 연도</label><input class="input" name="startYear" type="number" value="2024"></div>
+          <div class="form-group"><label>시작 월</label><input class="input" name="startMonth" type="number" min="1" max="12" value="1"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>종료 연도</label><input class="input" name="endYear" type="number" value="2026"></div>
+          <div class="form-group"><label>종료 월</label><input class="input" name="endMonth" type="number" min="1" max="12" value="12"></div>
+        </div>
+        <div class="form-group"><label>내용</label><textarea class="textarea" name="content">전세→월세 전환분</textarea></div>
       </form>
     </div>
     <div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>취소</button><button type="submit" form="f-fx-e" class="btn btn-primary">저장</button></div>
@@ -164,7 +190,8 @@
     <div class="modal-header"><h2>월별 금액 수정</h2><button type="button" class="modal-close" data-modal-close aria-label="닫기">&times;</button></div>
     <div class="modal-body">
       <form id="f-fx-m" onsubmit="return false;">
-        <div class="form-group"><label>대상 연월</label><input class="input" type="month" name="ym" value="2026-08"></div>
+        <div class="form-group"><label>대상 연도</label><input class="input" type="number" name="year" value="2026"></div>
+        <div class="form-group"><label>대상 월</label><input class="input" type="number" name="month" min="1" max="12" value="8"></div>
         <div class="form-group"><label>그달 금액</label><input class="input" type="number" name="amount" value="850000"></div>
         <p class="form-hint">예: 8월만 관리비 포함으로 850,000원</p>
       </form>
