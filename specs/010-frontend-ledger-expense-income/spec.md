@@ -19,7 +19,7 @@
 | 3.4 | 소득 수정 | `/ledger?m=income-edit&id={id}` | 모달 |
 | 3.5 | 지출·소득 엑셀 일괄 등록 | `/ledger/excel` | 페이지 |
 
-전부 **로그인** 권한이다. 부르는 API 12건: `LedgerMonthlyList` · `ExpenseCreate` · `ExpenseCreateInstallment` · `ExpenseGet` · `ExpenseUpdate` · `ExpenseDelete` · `ExpenseSettleInstallmentRemainder` · `IncomeCreate` · `IncomeGet` · `IncomeUpdate` · `IncomeDelete` · `ExpenseIncomeExcelTemplateDownload` · `ExpenseIncomeExcelUpload`
+전부 **로그인** 권한이다. 부르는 API 15건: `PaymentMethodListActive` · `ExpendGroupListActive` · `LedgerMonthlyList` · `ExpenseCreate` · `ExpenseCreateInstallment` · `ExpenseGet` · `ExpenseUpdate` · `ExpenseDelete` · `ExpenseSettleInstallmentRemainder` · `IncomeCreate` · `IncomeGet` · `IncomeUpdate` · `IncomeDelete` · `ExpenseIncomeExcelTemplateDownload` · `ExpenseIncomeExcelUpload`
 
 ## 왜 5.1 과 3.x 를 한 스펙에 묶었나
 
@@ -171,7 +171,7 @@
 **지출·소득 입력 (US2)**
 
 - **FR-908**: 등록·수정·삭제는 가계부 위 **모달**이며 부모 URL + `?m=` 딥링크로 열려야 한다
-- **FR-909**: 수단·지출유형 선택 목록은 **사용 중이고 삭제되지 않은 것만** 보여야 한다. 지출에는 지출용 수단, 소득에는 소득용 수단이 온다
+- **FR-909**: 수단·지출유형 선택 목록은 관리 목록(`PaymentMethodList`·`ExpendGroupList`)이 아니라 **사용 중 목록 API**(`PaymentMethodListActive`·`ExpendGroupListActive`)로 채워야 한다. 관리 목록을 쓰면 삭제 표시된 것이 선택지에 뜬다. 지출에는 `/active/EXPENSE`, 소득에는 `/active/INCOME` 을 쓴다
 - **FR-910**: 지출유형은 **하나 필수**로 골라야 한다
 - **FR-911**: 지출 등록은 일시불·할부를 토글로 고르고, 할부를 고르면 개월 수·월 납부액·시작 연월 칸을 보여야 한다
 - **FR-912**: 일시불과 할부는 **서로 다른 API** 로 나가야 하며 금액 필드 이름도 다르다(`amount` vs `monthlyAmount`)
@@ -244,7 +244,7 @@
 
 - **007 이 이미 서 있다.** 모달 셸·확인 다이얼로그·페이징·API 클라이언트를 그대로 쓴다
 - **009 가 이미 서 있다.** 수단·지출유형이 있어야 지출·소득을 등록할 수 있다
-- **백엔드 004·005 의 API 가 동작한다.** 백엔드 코드와 스키마는 바뀌지 않는다
+- **백엔드 003·004·005 의 API 가 동작한다.** 지출·소득 12건은 004, `LedgerMonthlyList` 는 005, 수단·지출유형 선택 목록 2건은 003 의 사용 중 목록 API 다. 백엔드 코드와 스키마는 바뀌지 않는다
 - **화면기획 프로토타입을 그대로 옮긴다** — `ledger-monthly.html`(모달 넷 포함) · `ledger-excel.html`
 - **고정지출 행은 읽기만 한다.** 만들고 고치는 것은 011 이다
 - **가계부 목록에는 페이징이 없다.** 한 달치를 전부 받아 합계와 함께 보여준다

@@ -20,7 +20,7 @@
 
 **4.1 은 없다** — 고정지출 화면은 4.2 부터 센다. 전부 **로그인** 권한이다.
 
-부르는 API 8건: `FixedExpenseCreate` · `FixedExpenseList` · `FixedExpenseGet` · `FixedExpenseUpdate` · `FixedExpenseDelete` · `FixedExpenseMonthlyList` · `FixedExpenseMonthlyUpdate` · `FixedExpenseMonthlySync`
+부르는 API 10건: `PaymentMethodListActive` · `ExpendGroupListActive` · `FixedExpenseCreate` · `FixedExpenseList` · `FixedExpenseGet` · `FixedExpenseUpdate` · `FixedExpenseDelete` · `FixedExpenseMonthlyList` · `FixedExpenseMonthlyUpdate` · `FixedExpenseMonthlySync`
 
 ## 이 기능의 핵심 개념
 
@@ -137,7 +137,7 @@
 
 - **FR-1001**: 등록은 이름·수단·지출유형·금액·매달 결제일·적용 시작 연월·적용 종료 연월을 **전부 필수**로 받아야 한다
 - **FR-1002**: 적용 기간은 **연과 월을 각각 정수로** 보내야 한다(`startYear`·`startMonth`·`endYear`·`endMonth`). 문자열 `YYYY-MM` 으로 보내지 않는다
-- **FR-1003**: 수단 선택 목록은 **지출용(`EXPENSE`)이고 사용 중인 것만** 보여야 한다
+- **FR-1003**: 수단·지출유형 선택 목록은 관리 목록(`PaymentMethodList`·`ExpendGroupList`)이 아니라 **사용 중 목록 API**(`PaymentMethodListActive` 의 `/active/EXPENSE` · `ExpendGroupListActive`)로 채워야 한다. 관리 목록을 쓰면 삭제 표시된 것이 선택지에 뜬다
 - **FR-1004**: 결제일은 1~31 로 제한하고, 값 오류(`3401`)를 어느 칸이 틀렸는지와 함께 알려야 한다
 - **FR-1005**: 수단 용도가 맞지 않아 거절되면(`3401`) **"지출용 수단을 고르라"**로 안내해야 한다 — 수단이 없다는 뜻이 아니다
 - **FR-1006**: 목록은 페이징을 제공해야 하며 007 의 공통 환산을 써야 한다
@@ -154,7 +154,7 @@
 - **FR-1011**: 월별 내역 모달은 연·월을 골라 그 달 목록을 보여야 하며, 연·월이 바뀌면 다시 조회해야 한다
 - **FR-1012**: 모달 URL 은 `?m=monthly` 이며 **특정 고정지출 ID 를 붙이지 않는다** — 그 달 전체를 보는 화면이다
 - **FR-1013**: 직접 고친 행을 **「수정됨」으로 구분**해 보여야 한다. 구분이 없으면 반영 시 무엇이 보존되는지 알 수 없다
-- **FR-1014**: 한 건 수정은 금액·결제일·내용·수단만 바꿀 수 있어야 하며, 결제일은 **그 달 안**이어야 한다
+- **FR-1014**: 한 건 수정은 금액·결제일·내용·수단만 바꿀 수 있어야 하며, 결제일은 **그 달 안**이어야 한다. 수단 선택 목록은 등록과 같은 **사용 중 목록 API**(`PaymentMethodListActive` 의 `/active/EXPENSE`)로 채운다
 - **FR-1015**: 상단 합계는 **필터와 무관하게 그 달 전체 기준**이어야 한다
 - **FR-1016**: 그 달 대상이 없으면 "이 달에 해당하는 고정지출이 없습니다"를 보여야 한다
 - **FR-1017**: 아직 만들어지지 않은 달의 단건 수정 실패(`3405`)는 **먼저 그 달을 열라**는 안내로 이어져야 한다
@@ -204,7 +204,7 @@
 
 - **007 이 이미 서 있다.** 모달 셸·확인 다이얼로그·페이징 환산·API 클라이언트를 그대로 쓴다
 - **009 가 이미 서 있다.** 지출용 수단과 지출유형이 있어야 고정지출을 만들 수 있다
-- **백엔드 005 의 API 8건이 동작한다.** 백엔드 코드와 스키마는 바뀌지 않는다
+- **백엔드 005 의 API 9건이 동작한다.** 011 은 그중 고정지출 8건을 부르고 `LedgerMonthlyList` 는 010 이 부른다. 선택 목록 2건은 백엔드 003 의 사용 중 목록 API 다. 백엔드 코드와 스키마는 바뀌지 않는다
 - **화면기획 프로토타입을 그대로 옮긴다** — `fixed-expense-list.html`(모달 넷 포함)
 - **가계부의 고정지출 행은 010 이 읽기만 한다.** 만들고 고치는 곳은 이 스펙이다
 - **월별 내역의 생성은 서버가 한다.** 화면은 그 달을 열 뿐이고 만들라고 따로 요청하지 않는다
