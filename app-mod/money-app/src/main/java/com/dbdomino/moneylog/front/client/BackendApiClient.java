@@ -1,8 +1,13 @@
 package com.dbdomino.moneylog.front.client;
 
+import com.dbdomino.moneylog.common.error.ErrorCode;
+import com.dbdomino.moneylog.front.session.LoginSession;
+import com.dbdomino.moneylog.front.session.SessionExpiredException;
+import com.dbdomino.moneylog.front.session.TokenRefresher;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -17,14 +22,19 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * 화면 모듈이 백엔드로 나가는 <b>유일한 통로</b>.
  *
- * <p>008~012 는 이 클래스만 보고 호출하며 {@code resCode} 를 직접 보지 않는다. 성공이면
- * 값이 오고, 아니면 예외가 온다.
+ * <p>008~012 는 이 클래스만 보고 호출하며 응답 코드를 직접 보지 않는다. 성공이면 값이 오고,
+ * 아니면 예외가 온다.
  *
  * <h2>봉투를 푸는 자리가 하나다</h2>
  *
  * <p>백엔드는 성공·실패를 같은 봉투에 담아 답하고 <b>실패도 HTTP 200</b> 이다(헌장 원칙
  * III). 화면마다 이걸 풀면 어느 화면 하나가 코드 확인을 빠뜨렸을 때 실패가 성공으로 읽히고
  * 빈 화면이 정상처럼 뜬다. 그래서 푸는 자리를 이 클래스 하나로 묶는다.
+ *
+ * <h2>재발급도 여기서 일어난다</h2>
+ *
+ * <p>진입 판정이 아니라 호출 지점에 두는 이유는, 화면에 들어온 <b>뒤에</b> 만료된 토큰을
+ * 받아낼 자리가 필요하기 때문이다. 판정만 통과시키면 그다음 호출이 만료로 실패한다.
  *
  * <h2>PUT 이 없다</h2>
  *
@@ -39,10 +49,20 @@ public class BackendApiClient {
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
+    private final LoginSession loginSession;
 
-    public BackendApiClient(RestClient backendRestClient, ObjectMapper objectMapper) {
+    /**
+     * 재발급기를 지연으로 받는다. 재발급기는 이 클라이언트를 쓰므로 생성자에서 바로 받으면
+     * 서로를 기다리다 기동이 멈춘다.
+     */
+    private final ObjectProvider<TokenRefresher> tokenRefresherProvider;
+
+    public BackendApiClient(RestClient backendRestClient, ObjectMapper objectMapper,
+            LoginSession loginSession, ObjectProvider<TokenRefresher> tokenRefresherProvider) {
         this.restClient = backendRestClient;
         this.objectMapper = objectMapper;
+        this.loginSession = loginSession;
+        this.tokenRefresherProvider = tokenRefresherProvider;
     }
 
     // ── 호출 ────────────────────────────────────────────────────────────
@@ -55,23 +75,23 @@ public class BackendApiClient {
      */
     public <T> T get(String pathTemplate, Class<T> type, Object... pathVariables) {
         rejectQueryString(pathTemplate);
-        return exchangeEnvelope(HttpMethod.GET, pathTemplate, null, null, null, type, pathVariables);
+        return call(HttpMethod.GET, pathTemplate, null, null, null, type, true, pathVariables);
     }
 
     /**
      * Query 만 쓰는 조회. 경로에 자리표시자를 두지 않는다.
      *
-     * <p>목록 조회가 이쪽이다. {@code offset}·{@code limit} 은 {@link com.dbdomino.moneylog.front.web.Paging}
-     * 이 만들어 넘긴다 — 화면이 직접 계산하면 배수가 아닌 값이 새어 나간다.
+     * <p>목록 조회가 이쪽이다. 시작점과 개수는 {@link com.dbdomino.moneylog.front.web.Paging}
+     * 이 만들어 넘긴다 — 화면이 직접 계산하면 개수의 배수가 아닌 값이 새어 나간다.
      */
     public <T> T getByQuery(String path, Map<String, ?> query, Class<T> type) {
         rejectPathVariables(path);
         rejectQueryString(path);
-        return exchangeEnvelope(HttpMethod.GET, path, query, null, null, type);
+        return call(HttpMethod.GET, path, query, null, null, type, true);
     }
 
     /**
-     * Path 와 Query 를 함께 쓰는 <b>유일한 조회</b> — 월별 통계({@code StatisticsMonthlyGet})다.
+     * Path 와 Query 를 함께 쓰는 <b>유일한 조회</b> — 월별 통계다.
      *
      * <p>연·월은 Path 로, 저장본이냐 즉시 계산이냐를 가르는 값은 Query 로 받는다. 다른
      * 호출이 이 메서드를 쓰면 혼용 금지가 무너지므로 새 호출을 여기 얹지 않는다.
@@ -79,26 +99,38 @@ public class BackendApiClient {
     public <T> T getStatisticsMonthly(String pathTemplate, Map<String, ?> query, Class<T> type,
             Object... pathVariables) {
         rejectQueryString(pathTemplate);
-        return exchangeEnvelope(HttpMethod.GET, pathTemplate, query, null, null, type, pathVariables);
+        return call(HttpMethod.GET, pathTemplate, query, null, null, type, true, pathVariables);
     }
 
     /** 생성. Body 만 쓴다 — 경로에 자리표시자도 Query 도 두지 않는다. */
     public <T> T post(String path, Object body, Class<T> type) {
         rejectPathVariables(path);
         rejectQueryString(path);
-        return exchangeEnvelope(HttpMethod.POST, path, null, body, MediaType.APPLICATION_JSON, type);
+        return call(HttpMethod.POST, path, null, body, MediaType.APPLICATION_JSON, type, true);
+    }
+
+    /**
+     * 로그인 전에 부르는 생성. 인증 헤더를 붙이지 않고 재발급 흐름도 타지 않는다.
+     *
+     * <p>로그인·가입·아이디 찾기·비밀번호 찾기·비밀번호 재설정, 그리고 재발급 자체가 여기로
+     * 나간다. 이들에 만료된 토큰을 실어 보내면 <b>로그인조차 만료로 거절된다.</b>
+     */
+    public <T> T postWithoutAuth(String path, Object body, Class<T> type) {
+        rejectPathVariables(path);
+        rejectQueryString(path);
+        return call(HttpMethod.POST, path, null, body, MediaType.APPLICATION_JSON, type, false);
     }
 
     /**
      * 파일을 실어 보내는 생성. 아이콘 업로드(009)와 엑셀 일괄 등록(010)이 쓴다.
      *
-     * <p>multipart 는 POST 에만 둔다. 수정(PATCH)에 파일을 실을 일이 생기면 그때 백엔드
-     * 계약부터 정하고 여기 더한다.
+     * <p>multipart 는 POST 에만 둔다. 수정에 파일을 실을 일이 생기면 그때 백엔드 계약부터
+     * 정하고 여기 더한다.
      */
     public <T> T postMultipart(String path, MultiValueMap<String, ?> parts, Class<T> type) {
         rejectPathVariables(path);
         rejectQueryString(path);
-        return exchangeEnvelope(HttpMethod.POST, path, null, parts, MediaType.MULTIPART_FORM_DATA, type);
+        return call(HttpMethod.POST, path, null, parts, MediaType.MULTIPART_FORM_DATA, type, true);
     }
 
     /**
@@ -109,14 +141,14 @@ public class BackendApiClient {
      */
     public <T> T patch(String pathTemplate, Object body, Class<T> type, Object... pathVariables) {
         rejectQueryString(pathTemplate);
-        return exchangeEnvelope(HttpMethod.PATCH, pathTemplate, null, body, MediaType.APPLICATION_JSON,
-                type, pathVariables);
+        return call(HttpMethod.PATCH, pathTemplate, null, body, MediaType.APPLICATION_JSON, type,
+                true, pathVariables);
     }
 
     /** 삭제. Path 만 쓰고 Body 를 싣지 않는다. */
     public void delete(String pathTemplate, Object... pathVariables) {
         rejectQueryString(pathTemplate);
-        exchangeEnvelope(HttpMethod.DELETE, pathTemplate, null, null, null, null, pathVariables);
+        call(HttpMethod.DELETE, pathTemplate, null, null, null, null, true, pathVariables);
     }
 
     /**
@@ -133,7 +165,7 @@ public class BackendApiClient {
     public BinaryPayload getBinary(String pathTemplate, Object... pathVariables) {
         rejectQueryString(pathTemplate);
         long startNanos = System.nanoTime();
-        RawResponse raw = execute(HttpMethod.GET, pathTemplate, null, null, null, pathVariables);
+        RawResponse raw = execute(HttpMethod.GET, pathTemplate, null, null, null, true, pathVariables);
 
         if (isJson(raw.contentType())) {
             ApiEnvelope envelope = parseEnvelope(raw);
@@ -153,36 +185,76 @@ public class BackendApiClient {
         return new BinaryPayload(raw.body(), contentTypeValue(raw), filenameOf(raw.contentDisposition()));
     }
 
-    // ── 봉투 해석 ───────────────────────────────────────────────────────
+    // ── 봉투 해석과 재발급 ──────────────────────────────────────────────
 
-    private <T> T exchangeEnvelope(HttpMethod method, String pathTemplate, Map<String, ?> query,
-            Object body, MediaType contentType, Class<T> type, Object... pathVariables) {
-        long startNanos = System.nanoTime();
-        try {
-            RawResponse raw = execute(method, pathTemplate, query, body, contentType, pathVariables);
-            ApiEnvelope envelope = parseEnvelope(raw);
+    /**
+     * 한 번 보내고, 인증 만료면 재발급 뒤 <b>한 번만</b> 다시 보낸다.
+     *
+     * <p>재시도 여부를 호출 지역 변수로 잠근다. 필드나 세션에 두면 같은 화면이 API 를 여러 번
+     * 부를 때 서로의 상태를 덮어써, 어떤 호출은 재발급 기회를 잃고 어떤 호출은 두 번 받는다.
+     */
+    private <T> T call(HttpMethod method, String pathTemplate, Map<String, ?> query, Object body,
+            MediaType contentType, Class<T> type, boolean authenticated, Object... pathVariables) {
 
-            if (!envelope.isSuccess()) {
-                logFailure(method, pathTemplate, envelope, startNanos);
-                throw new BackendApiException(envelope.resCode(), envelope.message());
+        boolean refreshed = false;
+        while (true) {
+            long startNanos = System.nanoTime();
+            ApiEnvelope envelope;
+            try {
+                RawResponse raw = execute(method, pathTemplate, query, body, contentType,
+                        authenticated, pathVariables);
+                envelope = parseEnvelope(raw);
+            } catch (BackendUnavailableException e) {
+                log.warn("백엔드 미도달 {} {} {}ms: {}", method, pathTemplate,
+                        elapsedMillis(startNanos), e.getMessage());
+                throw e;
             }
 
-            log.info("백엔드 호출 {} {} resCode={} {}ms", method, pathTemplate, envelope.resCode(),
-                    elapsedMillis(startNanos));
-            return convert(envelope.data(), type);
+            if (envelope.isSuccess()) {
+                log.info("백엔드 호출 {} {} resCode={} {}ms", method, pathTemplate,
+                        envelope.resCode(), elapsedMillis(startNanos));
+                return convert(envelope.data(), type);
+            }
 
-        } catch (BackendUnavailableException e) {
-            log.warn("백엔드 미도달 {} {} {}ms: {}", method, pathTemplate, elapsedMillis(startNanos),
-                    e.getMessage());
-            throw e;
+            logFailure(method, pathTemplate, envelope, startNanos);
+
+            if (authenticated && envelope.resCode() == ErrorCode.SESSION_INVALID.code()) {
+                // 다른 곳에서 로그인해 이 세션이 밀려났다. 재발급을 시도하지 않는다 —
+                // 백엔드가 세션을 이미 버렸으므로 새 토큰을 받을 근거가 없다.
+                loginSession.invalidate();
+                throw new SessionExpiredException(envelope.resCode(), envelope.message());
+            }
+
+            if (authenticated && envelope.resCode() == ErrorCode.UNAUTHORIZED.code() && !refreshed) {
+                // 재발급은 한 번뿐이다. 열어 두면 백엔드가 계속 만료로 답할 때 무한 왕복이 된다.
+                tokenRefresher().refresh();
+                refreshed = true;
+                continue;
+            }
+
+            if (authenticated && envelope.resCode() == ErrorCode.UNAUTHORIZED.code()) {
+                // 재발급 직후인데 또 만료다. 더 시도하지 않고 로그인 화면으로 보낸다.
+                loginSession.invalidate();
+                throw new SessionExpiredException(envelope.resCode(), envelope.message());
+            }
+
+            throw new BackendApiException(envelope.resCode(), envelope.message());
         }
+    }
+
+    private TokenRefresher tokenRefresher() {
+        TokenRefresher refresher = tokenRefresherProvider.getIfAvailable();
+        if (refresher == null) {
+            throw new IllegalStateException("토큰 재발급기를 찾지 못했다.");
+        }
+        return refresher;
     }
 
     /**
      * 응답 본문을 봉투로 읽는다. 봉투가 아니면 닿지 못한 것으로 본다.
      *
-     * <p>{@code resCode} 가 없는 JSON 도 봉투가 아니다. 그대로 두면 코드가 {@code 0} 인
-     * 실패로 읽혀 화면에 뜻 모를 숫자가 나간다.
+     * <p>응답 코드가 없는 JSON 도 봉투가 아니다. 그대로 두면 코드가 {@code 0} 인 실패로 읽혀
+     * 화면에 뜻 모를 숫자가 나간다.
      */
     private ApiEnvelope parseEnvelope(RawResponse raw) {
         if (raw.body() == null || raw.body().length == 0) {
@@ -204,7 +276,7 @@ public class BackendApiClient {
      * 봉투 안의 값을 호출부가 요청한 타입으로 바꾼다.
      *
      * <p>변환에 실패하면 화면은 어차피 데이터를 얻지 못한 것이므로 닿지 못한 것과 같이
-     * 다룬다. 코드를 지어내지 않는다(FR-607).
+     * 다룬다. 코드를 지어내지 않는다.
      */
     private <T> T convert(JsonNode data, Class<T> type) {
         if (type == null || type == Void.class) {
@@ -224,7 +296,7 @@ public class BackendApiClient {
     // ── 전송 ────────────────────────────────────────────────────────────
 
     private RawResponse execute(HttpMethod method, String pathTemplate, Map<String, ?> query,
-            Object body, MediaType contentType, Object... pathVariables) {
+            Object body, MediaType contentType, boolean authenticated, Object... pathVariables) {
         try {
             RestClient.RequestBodySpec spec = restClient.method(method).uri(uriBuilder -> {
                 uriBuilder.path(pathTemplate);
@@ -237,6 +309,13 @@ public class BackendApiClient {
                 }
                 return uriBuilder.build(pathVariables);
             });
+
+            if (authenticated) {
+                String accessToken = loginSession.accessToken();
+                if (accessToken != null && !accessToken.isBlank()) {
+                    spec = spec.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+                }
+            }
 
             RestClient.RequestHeadersSpec<?> ready = spec;
             if (body != null) {
@@ -265,7 +344,8 @@ public class BackendApiClient {
      * 실패 한 건을 남긴다.
      *
      * <p><b>남기는 것은 경로 템플릿이다.</b> 채워진 주소를 남기면 식별자와 Query 값이 로그로
-     * 흘러 들어간다. 인증 헤더·토큰 필드·비밀번호는 애초에 이 클래스가 로그로 넘기지 않는다.
+     * 흘러 들어간다. 인증 헤더 값·요청 본문·응답 본문은 애초에 이 클래스가 로그로 넘기지
+     * 않는다 — 토큰과 비밀번호가 지나는 자리가 그 셋이다.
      */
     private void logFailure(HttpMethod method, String pathTemplate, ApiEnvelope envelope, long startNanos) {
         log.warn("백엔드 호출 실패 {} {} resCode={} {}ms message={}", method, pathTemplate,

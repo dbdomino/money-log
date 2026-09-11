@@ -2,9 +2,11 @@ package com.dbdomino.moneylog.front.web;
 
 import com.dbdomino.moneylog.front.client.BackendApiException;
 import com.dbdomino.moneylog.front.client.BackendUnavailableException;
+import com.dbdomino.moneylog.front.session.SessionExpiredException;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * 백엔드 호출 실패를 화면으로 옮기는 <b>한 자리</b>.
@@ -47,5 +49,25 @@ public class FrontExceptionHandler {
     public String handleBackendUnavailable(BackendUnavailableException exception, Model model) {
         model.addAttribute("message", UNAVAILABLE_MESSAGE);
         return "error";
+    }
+
+    /**
+     * 로그인 상태가 끝났다. 오류 화면이 아니라 <b>로그인 화면</b>으로 보낸다.
+     *
+     * <p>세션은 이 예외가 올라오기 전에 이미 버려졌다. 사용자가 다음에 할 일이 로그인 하나뿐인
+     * 상황에서 오류 화면을 한 번 거치게 하면 클릭만 늘어난다.
+     *
+     * <p>안내 문구는 백엔드가 준 것을 그대로 실어 보낸다. 다른 곳에서 로그인해 밀려난 경우와
+     * 재발급 토큰이 만료된 경우와 계정이 정지된 경우는 다음에 할 일이 달라서, 백엔드가 이미
+     * 셋으로 나눠 둔 문구를 화면이 하나로 뭉개지 않는다.
+     */
+    @ExceptionHandler(SessionExpiredException.class)
+    public String handleSessionExpired(SessionExpiredException exception,
+            RedirectAttributes redirectAttributes) {
+        String message = exception.getMessage();
+        if (message != null && !message.isBlank()) {
+            redirectAttributes.addFlashAttribute("message", message);
+        }
+        return "redirect:" + AuthInterceptor.LOGIN_URL;
     }
 }

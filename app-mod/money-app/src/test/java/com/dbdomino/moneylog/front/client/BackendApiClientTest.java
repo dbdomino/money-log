@@ -9,12 +9,14 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withException;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
+import com.dbdomino.moneylog.front.session.LoginSession;
 import com.dbdomino.moneylog.front.web.Paging;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.ConnectException;
 import java.util.Arrays;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,8 +24,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
 
 /**
  * 봉투를 푸는 자리가 이 클래스 하나라는 것을 고정한다.
@@ -33,7 +33,7 @@ import tools.jackson.databind.json.JsonMapper;
  */
 class BackendApiClientTest {
 
-    private static final String BASE_URL = "http://backend.test/api/v1";
+    private static final String BASE_URL = BackendClientFixture.BASE_URL;
 
     private MockRestServiceServer server;
     private BackendApiClient client;
@@ -44,10 +44,16 @@ class BackendApiClientTest {
 
     @BeforeEach
     void setUp() {
-        RestClient.Builder builder = RestClient.builder().baseUrl(BASE_URL);
-        server = MockRestServiceServer.bindTo(builder).build();
-        ObjectMapper objectMapper = JsonMapper.builder().build();
-        client = new BackendApiClient(builder.build(), objectMapper);
+        BackendClientFixture.bindRequest();
+        RestClient.Builder builder = BackendClientFixture.builder();
+        server = BackendClientFixture.bindServer(builder);
+        // 로그인하지 않은 상태다. 인증 헤더가 붙지 않고 재발급도 일어나지 않는다.
+        client = BackendClientFixture.client(builder, new LoginSession(), () -> null);
+    }
+
+    @AfterEach
+    void tearDown() {
+        BackendClientFixture.unbindRequest();
     }
 
     @Test
