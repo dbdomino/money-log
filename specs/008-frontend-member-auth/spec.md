@@ -24,7 +24,7 @@
 
 **1.6 권한 없음은 007 이 만든다** — 권한 차단이 착지할 화면이라 인터셉터와 함께 서야 한다.
 
-부르는 API 13건: `MemberSignup` · `MemberLogin` · `MemberTokenRevoke` · `MemberFindId` · `MemberFindPassword` · `MemberResetPassword` · `MemberGetMe` · `MemberUpdateMe` · `AdminMemberList` · `AdminMemberCreate` · `AdminMemberGet` · `AdminMemberUpdate` · `AdminMemberDeactivate`
+부르는 API 12건: `MemberSignup` · `MemberLogin` · `MemberFindId` · `MemberFindPassword` · `MemberResetPassword` · `MemberGetMe` · `MemberUpdateMe` · `AdminMemberList` · `AdminMemberCreate` · `AdminMemberGet` · `AdminMemberUpdate` · `AdminMemberDeactivate`
 
 ## 이 기능의 핵심 개념
 
@@ -142,7 +142,7 @@
 - **FR-705**: 로그인이 성공하면 월별 가계부로 보내야 한다
 - **FR-706**: 로그인 실패(`1003`)는 **아이디와 비밀번호 중 무엇이 틀렸는지 드러내지 않아야** 한다. 서버가 하나의 코드로 묶은 이유를 화면이 풀지 않는다
 - **FR-707**: 정지된 계정(`1004`)은 비활성 상태임을 알려야 한다
-- **FR-708**: 로그아웃은 상단에서 부를 수 있어야 하며, 부르면 로그인 화면으로 보내야 한다
+- **FR-708**: 로그아웃은 상단에서 부를 수 있어야 하며, 부르면 로그인 화면으로 보내야 한다. 백엔드 `MemberTokenRevoke` 를 008 이 직접 부르지 않고 **007 의 `POST /auth/logout` 에 보낸다** — 토큰 비활성화와 세션 무효화의 순서(007 FR-621)를 한 곳에서 지켜야 하기 때문이다
 - **FR-709**: 이미 로그인한 사용자가 로그인·가입 화면에 들어오면 월별 가계부로 보내야 한다
 
 **찾기·재설정 (US2)**
@@ -206,7 +206,7 @@ DB 저장 단위가 없다. 화면이 다루는 것은 백엔드가 돌려주는
 ## Assumptions
 
 - **007 이 이미 서 있다.** 세션 인증·인터셉터·레이아웃·모달 셸·확인 다이얼로그·API 클라이언트를 그대로 쓰며 이 스펙은 화면만 만든다
-- **백엔드 002 의 API 16건이 동작한다.** 008 은 그중 13건을 부르고, `MemberTokenValidate`·`MemberTokenRefresh` 2건은 007 의 토큰 계층이 부르며, `HealthCheck` 는 화면이 부르지 않는다. 백엔드 코드와 스키마는 바뀌지 않는다
+- **백엔드 002 의 API 16건이 동작한다.** 008 은 그중 12건을 부르고, `MemberTokenValidate`·`MemberTokenRefresh`·`MemberTokenRevoke` 3건은 007 의 세션 계층이 부르며(로그아웃 버튼은 008 이 만들고 호출은 007 이 한다), `HealthCheck` 는 화면이 부르지 않는다. 백엔드 코드와 스키마는 바뀌지 않는다
 - **화면기획 프로토타입을 그대로 옮긴다** — `auth-*.html` 다섯, `member-profile.html`, `member-admin-list.html`. 폼 필드 이름은 이미 백엔드 계약에 맞춰져 있다
 - **1.6 권한 없음은 007 이 만들어 둔 것을 쓴다**
 - **소셜 로그인은 범위 밖이다**(명세의 "이후 버전")
