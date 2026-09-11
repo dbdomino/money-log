@@ -108,7 +108,10 @@ Spring Boot 기반 **멀티 모듈** 가계부 웹 애플리케이션이다.
 | Password | `1q2w3e4r` |
 
 설정: `data-mod/src/main/resources/application-postgresql.yml`  
-활성 프로필: `money-app`의 `application.yml` → `spring.profiles.active=postgresql`
+활성 프로필: `money-backend-app`의 `application.yml` → `spring.profiles.active=postgresql`
+
+**`money-app`은 DB 프로필을 타지 않는다.** 데이터 접근 의존을 두지 않아 DB가 꺼져 있어도 기동한다
+(헌장 원칙 I). 백엔드 주소는 `moneylog.backend.base-url` 로 설정한다.
 
 초기 생성 스크립트: [sql/](./sql) — `postgres` 계정으로 순서대로 실행
 

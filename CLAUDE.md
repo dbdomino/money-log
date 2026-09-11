@@ -103,7 +103,7 @@ Spring Boot 멀티모듈 가계부. 프론트(Thymeleaf)와 백엔드 API가 분
 
 이 저장소에서 실제로 시간을 잡아먹었던 것들이다.
 
-**`./gradlew test`(전체)는 실패한다.** `money-app`의 레거시 테스트 3건이 깨져 있다 — `app-mod/money-app/src/test/resources/application.yml`이 메인 설정을 덮어쓰는데 `profiles.active`도 없고 H2 datasource 줄이 전부 주석 처리돼 있어 datasource가 없다(`Failed to determine a suitable driver class`). `init` 커밋부터 그런 상태다. 모듈별로 나눠 돌린다.
+**`./gradlew test`(전체)는 PostgreSQL이 떠 있어야 한다.** `data-mod`의 스키마 검증과 백엔드 통합 시험이 실제 DB를 쓴다. DB가 없으면 그 두 모듈이 실패한다 — `money-app`은 DB를 모르므로 영향이 없다. 007 이전에는 `money-app`의 레거시 테스트 3건이 `init` 커밋부터 깨져 있어 전체 실행 자체가 불가능했는데, 그 시험들은 007에서 정리됐다.
 
 **스키마 반영은 앱 기동 한 번이다.** 스키마·테이블·컬럼·FK·인덱스·CHECK·부분 유니크·시퀀스·테이블 주석을 전부 Hibernate가 만든다. 실행할 보조 DDL 스크립트가 없다(`sql/04_constraints.sql`은 2026-09-02에 삭제).
 

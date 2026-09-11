@@ -193,19 +193,38 @@ grep -rn "@Entity\|JpaRepository\|@Mapper" app-mod/money-app/src/main/java
 
 ## 4. 완료 판정
 
-- [ ] **PostgreSQL 을 띄운 채** `./gradlew test` (전 모듈)가 **한 번에** 통과한다 — SC-603
-- [ ] DB 를 내린 채 `money-app` 이 기동한다 — SC-601
-- [ ] `money-app` 소스·`build.gradle` 에 `data-mod`·`core-mod`·JPA·MyBatis·PostgreSQL 참조가 0건 — SC-602
-- [ ] 화이트리스트 밖 URL 패턴을 미로그인으로 열면 **예외 없이** `/auth/login` — SC-604 (007 시점 기준. 화면이 다 선 뒤의 전수 확인은 012)
-- [ ] `/admin/**` 패턴을 `role=3` 으로 열면 **예외 없이** `/error/forbidden` — SC-605 (전수 확인은 012)
-- [ ] `1001` 후 재로그인 없이 원래 요청이 성공한다 — SC-606
-- [ ] 어떤 응답에도 JWT 원문이 없다 — SC-607
-- [ ] 백엔드가 꺼진 상태가 화면에 **글로** 보인다 — SC-608
-- [ ] 백엔드 실패의 `resCode` 가 바뀌지 않고 화면까지 온다 — SC-609
-- [ ] `?m=` 딥링크가 열리고, 모르는 값이면 부모만 뜬다 — SC-610
-- [ ] `logs/` 에 파일 로그가 쌓인다 (원칙 IV — 지금은 한 줄도 없다)
-- [ ] `git diff sql/schema-moneylogdb.sql` 이 **비어 있다** (원칙 VI — 이 기능은 DB 를 안 건드린다)
-- [ ] 선행 개정 4건이 반영돼 있고 `1.6-ErrorForbidden.md` 에 `(작성 예정)` 이 0건 (원칙 V)
+확인 결과는 2026-09-11 기준이다.
+
+- [x] **PostgreSQL 을 띄운 채** `./gradlew test` (전 모듈)가 **한 번에** 통과한다 — SC-603
+  → 834건 통과(`data-mod` 80 · `money-app` 62 · `money-backend-app` 692), 실패 0
+- [x] DB 를 내린 채 `money-app` 이 기동한다 — SC-601
+  → 1.4초에 기동하고 datasource 관련 로그가 0줄. 시험도 `DataSource` 빈이 0개임을 건다
+- [x] `money-app` 소스·`build.gradle` 에 `data-mod`·`core-mod`·JPA·MyBatis·PostgreSQL 참조가 0건 — SC-602
+  → 자바 import 0건 · 의존 선언 0건 · **runtimeClasspath 에도 0건**
+- [x] 화이트리스트 밖 URL 패턴을 미로그인으로 열면 **예외 없이** `/auth/login` — SC-604 (007 시점 기준. 화면이 다 선 뒤의 전수 확인은 012)
+- [x] `/admin/**` 패턴을 `role=3` 으로 열면 **예외 없이** `/error/forbidden` — SC-605 (전수 확인은 012)
+- [x] `1001` 후 재로그인 없이 원래 요청이 성공한다 — SC-606
+  → 재발급 호출이 **1회뿐**이라는 것도 가짜 서버의 기대 건수로 함께 고정했다
+- [x] 어떤 응답에도 JWT 원문이 없다 — SC-607
+- [x] 백엔드가 꺼진 상태가 화면에 **글로** 보인다 — SC-608
+  → **시험으로 확인했다.** 007 에는 백엔드를 부르는 화면이 하나도 없어(1.6 은 호출 없음) 뜬 앱에서 눈으로 볼 대상이 없다. 실제 화면에서의 확인은 008 의 첫 화면이 서는 시점이다
+- [x] 백엔드 실패의 `resCode` 가 바뀌지 않고 화면까지 온다 — SC-609
+- [x] `?m=` 딥링크가 열리고, 모르는 값이면 부모만 뜬다 — SC-610
+  → 1.6 에는 모달이 없어 **시험 전용 화면**(`src/test/resources/templates/shelltest/`)으로 확인한다
+- [x] `logs/` 에 파일 로그가 쌓인다 (원칙 IV — 지금은 한 줄도 없다)
+  → `app-mod/money-app/logs/money-app.log` 가 생긴다. 기동 디렉터리 기준 경로다
+- [x] `git diff sql/schema-moneylogdb.sql` 이 **비어 있다** (원칙 VI — 이 기능은 DB 를 안 건드린다)
+- [x] 선행 개정 4건이 반영돼 있고 `1.6-ErrorForbidden.md` 에 `(작성 예정)` 이 0건 (원칙 V)
+
+### 개발 기동에서만 보이는 것
+
+`bootRun` 으로 띄우면 404 같은 오류의 **JSON 응답에 예외 스택이 실린다.** `application.yml` 은
+`server.error.include-stacktrace: never` 로 두었지만 `spring-boot-devtools` 가 개발 편의를 위해
+그 값을 덮는다. devtools 는 `developmentOnly` 의존이라 배포 산출물에는 들어가지 않으므로 운영
+응답에는 스택이 실리지 않는다.
+
+브라우저처럼 `Accept: text/html` 로 요청하면 `templates/error.html` 이 그려진다. 스택이 실리는
+것은 HTML 을 받지 않는 클라이언트의 JSON 응답 쪽이다.
 
 ## 5. 다음
 
