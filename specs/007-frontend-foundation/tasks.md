@@ -172,14 +172,14 @@ Spring Boot 멀티모듈이다. 저장소 루트 기준 경로를 쓴다.
 
 ### Tests for User Story 4
 
-- [ ] T054 [P] [US4] `.../front/web/UrlMapTest.java` — url-map.md §5 의 여섯 갈래: ① 세션 있음 + `/` → `/ledger` ② 세션 없음 + `/` → `/auth/login` ③ `/mem/login` → `/auth/login` ④ `/payments/1/edit` → `/payments?m=edit&id=1` ⑤ `/expend-groups/icons/1_1.png` 가 상세 redirect 로 **새지 않는다** ⑥ 미로그인 + `/payments/new` → `/auth/login`(모달 URL 이 아니다 — redirect 도 인터셉터를 탄다)
+- [X] T054 [P] [US4] `.../front/web/UrlMapTest.java` — url-map.md §5 의 여섯 갈래: ① 세션 있음 + `/` → `/ledger` ② 세션 없음 + `/` → `/auth/login` ③ `/mem/login` → `/auth/login` ④ `/payments/1/edit` → `/payments?m=edit&id=1` ⑤ `/expend-groups/icons/1_1.png` 가 상세 redirect 로 **새지 않는다** ⑥ 미로그인 + `/payments/new` → `/auth/login`(모달 URL 이 아니다 — redirect 도 인터셉터를 탄다)
 
 ### Implementation for User Story 4
 
-- [ ] T055 [US4] `.../front/web/RootController.java` — `GET /` 가 세션에 토큰이 있으면 `302 → /ledger`, 없으면 `302 → /auth/login`(FR-633). **토큰 유효성까지 확인하지 않는다** — 세션 존재만 보고 보내고 실제 검증은 착지한 화면의 인터셉터가 한다. `301` 이 아니라 `302` 인 이유는 목적지가 로그인 상태에 따라 바뀌기 때문이다(`301` 이면 브라우저가 캐시해 로그아웃 후에도 `/ledger` 로 간다)
-- [ ] T056 [US4] `.../front/web/LegacyUrlController.java` 에 **실재했던 레거시 URL** 을 넣는다(url-map.md §2) — `/mem/login`(GET) → `301 /auth/login`, `/mem/ind` → `301 /`. `/mem/login`(POST)와 `/api/ammounts/**` 는 **redirect 하지 않고 없앤다**: POST 는 본문 형식이 백엔드 계약과 다르고, `/api/**` 는 화면 URL 이 아니다. **프론트가 REST 를 노출하면 브라우저가 화면 모듈을 API 처럼 부르는 길이 생긴다**
-- [ ] T057 [US4] 같은 클래스에 **구 화면 URL 16건**을 넣는다(FR-634, url-map.md §3 표) — 수단 3 · 지출유형 3 · 지출 2 · 소득 2 · 고정지출 4 · 회원 2. 전부 `301` 로 부모 + `?m=`(+ `id`) 로 보낸다. `id` 가 없으면 부모 페이지로만 보낸다. 목록에 없는 주소는 redirect 하지 않고 Spring 기본 404 다
-- [ ] T058 [US4] **매핑 순서를 확인한다** — `/expend-groups/icons/{filename}`(T029 의 프록시)이 `/expend-groups/{id}`(T057 의 상세 redirect)보다 **먼저** 매칭되어야 한다. 순서를 잘못 두면 아이콘 요청이 상세 모달 redirect 로 새어 나가고, 증상은 "아이콘이 하나도 안 보인다"라 원인이 URL 매핑이라는 것을 짐작하기 어렵다
+- [X] T055 [US4] `.../front/web/RootController.java` — `GET /` 가 세션에 토큰이 있으면 `302 → /ledger`, 없으면 `302 → /auth/login`(FR-633). **토큰 유효성까지 확인하지 않는다** — 세션 존재만 보고 보내고 실제 검증은 착지한 화면의 인터셉터가 한다. `301` 이 아니라 `302` 인 이유는 목적지가 로그인 상태에 따라 바뀌기 때문이다(`301` 이면 브라우저가 캐시해 로그아웃 후에도 `/ledger` 로 간다)
+- [X] T056 [US4] `.../front/web/LegacyUrlController.java` 에 **실재했던 레거시 URL** 을 넣는다(url-map.md §2) — `/mem/login`(GET) → `301 /auth/login`, `/mem/ind` → `301 /`. `/mem/login`(POST)와 `/api/ammounts/**` 는 **redirect 하지 않고 없앤다**: POST 는 본문 형식이 백엔드 계약과 다르고, `/api/**` 는 화면 URL 이 아니다. **프론트가 REST 를 노출하면 브라우저가 화면 모듈을 API 처럼 부르는 길이 생긴다**
+- [X] T057 [US4] 같은 클래스에 **구 화면 URL 16건**을 넣는다(FR-634, url-map.md §3 표) — 수단 3 · 지출유형 3 · 지출 2 · 소득 2 · 고정지출 4 · 회원 2. 전부 `301` 로 부모 + `?m=`(+ `id`) 로 보낸다. `id` 가 없으면 부모 페이지로만 보낸다. 목록에 없는 주소는 redirect 하지 않고 Spring 기본 404 다
+- [X] T058 [US4] **매핑 순서를 확인한다** — `/expend-groups/icons/{filename}`(T029 의 프록시)이 `/expend-groups/{id}`(T057 의 상세 redirect)보다 **먼저** 매칭되어야 한다. 순서를 잘못 두면 아이콘 요청이 상세 모달 redirect 로 새어 나가고, 증상은 "아이콘이 하나도 안 보인다"라 원인이 URL 매핑이라는 것을 짐작하기 어렵다
 
 **Checkpoint**: 북마크·구 링크로 들어온 사용자가 지금의 화면 주소로 착지한다
 
