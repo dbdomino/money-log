@@ -69,21 +69,19 @@ project(':app-mod:money-app') {
 	apply plugin: 'org.springframework.boot'
 
 	dependencies {
+		// 헌장 원칙 I: 화면 모듈이 기대는 것은 common-mod(에러코드 Enum) 하나뿐이다.
+		// core-mod·data-mod·JPA·MyBatis·PostgreSQL 을 두지 않으므로 DB 로 가는 우회로를
+		// 남기려야 남길 수 없다. 데이터는 전부 백엔드 API 호출로 얻는다.
 		implementation project(':common-mod')
-		implementation project(':core-mod')
-		implementation project(':data-mod')
 
 		developmentOnly 'org.springframework.boot:spring-boot-devtools'
 		testImplementation 'org.springframework.boot:spring-boot-starter-test'
+		// Boot 4 에서 starter-test 가 @AutoConfigureMockMvc 를 더는 끌어오지 않는다
+		testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 
-		implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 		implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 		implementation 'org.springframework.boot:spring-boot-starter-web'
-		implementation 'org.springframework.boot:spring-boot-starter-aspectj'
 		implementation 'org.springframework.boot:spring-boot-starter-validation'
-
-		implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.0'
-		runtimeOnly 'org.postgresql:postgresql'
 	}
 
 	clean {
