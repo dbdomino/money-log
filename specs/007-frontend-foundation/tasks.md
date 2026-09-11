@@ -45,11 +45,11 @@ Spring Boot 멀티모듈이다. 저장소 루트 기준 경로를 쓴다.
 
 **Purpose**: 착수 전 문서 확정. **T001~T004 는 코드보다 반드시 먼저** 한다(헌장 원칙 V)
 
-- [ ] T001 [P] `프로젝트설계/기능명세상세-프론트엔드/phase1-회원/1.6-ErrorForbidden.md` 메타의 **레이아웃을 `main` 에서 `auth` 로** 고친다 — `화면기획/01-화면구성.md` 의 표와 `화면기획/proto/error-forbidden.html`(`class="layout-auth"`) 이 둘 다 auth 다. 1.6 은 **미로그인도 들어오는 화면**이라 로그인 후 사이드바를 붙일 수 없다. 그대로 두면 구현자가 main 레이아웃을 붙여 **사이드바가 빈 채로 뜨는 화면**을 만든다
-- [ ] T002 같은 문서의 「화면 구성」·「동작」·「검증·안내」 세 표에서 **`(작성 예정)` 을 없앤다** — 007 범위의 화면이 1.6 하나다. 영역(제목·안내 문구·버튼 둘), 동작(「가계부로」→`/ledger`, 「로그인」→`/auth/login`), 검증(호출 API 없음·미로그인 접근 가능)을 적는다. `grep -n "작성 예정"` 이 **0건**이 되어야 한다(quickstart §0)
-- [ ] T003 [P] `프로젝트설계/기능명세상세-프론트엔드/_공통.md` § 표시방식의 구 URL redirect 문장을 [contracts/url-map.md](./contracts/url-map.md) 기준으로 고친다 — 현재 예시가 **실재한 적 없는 주소**(`/payments/new`·`/ledger/expenses/new`)뿐이라 FR-634 의 대상이 무엇인지 문서만 보고 알 수 없다. 실재 레거시(`/mem/login`·`/mem/ind`·`/api/ammounts/**`)의 처리를 함께 적는다
-- [ ] T004 [P] 같은 문서 § 인증·토큰 의 「세션 만료」 행에 **`server.servlet.session.timeout` 값(30분)** 을 적는다 — 명세가 값을 비워 둔 탓에 현재 설정 **60초**(단위 없는 `60`)가 "의도된 값"으로 읽혔다. Access 토큰이 1일인데 화면 세션이 1분이면 FR-623 이 "1분마다 재로그인"으로 관측되고 재발급 흐름(FR-615)은 실제로 일어나지 않는다
-- [ ] T005 착수 전 상태를 기록한다(quickstart §1) — `sed -n '/money-app/,/^}/p' build.gradle` 의 의존 6건, `grep -rn "data-mod\|jakarta.persistence\|mybatis\|@Entity" app-mod/money-app/src/main/java | wc -l` 의 건수, `ls app-mod/money-app/src/main/resources/logback*.xml`. 이 값들이 완료 판정(SC-602)의 "전" 값이다
+- [X] T001 [P] `프로젝트설계/기능명세상세-프론트엔드/phase1-회원/1.6-ErrorForbidden.md` 메타의 **레이아웃을 `main` 에서 `auth` 로** 고친다 — `화면기획/01-화면구성.md` 의 표와 `화면기획/proto/error-forbidden.html`(`class="layout-auth"`) 이 둘 다 auth 다. 1.6 은 **미로그인도 들어오는 화면**이라 로그인 후 사이드바를 붙일 수 없다. 그대로 두면 구현자가 main 레이아웃을 붙여 **사이드바가 빈 채로 뜨는 화면**을 만든다
+- [X] T002 같은 문서의 「화면 구성」·「동작」·「검증·안내」 세 표에서 **`(작성 예정)` 을 없앤다** — 007 범위의 화면이 1.6 하나다. 영역(제목·안내 문구·버튼 둘), 동작(「가계부로」→`/ledger`, 「로그인」→`/auth/login`), 검증(호출 API 없음·미로그인 접근 가능)을 적는다. `grep -n "작성 예정"` 이 **0건**이 되어야 한다(quickstart §0)
+- [X] T003 [P] `프로젝트설계/기능명세상세-프론트엔드/_공통.md` § 표시방식의 구 URL redirect 문장을 [contracts/url-map.md](./contracts/url-map.md) 기준으로 고친다 — 현재 예시가 **실재한 적 없는 주소**(`/payments/new`·`/ledger/expenses/new`)뿐이라 FR-634 의 대상이 무엇인지 문서만 보고 알 수 없다. 실재 레거시(`/mem/login`·`/mem/ind`·`/api/ammounts/**`)의 처리를 함께 적는다
+- [X] T004 [P] 같은 문서 § 인증·토큰 의 「세션 만료」 행에 **`server.servlet.session.timeout` 값(30분)** 을 적는다 — 명세가 값을 비워 둔 탓에 현재 설정 **60초**(단위 없는 `60`)가 "의도된 값"으로 읽혔다. Access 토큰이 1일인데 화면 세션이 1분이면 FR-623 이 "1분마다 재로그인"으로 관측되고 재발급 흐름(FR-615)은 실제로 일어나지 않는다
+- [X] T005 착수 전 상태를 기록한다(quickstart §1) — `sed -n '/money-app/,/^}/p' build.gradle` 의 의존 6건, `grep -rn "data-mod\|jakarta.persistence\|mybatis\|@Entity" app-mod/money-app/src/main/java | wc -l` 의 건수, `ls app-mod/money-app/src/main/resources/logback*.xml`. 이 값들이 완료 판정(SC-602)의 "전" 값이다
 
 **Checkpoint**: 명세가 서고, 걷어낼 대상의 규모가 숫자로 확인된다
 
