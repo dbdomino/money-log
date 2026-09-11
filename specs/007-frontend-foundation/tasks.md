@@ -146,19 +146,19 @@ Spring Boot 멀티모듈이다. 저장소 루트 기준 경로를 쓴다.
 
 ### Tests for User Story 3
 
-- [ ] T044 [P] [US3] `.../front/web/ScreenShellTest.java` — 다섯 갈래: ① main 레이아웃 화면에 사이드바가 있고 `activeMenu` 가 활성(FR-625) ② `role=3` 응답 HTML 에 `/admin/members` 문자열이 **없다**(FR-626) ③ `?m=` 이 아는 값이면 모델에 `openModal` 이 있다(SC-610) ④ `?m=nonsense` 면 `openModal` 이 **없고** HTTP 200 으로 부모가 뜬다(FR-630) ⑤ `/error/forbidden` 이 **미로그인으로 200**(FR-632)
-- [ ] T045 [P] [US3] T044 가 쓸 **시험 전용 화면**을 `src/test/` 에 둔다 — 1.6 에는 모달이 없어 ③·④를 걸 대상이 없다. 모달 셸과 `data-modal-map` 을 붙인 최소 화면을 시험 소스에 두고 그것으로 확인한다. **`src/main` 에 두지 않는다**(운영 화면이 아니다)
+- [X] T044 [P] [US3] `.../front/web/ScreenShellTest.java` — 다섯 갈래: ① main 레이아웃 화면에 사이드바가 있고 `activeMenu` 가 활성(FR-625) ② `role=3` 응답 HTML 에 `/admin/members` 문자열이 **없다**(FR-626) ③ `?m=` 이 아는 값이면 모델에 `openModal` 이 있다(SC-610) ④ `?m=nonsense` 면 `openModal` 이 **없고** HTTP 200 으로 부모가 뜬다(FR-630) ⑤ `/error/forbidden` 이 **미로그인으로 200**(FR-632)
+- [X] T045 [P] [US3] T044 가 쓸 **시험 전용 화면**을 `src/test/` 에 둔다 — 1.6 에는 모달이 없어 ③·④를 걸 대상이 없다. 모달 셸과 `data-modal-map` 을 붙인 최소 화면을 시험 소스에 두고 그것으로 확인한다. **`src/main` 에 두지 않는다**(운영 화면이 아니다)
 
 ### Implementation for User Story 3
 
-- [ ] T046 [P] [US3] 화면기획 정적 자원 **3개를 이식한다**(FR-631) — `프로젝트설계/화면기획/css/tokens.css` → `resources/static/css/tokens.css`, `css/ui.css` → `static/css/ui.css`, `js/modal.js` → `static/js/modal.js`. **세 파일의 내용을 고치지 않는다.** `modal.js`(75행)에는 `data-modal-open`·`data-modal-close`·Esc·딤 클릭·`data-modal-map` 딥링크가 이미 다 들어 있다
-- [ ] T047 [US3] `resources/templates/layout/auth.html` — 비로그인 화면(1.1~1.6)의 껍데기. `proto/layout-auth-shell.html` 을 옮기고 상대경로(`../css/...`)를 `th:href="@{/css/...}"` 로 바꾼다. `<head>` 에서 T046 의 세 파일을 **한 번만** 건다 — 화면마다 다시 걸지 않는다
-- [ ] T048 [US3] `resources/templates/layout/main.html` — 로그인 후 화면의 껍데기(사이드바 + 상단바 + 본문). `proto/layout-main-shell.html` 을 옮긴다. **모든 화면이 auth·main 둘 중 하나를 쓴다**(FR-624) — 화면이 자기 `<html>` 골격을 따로 두지 않는다
-- [ ] T049 [US3] `resources/templates/fragments/sidebar.html :: sidebar` — 메뉴 12개(screen-shell.md §2 표)와 `activeMenu` 활성 표시(FR-625). 등록 메뉴 셋(지출·소득·고정지출)은 부모 페이지와 **같은 `activeMenu`** 를 쓴다. **회원 관리 메뉴는 `role == 1` 일 때만 HTML 에 그린다**(FR-626) — `display:none` 이면 소스에서 URL 이 읽힌다
-- [ ] T050 [P] [US3] `resources/templates/fragments/modal-shell.html :: modalShell` — 딤·카드·헤더(제목 + X)·푸터(취소/확인) 자리를 제공하고 본문은 각 화면 fragment 가 채운다. 네 가지 닫기 경로(취소·X·Esc·딤)가 전부 동작해야 한다(FR-628) — 동작 자체는 T046 의 `modal.js` 가 이미 갖고 있다
-- [ ] T051 [P] [US3] `resources/templates/fragments/confirm-dialog.html` — 삭제·회원 정지·할부 중도상환이 **공용으로** 쓴다(FR-629). 제목·본문·확인 버튼 문구를 파라미터로 받는다. 되돌릴 수 없는 삭제(고정지출은 월별 내역까지 사라진다)는 **그 사실을 본문에 적어** 넘긴다 — 다이얼로그가 문구를 만들지 않는다. 화면마다 `confirm()` 을 쓰지 않는다
-- [ ] T052 [US3] `.../front/web/ModalParam.java` — `?m=` 값을 **화이트리스트로 판정**한다(FR-627·630). 아는 값이면 모델에 `openModal` 을 넣고, 모르는 값이면 **키 자체를 넣지 않는다**. 오류 화면으로 보내지 않는다 — 북마크·오타로 들어온 사용자를 막을 이유가 없다. **서버가 판정하고 JS 는 연다**(research 14): JS 에만 두면 상세·수정 모달의 선행 조회(`id` 로 단건 GET) 시점을 정할 수 없다. **화면별 값 목록은 007 이 정하지 않는다** — 008~012 가 자기 `data-modal-map` 과 함께 낸다
-- [ ] T053 [US3] `.../front/web/ForbiddenController.java` 와 `resources/templates/error/forbidden.html` — 화면 1.6(FR-632). `GET /error/forbidden` · **auth 레이아웃**(T001 의 개정 결과) · 권한 없음(비로그인 허용) · **호출 API 없음**. `proto/error-forbidden.html` 을 옮긴다: 제목 「권한 없음」, 안내 문구, 버튼 둘(「가계부로」→`/ledger`, 「로그인」→`/auth/login`). 이 화면이 T041 권한 차단의 착지점이다
+- [X] T046 [P] [US3] 화면기획 정적 자원 **3개를 이식한다**(FR-631) — `프로젝트설계/화면기획/css/tokens.css` → `resources/static/css/tokens.css`, `css/ui.css` → `static/css/ui.css`, `js/modal.js` → `static/js/modal.js`. **세 파일의 내용을 고치지 않는다.** `modal.js`(75행)에는 `data-modal-open`·`data-modal-close`·Esc·딤 클릭·`data-modal-map` 딥링크가 이미 다 들어 있다
+- [X] T047 [US3] `resources/templates/layout/auth.html` — 비로그인 화면(1.1~1.6)의 껍데기. `proto/layout-auth-shell.html` 을 옮기고 상대경로(`../css/...`)를 `th:href="@{/css/...}"` 로 바꾼다. `<head>` 에서 T046 의 세 파일을 **한 번만** 건다 — 화면마다 다시 걸지 않는다
+- [X] T048 [US3] `resources/templates/layout/main.html` — 로그인 후 화면의 껍데기(사이드바 + 상단바 + 본문). `proto/layout-main-shell.html` 을 옮긴다. **모든 화면이 auth·main 둘 중 하나를 쓴다**(FR-624) — 화면이 자기 `<html>` 골격을 따로 두지 않는다
+- [X] T049 [US3] `resources/templates/fragments/sidebar.html :: sidebar` — 메뉴 12개(screen-shell.md §2 표)와 `activeMenu` 활성 표시(FR-625). 등록 메뉴 셋(지출·소득·고정지출)은 부모 페이지와 **같은 `activeMenu`** 를 쓴다. **회원 관리 메뉴는 `role == 1` 일 때만 HTML 에 그린다**(FR-626) — `display:none` 이면 소스에서 URL 이 읽힌다
+- [X] T050 [P] [US3] `resources/templates/fragments/modal-shell.html :: modalShell` — 딤·카드·헤더(제목 + X)·푸터(취소/확인) 자리를 제공하고 본문은 각 화면 fragment 가 채운다. 네 가지 닫기 경로(취소·X·Esc·딤)가 전부 동작해야 한다(FR-628) — 동작 자체는 T046 의 `modal.js` 가 이미 갖고 있다
+- [X] T051 [P] [US3] `resources/templates/fragments/confirm-dialog.html` — 삭제·회원 정지·할부 중도상환이 **공용으로** 쓴다(FR-629). 제목·본문·확인 버튼 문구를 파라미터로 받는다. 되돌릴 수 없는 삭제(고정지출은 월별 내역까지 사라진다)는 **그 사실을 본문에 적어** 넘긴다 — 다이얼로그가 문구를 만들지 않는다. 화면마다 `confirm()` 을 쓰지 않는다
+- [X] T052 [US3] `.../front/web/ModalParam.java` — `?m=` 값을 **화이트리스트로 판정**한다(FR-627·630). 아는 값이면 모델에 `openModal` 을 넣고, 모르는 값이면 **키 자체를 넣지 않는다**. 오류 화면으로 보내지 않는다 — 북마크·오타로 들어온 사용자를 막을 이유가 없다. **서버가 판정하고 JS 는 연다**(research 14): JS 에만 두면 상세·수정 모달의 선행 조회(`id` 로 단건 GET) 시점을 정할 수 없다. **화면별 값 목록은 007 이 정하지 않는다** — 008~012 가 자기 `data-modal-map` 과 함께 낸다
+- [X] T053 [US3] `.../front/web/ForbiddenController.java` 와 `resources/templates/error/forbidden.html` — 화면 1.6(FR-632). `GET /error/forbidden` · **auth 레이아웃**(T001 의 개정 결과) · 권한 없음(비로그인 허용) · **호출 API 없음**. `proto/error-forbidden.html` 을 옮긴다: 제목 「권한 없음」, 안내 문구, 버튼 둘(「가계부로」→`/ledger`, 「로그인」→`/auth/login`). 이 화면이 T041 권한 차단의 착지점이다
 
 **Checkpoint**: 008~012 가 얹힐 껍데기가 서고, 007 범위의 화면 1개가 뜬다
 

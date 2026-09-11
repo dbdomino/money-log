@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<!--
+  로그인 전 화면(1.1~1.6)의 껍데기. 가운데 카드 하나이고 사이드바도 상단바도 없다.
+
+  화면기획의 proto/layout-auth-shell.html 을 옮긴 것이며, 상대경로 링크를 화면 모듈 주소로
+  바꾼 것이 이식의 전부다.
+
+  쓰는 쪽:
+    <html th:replace="~{layout/auth :: page('권한 없음', ~{::section})}">
+    <body><section> ... </section></body></html>
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:fragment="page(title, content)">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${title} + ' — money-log'">money-log</title>
+
+  <!-- 정적 자원은 레이아웃에서 한 번만 건다. 화면마다 다시 걸면 어느 화면 하나가 빠뜨렸을 때
+       그 화면만 스타일이 깨지고, 빠진 곳을 찾으려면 화면 31개를 열어 봐야 한다. -->
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/ui.css}">
+  <script defer th:src="@{/js/modal.js}"></script>
+</head>
+<body>
+<div class="layout-auth">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="logo">money-log</div>
+    </div>
+
+    <!-- 안내 문구는 화면이 직접 그린다. 껍데기가 대신 그리면 화면이 같은 문구를 한 번 더
+         그렸을 때 두 줄이 되고, 어느 쪽이 그린 것인지 소스를 봐야 알 수 있다. -->
+    <th:block th:replace="${content}">본문이 들어가는 자리</th:block>
+  </div>
+</div>
+</body>
+</html>

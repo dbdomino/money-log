@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<!--
+  로그인 후 화면(1.7 및 Phase 2~6 전부)의 껍데기. 사이드바 + 상단바 + 본문이다.
+
+  화면기획의 proto/layout-main-shell.html 을 옮겼다. 사이드바는 fragments/sidebar.html 이
+  따로 들고 있는데, 메뉴 12개가 화면마다 복사되면 하나를 고칠 때 31곳을 고쳐야 하기 때문이다.
+
+  모달 딥링크:
+    body 의 data-modal-map 은 화면이 모델에 담은 modalMap 을 그대로 싣는다. 값 목록은 007 이
+    정하지 않는다 — 008~012 가 자기 화면의 값과 함께 낸다.
+
+  쓰는 쪽:
+    <html th:replace="~{layout/main :: page('수단 목록', ~{::section})}">
+    <body><section> ... </section></body></html>
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:fragment="page(title, content)">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${title} + ' — money-log'">money-log</title>
+
+  <!-- 정적 자원은 레이아웃에서 한 번만 건다. -->
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/ui.css}">
+  <script defer th:src="@{/js/modal.js}"></script>
+</head>
+<body th:attr="data-modal-map=${modalMap}">
+<div class="layout-main">
+
+  <th:block th:replace="~{fragments/sidebar :: sidebar}"></th:block>
+
+  <header class="header">
+    <span class="user-name" th:text="${sessionUser != null} ? ${sessionUser.memberId()} : ''">사용자</span>
+    <!-- 로그아웃은 POST 다. 링크로 두면 브라우저가 미리 불러오는 것만으로 세션이 끊긴다.
+         버튼은 008 이 꾸미고, 백엔드 토큰 비활성화는 007 의 세션 계층이 한다. -->
+    <form th:action="@{/auth/logout}" method="post" style="display:inline">
+      <button type="submit" class="btn btn-ghost btn-sm">로그아웃</button>
+    </form>
+  </header>
+
+  <main class="main">
+    <th:block th:replace="${content}">본문이 들어가는 자리</th:block>
+  </main>
+</div>
+</body>
+</html>
