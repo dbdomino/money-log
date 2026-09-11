@@ -19,6 +19,19 @@ public interface UserExpendGroupRepository extends JpaRepository<UserExpendGroup
     List<UserExpendGroup> findByUserIdKeyAndInUseTrueAndDeletedFalseOrderByIdxAsc(Long idKey);
 
     /**
+     * 목표금액 목록(006 의 5.1) — <b>{@code in_use} 만 본다</b>.
+     *
+     * <p>바로 위의 2.13 용 메서드와 달리 {@code deleted} 를 조건에 넣지 <b>않는다</b>.
+     * FR-509 가 정한 모집단이 "사용 중 유형"뿐이고, 삭제 표시는 목표금액에서 조건이
+     * 아니기 때문이다(target-amount.md §5) — 삭제 표시된 유형의 목표 행은 유지되며
+     * (FR-511) 그 유형이 {@code in_use=true} 인 채로 삭제 표시만 됐다면 목록에 나온다.
+     *
+     * <p>둘을 하나로 합치지 않는 것은 <b>2.13 의 모집단을 바꾸면 003 의 계약이 움직이기</b>
+     * 때문이다.
+     */
+    List<UserExpendGroup> findByUserIdKeyAndInUseTrueOrderByIdxAsc(Long idKey);
+
+    /**
      * 이름 중복 검사({@code 3101}).
      *
      * <p>삭제 표시된 유형의 이름도 여전히 점유 상태다 — 유일 제약이 삭제분을 포함하기

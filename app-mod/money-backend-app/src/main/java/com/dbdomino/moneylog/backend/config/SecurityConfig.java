@@ -45,6 +45,28 @@ public class SecurityConfig {
             "/api/v1/auth/reset-password"
     };
 
+    /**
+     * Swagger UI 와 OpenAPI 문서. <b>인증 없이 연다.</b>
+     *
+     * <p>문서를 보는 데 토큰이 필요하면 "토큰을 어떻게 얻는지 보려고 문서를 여는" 첫
+     * 사용자가 막힌다. 로그인(1.1)이 바로 그 문서 안에 있다.
+     *
+     * <p><b>여는 것은 문서일 뿐 API 가 아니다.</b> 실제 호출은 `Authorize` 로 넣은
+     * Bearer 토큰을 타고 이 필터 체인을 그대로 지난다 — UI 를 거친다고 인가가 느슨해지지
+     * 않는다.
+     *
+     * <p><b>운영에서는 꺼야 한다.</b> 스키마 전체가 그대로 드러나기 때문이다. 끄는 방법은
+     * 경로를 지우는 것이 아니라 {@code springdoc.api-docs.enabled=false} ·
+     * {@code springdoc.swagger-ui.enabled=false} 다 — 그러면 이 경로가 404 가 되므로
+     * permitAll 이 남아 있어도 노출되지 않는다. {@code application.yml} 에 근거를 적어 두었다.
+     */
+    private static final String[] SPRINGDOC_PATHS = {
+            "/swagger-ui.html",
+            "/swagger-ui/**",
+            "/v3/api-docs",
+            "/v3/api-docs/**"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    RestAuthEntryPoint authEntryPoint,
@@ -70,6 +92,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/api/v1/ha").permitAll()
                         .requestMatchers(HttpMethod.POST, PERMIT_ALL_POST).permitAll()
+                        // 문서만 연다. 여기서 쏘는 호출은 Bearer 토큰을 달고 아래 규칙을 그대로 탄다.
+                        .requestMatchers(HttpMethod.GET, SPRINGDOC_PATHS).permitAll()
                         // 관리자 전용. role != 1 이면 RestAccessDeniedHandler 가 1002 를 돌려준다.
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // 나머지 전부. 003~006 이 붙을 자리도 여기에 걸린다.

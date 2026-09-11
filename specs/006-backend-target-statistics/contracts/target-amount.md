@@ -73,12 +73,15 @@
 ```json
 { "expendGroupId": 1, "expendGroupName": "식비",
   "defaultTargetAmount": 400000,
-  "monthlyTargetAmount": null,
-  "appliedTargetAmount": 400000 }
+  "monthlyTargetAmount": null }
 ```
 
-**세 필드가 다 필요하다.** 적용 금액만 주면 화면이 "이 달은 따로 정한 것인가 기본을
-따르는 것인가"를 구분할 수 없다 — 목표금액 화면이 그걸 보여줘야 한다.
+**적용 금액 필드는 응답에 없다.** 5.1·5.2 의 필드 표(프로젝트설계)와 FR-507 이 함께
+정한 것은 **두 필드**이며, 적용 금액은 화면이 `monthlyTargetAmount ?? defaultTargetAmount`
+로 낸다. 두 값을 다 내리므로 화면은 "이 달은 따로 정한 것인가 기본을 따르는 것인가"를
+구분할 수 있고, 적용 금액까지 내리면 서버가 같은 정보를 두 형태로 내려 둘이 어긋날 여지만
+생긴다. **서버가 적용 금액을 직접 쓰는 곳은 통계(5.5·5.6)뿐**이고 거기서는 `targetAmount`
+한 필드로 나간다.
 
 `monthlyTargetAmount`가 `null`일 때 **필드를 생략하지 않는다.** Jackson이 `null` 필드를
 빼지 않도록 확인한다 — 프론트가 `'monthlyTargetAmount' in obj`로 분기하면 생략과 `null`이

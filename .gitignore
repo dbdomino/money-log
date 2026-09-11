@@ -253,6 +253,7 @@ buildNumber.properties
 ### Compliled files
 /target/
 **/target
+!**/src/**/target/
 /example/
 
 # Ignore Gradle GUI config

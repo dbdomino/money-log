@@ -19,6 +19,12 @@ import org.springframework.stereotype.Component;
  * 각자 구현하면 <b>한 곳만 어긋나도 과거 데이터가 조용히 오염된다</b> — 예외도 오류 응답도
  * 나지 않고 이름만 바뀌므로 한참 뒤에 발견된다.
  *
+ * <p><b>005 는 사용자가 참조를 직접 고르는 경로에서만 이 클래스를 쓴다</b>(4.1 등록 ·
+ * 4.4 수정 · 4.6 월별 단건 수정). 월별 내역을 <b>자동으로 만드는</b> 경로(4.5·4.8·4.9)는
+ * 설정이 이미 들고 있는 참조를 그대로 복사하며 <b>여기를 거치지 않는다</b> — 거치면
+ * 삭제 표시된 유형을 쓰던 고정지출 때문에 평범한 달 조회가 {@code 3103} 으로 죽는다
+ * (FR-426. {@code FixedExpenseMonthlyFactory} 의 javadoc 에 자세히 적었다).
+ *
  * <h2>규칙 1 — 새로 거는 참조만 "사용 중"을 요구한다 (FR-325 ↔ FR-326)</h2>
  *
  * <table border="1">
@@ -88,11 +94,107 @@ public class ReferenceResolver {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_METHOD_NOT_FOUND));
     }
 
-    /** 등록(3.1·3.5)이 거는 지출유형. 같은 규칙이며 실패 코드만 {@code 3103} 이다. */
+    /** 등록(3.1·3.5·4.1)이 거는 지출유형. 같은 규칙이며 실패 코드만 {@code 3103} 이다. */
     public UserExpendGroup requireUsableExpendGroup(AuthPrincipal principal, Long expendGroupId) {
         return expendGroupRepository.findByIdxAndUserIdKey(expendGroupId, principal.idKey())
                 .filter(ReferenceResolver::isUsable)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EXPEND_GROUP_NOT_FOUND));
+    }
+
+    // ── 005 가 쓰는 갈래: 용도 실패를 다른 코드로 낸다 ──────────────────────
+
+    /**
+     * 소유·사용 가능 여부<b>까지만</b> 보는 수단 조회. 실패는 {@code 3003} 이다.
+     *
+     * <p>{@link #requireUsablePaymentMethod} 와 나뉘는 지점이 <b>용도 불일치를 어느 코드로
+     * 내느냐</b>다.
+     *
+     * <table border="1">
+     *   <caption>같은 상황, 다른 코드</caption>
+     *   <tr><th>기능</th><th>수단 없음·타인·사용 안 함</th><th>용도 불일치</th></tr>
+     *   <tr><td>004 (3.1·3.7 등)</td><td>{@code 3003}</td><td><b>{@code 3003}</b></td></tr>
+     *   <tr><td>005 (4.1·4.6)</td><td>{@code 3003}</td><td><b>{@code 3401}</b></td></tr>
+     * </table>
+     *
+     * <p>004 가 용도까지 {@code 3003} 으로 묶은 것은 <b>존재를 감추기 위해서</b>였다 —
+     * ID 를 훑어 남의 수단을 찾아내지 못하게. 005 는 그럴 필요가 없다. 4.1 의 수단은
+     * 사용자가 <b>자기 목록에서 고른 것</b>이라 존재가 이미 드러나 있고, 사용자가 취할
+     * 조치도 다르다("다른 수단을 고른다"가 아니라 "지출용 수단을 고른다").
+     *
+     * <p><b>004 의 메서드는 손대지 않는다.</b> 그쪽 시그니처를 바꾸면 3.1·3.3·3.5·3.7·3.9·
+     * 3.12 여섯 경로의 실패 코드가 함께 움직인다.
+     *
+     * @see #requirePurpose(UserPaymentMethod, String, ErrorCode)
+     */
+    public UserPaymentMethod requireOwnedUsablePaymentMethod(AuthPrincipal principal,
+                                                             Long paymentMethodId) {
+        return paymentMethodRepository.findByIdxAndUserIdKey(paymentMethodId, principal.idKey())
+                .filter(ReferenceResolver::isUsable)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_METHOD_NOT_FOUND));
+    }
+
+    /**
+     * 그 수단이 요구한 용도인가. 아니면 <b>호출자가 정한 코드</b>로 거절한다.
+     *
+     * <p>{@link #requireOwnedUsablePaymentMethod} 와 짝으로 쓴다. 둘을 나눠 둔 것은
+     * 판정 순서가 결과를 바꾸기 때문이다 — 참조({@code 3003}) 가 용도({@code 3401}) 보다
+     * <b>먼저</b>다. 한 메서드로 합치면 그 순서가 구현 안에 숨는다(api-contract.md §6).
+     *
+     * @param purpose   요구하는 용도. 고정지출은 {@code EXPENSE} 뿐이다 — 고정"지출"이므로
+     *                  소득용 수단이 들어올 자리가 없다
+     * @param errorCode 용도가 어긋났을 때 낼 코드. 005 는 {@code 3401} 을 넘긴다
+     */
+    public UserPaymentMethod requirePurpose(UserPaymentMethod method, String purpose,
+                                            ErrorCode errorCode) {
+        if (!purpose.equals(method.getPurpose())) {
+            throw new BusinessException(errorCode,
+                    "이 기능에는 %s 용도의 수단만 쓸 수 있습니다.".formatted(purpose));
+        }
+        return method;
+    }
+
+    // ── 006 이 쓰는 갈래: 소유(3103)와 사용 여부(3601)를 나눈다 ──────────────
+
+    /**
+     * 소유 여부<b>까지만</b> 보는 지출유형 조회. 실패는 {@code 3103} 이다.
+     *
+     * <p>{@link #requireUsableExpendGroup} 와 나뉘는 지점이 <b>사용 여부를 여기서
+     * 보느냐</b>다. 004·005 는 "없음·타인·사용 안 함" 셋을 {@code 3103} 하나로 묶었지만
+     * 006 은 사용 안 함을 {@code 3601} 로 따로 낸다 — 사용자가 취할 조치가 다르기
+     * 때문이다("다른 유형을 고른다"가 아니라 "그 유형을 다시 사용 중으로 돌린다").
+     *
+     * <p>그래서 <b>둘을 나눠 두고 순서를 호출자가 정한다</b>. 소유({@code 3103})가
+     * 사용 여부({@code 3601})보다 <b>먼저</b>여야 한다 — 남의 유형 ID 로 접근했는데 그게
+     * 마침 {@code in_use=false} 라면 {@code 3601} 을 내는 순간 <b>그 ID 가 실재한다는
+     * 사실이 코드 차이로 새어 나간다</b>(quickstart #14).
+     *
+     * <p><b>{@code deleted} 는 보지 않는다.</b> 목표금액에서 삭제 표시는 조건이 아니다
+     * (target-amount.md §5) — 삭제 표시된 유형의 목표 행은 유지되어야 하고(FR-511)
+     * 그 행을 읽으려면 유형을 찾을 수 있어야 한다.
+     *
+     * <p><b>004·005 의 메서드는 손대지 않는다.</b> 그쪽 시그니처를 바꾸면 여섯 경로의
+     * 실패 코드가 함께 움직인다.
+     *
+     * @see #requireInUse(UserExpendGroup, ErrorCode)
+     */
+    public UserExpendGroup requireOwnedExpendGroup(AuthPrincipal principal, Long expendGroupId) {
+        return expendGroupRepository.findByIdxAndUserIdKey(expendGroupId, principal.idKey())
+                .orElseThrow(() -> new BusinessException(ErrorCode.EXPEND_GROUP_NOT_FOUND));
+    }
+
+    /**
+     * 그 유형이 사용 중인가. 아니면 <b>호출자가 정한 코드</b>로 거절한다.
+     *
+     * <p>{@link #requireOwnedExpendGroup} 와 짝으로 쓴다. 006 은 {@code 3601} 을 넘긴다.
+     *
+     * <p><b>{@code deleted} 를 함께 보지 않는다.</b> 조건은 {@code in_use} 뿐이다
+     * (target-amount.md §5).
+     */
+    public UserExpendGroup requireInUse(UserExpendGroup group, ErrorCode errorCode) {
+        if (!Boolean.TRUE.equals(group.getInUse())) {
+            throw new BusinessException(errorCode, "사용하지 않는 지출유형입니다.");
+        }
+        return group;
     }
 
     // ── 규칙 1: 엑셀(3.12)은 ID 가 아니라 이름으로 찾는다 ──────────────────

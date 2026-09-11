@@ -5,6 +5,7 @@ import com.dbdomino.moneylog.data.repository.UserRepository;
 import tools.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockPart;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -304,6 +306,275 @@ public abstract class AbstractApiIT {
     }
 
     /**
+     * 003 의 2.7 로 지출유형 1건을 만들고 PK 를 돌려준다.
+     *
+     * <p><b>기본 유형은 이름을 바꿀 수 없다</b>({@code 3105}). 이름 변경이 필요한 시험은
+     * {@link #defaultGroupId} 대신 이것으로 새 유형을 만들어 쓴다.
+     *
+     * <p>{@code multipart/form-data} 다 — 2.7 이 아이콘을 함께 받기 때문이다. 아이콘은
+     * 선택이라 여기서는 폼 필드만 보낸다.
+     *
+     * <p><b>{@code inUse} 는 생략할 수 없다.</b> {@code ExpendGroupCreateRequest} 에서
+     * {@code @NotNull} 이라 빠뜨리면 {@code 9001} 이다 — 2.1 수단 등록의 {@code inUse} 가
+     * 기본값을 갖는 것과 다르다.
+     */
+    protected long createExpendGroup(String token, String name) throws Exception {
+        var request = MockMvcRequestBuilders.multipart("/api/v1/expend-groups");
+        request.header(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        request.part(new MockPart("name", name.getBytes(StandardCharsets.UTF_8)));
+        request.part(new MockPart("inUse", "true".getBytes(StandardCharsets.UTF_8)));
+        JsonNode response = objectMapper.readTree(mockMvc.perform(request)
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+        if (resCode(response) != 200) {
+            throw new IllegalStateException("지출유형 등록 실패: " + response);
+        }
+        return response.get("data").get("expendGroupId").asLong();
+    }
+
+    /** 003 의 2.11 로 지출유형 이름을 바꾼다. {@code multipart} + PATCH 다. */
+    protected JsonNode renameExpendGroup(String token, long expendGroupId, String name)
+            throws Exception {
+        var request = MockMvcRequestBuilders.multipart("/api/v1/expend-groups/" + expendGroupId);
+        request.with(servletRequest -> {
+            servletRequest.setMethod("PATCH");
+            return servletRequest;
+        });
+        request.header(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        request.part(new MockPart("name", name.getBytes(StandardCharsets.UTF_8)));
+        return objectMapper.readTree(mockMvc.perform(request)
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+    }
+
+    // ── 005(고정지출·가계부)가 쓰는 헬퍼 ─────────────────────────────────────
+
+    /**
+     * 4.1 로 고정지출 설정 1건을 만들고 PK 를 돌려준다.
+     *
+     * <p><b>API 로 만든다.</b> JDBC 로 넣으면 감사 컬럼을 손으로 채워야 하고, 004 에서
+     * 겪었듯 등록 규칙과 시험이 갈릴 수 있다.
+     *
+     * <p><b>이 호출은 관리 행 1건만 만든다.</b> 월별 내역은 그 달을 처음 조회할 때
+     * 생긴다(FR-402). 시험이 월별 행을 원하면 4.5·4.8 을 부르거나 4.9 로 재작성한다.
+     *
+     * @param yearMonthRange {@code "2026-11"} ~ {@code "2027-02"} 를 각각 시작·종료로 쓴다
+     */
+    protected long createFixedExpense(String token, String name, long paymentMethodId,
+                                      long expendGroupId, long amount, int paymentDayOfMonth,
+                                      String startYearMonth, String endYearMonth) throws Exception {
+        JsonNode response = postJson("/api/v1/fixed-expenses", token, """
+                {"name":"%s","paymentMethodId":%d,"expendGroupId":%d,"amount":%d,
+                 "paymentDayOfMonth":%d,"content":"%s",
+                 "startYear":%s,"startMonth":%s,"endYear":%s,"endMonth":%s}
+                """.formatted(name, paymentMethodId, expendGroupId, amount, paymentDayOfMonth, name,
+                yearOf(startYearMonth), monthOf(startYearMonth),
+                yearOf(endYearMonth), monthOf(endYearMonth)));
+        if (resCode(response) != 200) {
+            throw new IllegalStateException("고정지출 등록 실패: " + response);
+        }
+        return response.get("data").get("fixedExpenseId").asLong();
+    }
+
+    /** {@code "2026-11"} 의 연. */
+    protected static int yearOf(String yearMonth) {
+        return Integer.parseInt(yearMonth.substring(0, 4));
+    }
+
+    /** {@code "2026-11"} 의 월. */
+    protected static int monthOf(String yearMonth) {
+        return Integer.parseInt(yearMonth.substring(5, 7));
+    }
+
+    /**
+     * 그 회원의 그 연·월 월별 내역 건수.
+     *
+     * <p>lazy 생성이 실제로 몇 행을 만들었는지는 <b>DB 를 봐야</b> 안다. 응답의 목록
+     * 길이는 필터가 걸리면 달라지므로(FR-406) 생성 여부의 근거가 되지 못한다.
+     */
+    protected int countMonthly(Member member, int year, int month) {
+        Integer count = jdbc.queryForObject("""
+                select count(*) from moneylog.tbl_fixed_expense_monthly m
+                  join moneylog.tbl_user u on u.id_key = m.id_key
+                 where u.user_id = ? and m.year = ? and m.month = ?
+                """, Integer.class, member.memberId(), year, month);
+        return count == null ? 0 : count;
+    }
+
+    /** 그 회원의 월별 내역 전체 건수(연·월 무관). 삭제 CASCADE 검증(SC-407)이 쓴다. */
+    protected int countMonthlyAll(Member member) {
+        Integer count = jdbc.queryForObject("""
+                select count(*) from moneylog.tbl_fixed_expense_monthly m
+                  join moneylog.tbl_user u on u.id_key = m.id_key
+                 where u.user_id = ?
+                """, Integer.class, member.memberId());
+        return count == null ? 0 : count;
+    }
+
+    /**
+     * 한 고정지출의 그 연·월 행을 통째로 읽는다.
+     *
+     * <p>{@code payment_date}(말일 보정 결과)와 {@code modified} 를 <b>저장된 값</b>으로
+     * 확인하는 데 쓴다. 응답만 보면 조회 때마다 다시 계산하는 구현도 통과해 버린다.
+     *
+     * @return 컬럼 이름 → 값. 행이 없으면 예외가 난다 — "아직 안 만들어졌다"를 확인할
+     *         때는 {@link #countMonthly} 를 쓴다
+     */
+    protected Map<String, Object> monthlyRowOf(Member member, long fixedExpenseId,
+                                               int year, int month) {
+        return jdbc.queryForMap("""
+                select m.idx, m.amount, m.payment_date, m.content, m.modified,
+                       m.payment_method_idx, m.expend_group_idx, m.year, m.month
+                  from moneylog.tbl_fixed_expense_monthly m
+                  join moneylog.tbl_user u on u.id_key = m.id_key
+                 where u.user_id = ? and m.fixed_expense_idx = ? and m.year = ? and m.month = ?
+                """, member.memberId(), fixedExpenseId, year, month);
+    }
+
+    // ── 006(목표금액·통계)이 쓰는 헬퍼 ─────────────────────────────────────
+
+    /**
+     * 5.3 기본 목표 upsert.
+     *
+     * <p><b>Body 필드 이름이 5.4 와 다르다</b> — 5.3 은 {@code defaultTargetAmount},
+     * 5.4 는 {@code monthlyTargetAmount} 다(각 설계 명세의 Body 표). 두 층이 독립이라
+     * 요청에서도 어느 층을 건드리는지가 이름으로 드러난다.
+     */
+    protected JsonNode putDefaultTarget(String token, long expendGroupId, long amount)
+            throws Exception {
+        return patchJson("/api/v1/expend-targets/default/" + expendGroupId, token, """
+                {"defaultTargetAmount":%d}
+                """.formatted(amount));
+    }
+
+    /** 5.4 월별 목표 upsert. @see #putDefaultTarget */
+    protected JsonNode putMonthlyTarget(String token, int year, int month, long expendGroupId,
+                                        long amount) throws Exception {
+        return patchJson("/api/v1/expend-targets/monthly/" + year + "/" + month + "/"
+                + expendGroupId, token, """
+                {"monthlyTargetAmount":%d}
+                """.formatted(amount));
+    }
+
+    /** 003 의 2.11 로 지출유형의 사용 여부를 바꾼다. {@code 3601} 시험이 쓴다. */
+    protected void setExpendGroupInUse(String token, long expendGroupId, boolean inUse)
+            throws Exception {
+        var request = MockMvcRequestBuilders.multipart("/api/v1/expend-groups/" + expendGroupId);
+        request.with(servletRequest -> {
+            servletRequest.setMethod("PATCH");
+            return servletRequest;
+        });
+        request.header(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        request.part(new MockPart("inUse",
+                String.valueOf(inUse).getBytes(StandardCharsets.UTF_8)));
+        JsonNode response = objectMapper.readTree(mockMvc.perform(request)
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+        if (resCode(response) != 200) {
+            throw new IllegalStateException("지출유형 사용 여부 변경 실패: " + response);
+        }
+    }
+
+    /** 그 회원의 그 연·월 통계 행 수. <b>재저장해도 1건</b>인지 보는 데 쓴다(FR-516). */
+    protected int countStatistics(Member member, int year, int month) {
+        Integer count = jdbc.queryForObject("""
+                select count(*) from moneylog.tbl_statistics s
+                  join moneylog.tbl_user u on u.id_key = s.id_key
+                 where u.user_id = ? and s.year = ? and s.month = ?
+                """, Integer.class, member.memberId(), year, month);
+        return count == null ? 0 : count;
+    }
+
+    /**
+     * 그 연·월 통계의 상세 행 수.
+     *
+     * <p><b>재저장이 "지웠다 다시 넣는지"를 보는 자리다</b> — 갱신으로 구현하면 없어진
+     * 유형의 행이 남아 이 수가 줄지 않는다.
+     *
+     * @param table {@code tbl_statistics_weekly} · {@code tbl_statistics_expend_group} ·
+     *              {@code tbl_statistics_payment_method} 중 하나
+     */
+    protected int countStatisticsDetails(Member member, int year, int month, String table) {
+        Integer count = jdbc.queryForObject("""
+                select count(*) from moneylog.%s d
+                  join moneylog.tbl_statistics s on s.idx = d.statistics_idx
+                  join moneylog.tbl_user u on u.id_key = s.id_key
+                 where u.user_id = ? and s.year = ? and s.month = ?
+                """.formatted(table), Integer.class, member.memberId(), year, month);
+        return count == null ? 0 : count;
+    }
+
+    /** 저장된 통계 행 하나. {@code saved_at} 과 합계 6값을 확인하는 데 쓴다. */
+    protected Map<String, Object> statisticsRowOf(Member member, int year, int month) {
+        return jdbc.queryForMap("""
+                select s.idx, s.saved_at, s.income_total, s.expense_total, s.fixed_amount,
+                       s.regular_amount, s.fixed_percent, s.regular_percent
+                  from moneylog.tbl_statistics s
+                  join moneylog.tbl_user u on u.id_key = s.id_key
+                 where u.user_id = ? and s.year = ? and s.month = ?
+                """, member.memberId(), year, month);
+    }
+
+    /**
+     * 월별 내역 1행을 JDBC 로 직접 넣는다.
+     *
+     * <p><b>4.5 가 아직 없는 US1 단계에서 쓴다.</b> 삭제 CASCADE(SC-407)를 확인하려면
+     * 지울 자식 행이 있어야 하는데, 정상 경로인 lazy 생성은 US2 가 만든다. US2 이후로는
+     * 그 달을 <b>열어서</b> 만드는 편이 낫다 — 그쪽이 실제 경로이고 값도 규칙대로 채워진다.
+     *
+     * <p><b>감사 컬럼을 손으로 채운다.</b> {@code AuditingEntityListener} 는 Entity 를 거칠
+     * 때만 동작하는데 이 경로는 Entity 를 만들지 않는다. 네 컬럼이 NOT NULL 이라 빠뜨리면
+     * INSERT 가 통째로 실패한다.
+     *
+     * <p><b>트랜잭션 안에서 넣는다.</b> datasource 가 {@code auto-commit: false} 라
+     * 트랜잭션 밖 갱신은 커밋되지 않고 조용히 사라진다.
+     */
+    protected void insertMonthlyRow(Member member, long fixedExpenseId, int year, int month,
+                                    long amount) {
+        insertMonthlyRow(member, fixedExpenseId, year, month, amount,
+                "%d-%02d-01".formatted(year, month));
+    }
+
+    /**
+     * 결제일을 지정해 월별 내역 1행을 넣는다.
+     *
+     * <p>주 경계 시험(006 의 FR-520)이 쓴다 — 고정지출이 <b>몇째 주에 떨어지는가</b>가
+     * 기대값을 정하므로 1일 고정으로는 주별 합계를 가를 수 없다.
+     *
+     * @param paymentDate {@code "2026-07-05"} 형식
+     */
+    protected void insertMonthlyRow(Member member, long fixedExpenseId, int year, int month,
+                                    long amount, String paymentDate) {
+        Long idKey = idKeyOf(member);
+        tx.executeWithoutResult(status -> jdbc.update("""
+                insert into moneylog.tbl_fixed_expense_monthly
+                    (id_key, fixed_expense_idx, year, month, amount, payment_date, content,
+                     payment_method_idx, expend_group_idx, modified,
+                     created_at, updated_at, created_by, updated_by)
+                select ?, f.idx, ?, ?, ?, cast(? as date), f.content,
+                       f.payment_method_idx, f.expend_group_idx, false,
+                       now(), now(), ?, ?
+                  from moneylog.tbl_fixed_expense f
+                 where f.idx = ?
+                """, idKey, year, month, amount, paymentDate, idKey, idKey, fixedExpenseId));
+    }
+
+    /**
+     * 그 달 행의 {@code modified} 를 JDBC 로 세운다.
+     *
+     * <p>4.6 이 아직 없는 단계(US2)에서 "직접 수정한 달"을 만들 때 쓴다. US3 이후로는
+     * 4.6 을 부르는 편이 낫다 — 그쪽이 실제 경로다.
+     *
+     * <p><b>트랜잭션 안에서 갱신한다.</b> datasource 가 {@code auto-commit: false} 라
+     * 트랜잭션 밖 갱신은 커밋되지 않고 조용히 사라진다.
+     */
+    protected void markMonthlyModified(Member member, long fixedExpenseId, int year, int month) {
+        tx.executeWithoutResult(status -> jdbc.update("""
+                update moneylog.tbl_fixed_expense_monthly
+                   set modified = true
+                 where fixed_expense_idx = ? and year = ? and month = ?
+                   and id_key = (select id_key from moneylog.tbl_user where user_id = ?)
+                """, fixedExpenseId, year, month, member.memberId()));
+    }
+
+    /**
      * 테스트가 만든 회원과 그 자식 행을 지운다.
      *
      * <p><b>트랜잭션 안에서 지운다.</b> datasource 가 {@code auto-commit: false}라
@@ -332,10 +603,17 @@ public abstract class AbstractApiIT {
      * 003 의 참조 검사 시험(수단의 {@code purpose} 변경·유형 삭제 차단)이 그 행들을
      * Repository 로 직접 만들기 때문에, 부모부터 지우면 남은 자식이 FK 로 버틴다.
      *
+     * <p>통계 상세 3종이 {@code tbl_statistics} 보다 앞이고, 넷 다 {@code tbl_user} 를
+     * 참조하므로 회원보다 앞이어야 한다. 006 의 저장본 시험이 이 행들을 만든다.
+     *
      * <p>정리가 실패해도 예외는 다음 테스트의 엉뚱한 자리에서 터지므로 원인을 찾기 어렵다.
      * 새 테이블에 행을 만드는 시험을 추가하면 <b>이 목록도 함께 늘린다</b>.
      */
     private static final List<String> TABLES_IN_DELETE_ORDER = List.of(
+            "tbl_statistics_weekly",
+            "tbl_statistics_expend_group",
+            "tbl_statistics_payment_method",
+            "tbl_statistics",
             "tbl_expense",
             "tbl_income",
             "tbl_fixed_expense_monthly",

@@ -102,6 +102,27 @@ Bean Validation · Lombok · MapStruct 1.6.3 · PostgreSQL JDBC.
 - [x] **V** — 선행 개정 2건을 quickstart의 착수 전 절차로 넣었다.
 - [x] **VI** — 스키마 무변경. 완료 판정에 덤프 diff 확인을 넣었다.
 
+**구현 이후 (최종 확인, Phase 6)**
+
+- [x] **I** — `common-mod` 추가분은 `ErrorCode` 상수 4개로 끝났다. `money-app` 무변경,
+      역방향 의존 0건.
+- [x] **II** — Controller 둘 다 Service 하나에만 의존하고 Repository 를 직접 부르지 않는다.
+      Entity 는 경계를 넘지 않으며 매퍼 둘이 변환만 한다. 계산은 `StatisticsCalculator`
+      하나를 5.5·5.6 이 공유한다.
+- [x] **III** — `TargetStatisticsResponseContractIT` 가 6건 전부 래퍼임을 건다. `PUT` 0건이며
+      목표금액 저장을 `PUT` 으로 부를 수 없음도 같은 시험이 확인한다. 실패도 HTTP 200 이다.
+- [x] **IV** — `StatisticsLoggingIT` 가 006 의 컨트롤러 둘에 AOP 로깅이 걸리는지 확인한다.
+      제외 대상도 마스킹 대상도 없다.
+- [x] **V** — **개정이 계획한 2건보다 늘었다.** Phase 1 에서 3건(5.5 의 `status` 기준이
+      "(구현 시 조정 가능)"으로 열려 있던 것을 추가로 확정), Phase 3 에서 4건
+      (5.4 실패 표의 `3103` 누락, 5.1~5.3 의 코드 조건 자기완결화), Phase 5 에서 1건
+      (5.6 응답을 다섯 필드로 확정 — `tasks.md` T049 가 "통계 본문"을 적고 있었다).
+      **구현을 명세에 맞춘 것이 아니라 명세를 먼저 고치고 구현했다.**
+- [x] **VI** — `git diff sql/schema-moneylogdb.sql` 이 비어 있다. 덤프의 마지막 변경은
+      002 의 `1edf308` 이고 003~006 의 구현은 스키마를 건드리지 않았다. 통계 상세에 FK 를
+      더하려는 시도도, `usage_rate` 정밀도를 늘리려는 시도도 없었다 —
+      `StatisticsStructureIT` 가 FK 0건을 시험으로 고정했고 상한은 `9999.99` 로 잘랐다.
+
 ### 명세 선행 개정 (착수 전, 원칙 V)
 
 | # | 대상 | 고칠 내용 | 근거 |
@@ -146,6 +167,10 @@ app-mod/money-backend-app/src/main/
 │   │   └── StatisticsController.java             + 5.5·5.6
 │   ├── service/
 │   │   ├── ExpendTargetService.java              + 목표금액 4건 (upsert 포함)
+│   │   ├── ExpendTargetFieldRules.java           + 금액 0~1억 검사 (5.3·5.4 공용, 3602)
+│   │   ├── ReferenceResolver.java                ~ 006 용 지출유형 갈래 2개 추가
+│   │   │                                           requireOwnedExpendGroup(3103) ·
+│   │   │                                           requireInUse(호출자 코드, 006 은 3601)
 │   │   ├── StatisticsQueryService.java           + 5.5 (저장본 / 즉석 분기)
 │   │   ├── StatisticsSaveService.java            + 5.6 (재저장 = 상세 삭제 후 삽입)
 │   │   └── statistics/
@@ -153,18 +178,37 @@ app-mod/money-backend-app/src/main/
 │   │       ├── WeekBoundaryResolver.java         + 월요일 시작 주 경계
 │   │       └── TargetResolver.java               + 적용 금액(월별 ?? 기본) 판정
 │   ├── support/
-│   │   └── YearMonthValue.java                   ~ 005 가 만든 값 객체를 재사용
+│   │   ├── YearMonthValue.java                   ~ 005 것 재사용 + 연 범위 오버로드 추가
+│   │   │                                           (005 는 1900~9999, 006 은 2000~2100)
+│   │   └── StatisticsYearMonth.java              + 2000~2100 을 한 곳에 가둔다 (3603)
 │   ├── dto/
-│   │   ├── request/                              + 목표금액 upsert·통계 저장 Request DTO
-│   │   └── response/                             + ExpendTargetDto·StatisticsDto 등
+│   │   ├── request/
+│   │   │   ├── ExpendTargetListQuery.java        + 5.1 (연·월 3603 · 페이징 9001)
+│   │   │   ├── ExpendTargetDefaultUpsertRequest.java  + 5.3 — defaultTargetAmount
+│   │   │   ├── ExpendTargetMonthlyUpsertRequest.java  + 5.4 — monthlyTargetAmount
+│   │   │   │                                       (필드 이름이 층마다 다르다)
+│   │   │   ├── StatisticsViewQuery.java          + 5.5 의 view (생략=saved · live · 그 밖 3603)
+│   │   │   └── StatisticsSaveRequest.java        + 5.6 — 연·월을 Body 로만
+│   │   └── response/
+│   │       ├── ExpendTargetResponse.java         + 5.1 목록의 한 줄
+│   │       ├── ExpendTargetListResponse.java     + 5.1 (list + 연·월 + 페이징)
+│   │       ├── ExpendTargetDetailResponse.java   + 5.2
+│   │       ├── ExpendTargetDefaultResponse.java  + 5.3 (담당한 층만)
+│   │       ├── ExpendTargetMonthlyResponse.java  + 5.4 (담당한 층만)
+│   │       ├── StatisticsResponse.java           + 5.5 (+ 중첩 FixedVsRegularRatio)
+│   │       ├── StatisticsWeeklyResponse.java     + 주별 한 행
+│   │       ├── StatisticsExpendGroupResponse.java    + 유형별 한 행
+│   │       ├── StatisticsPaymentMethodResponse.java  + 수단별 한 행
+│   │       └── StatisticsSaveResponse.java       + 5.6 (다섯 필드 — 본문을 싣지 않는다)
 │   └── mapper/
-│       ├── ExpendTargetMapper.java               + Entity ↔ DTO
-│       └── StatisticsMapper.java                 + Entity ↔ DTO
+│       ├── ExpendTargetMapper.java               + 지출유형 + 두 층 금액 → DTO (현재 이름)
+│       └── StatisticsMapper.java                 + 저장본·계산 결과 두 입구 → DTO (스냅샷 이름)
 └── resources/application.yml                     (변경 없음)
 
 data-mod/src/main/java/com/dbdomino/moneylog/data/repository/
-├── UserExpendTargetDefaultRepository.java        ~ 회원·유형 조회 (upsert 용)
-├── UserExpendTargetMonthlyRepository.java        ~ 회원·연월·유형 조회
+├── UserExpendTargetDefaultRepository.java        ~ 단건 조회 + upsert (ON CONFLICT DO UPDATE)
+├── UserExpendTargetMonthlyRepository.java        ~ 연월 목록·단건 + upsert (같은 방식)
+├── UserExpendGroupRepository.java                ~ in_use 만 보는 목록 추가 (5.1 의 모집단)
 ├── UserStatisticsRepository.java                 ~ 회원·연월 조회
 ├── UserStatisticsWeeklyRepository.java           ~ 통계별 삭제·삽입
 ├── UserStatisticsExpendGroupRepository.java      ~ 통계별 삭제·삽입
@@ -174,8 +218,13 @@ data-mod/src/main/java/com/dbdomino/moneylog/data/repository/
 └── UserFixedExpenseMonthlyRepository.java        ~ 월별 집계 조회 (읽기만)
 
 app-mod/money-backend-app/src/test/java/com/dbdomino/moneylog/backend/
-├── target/         + 목표금액 2층 (US1)
-└── statistics/     + 조회 분기·저장·불변 (US2·US3)
+├── AbstractApiIT.java                            ~ 006 헬퍼 + 정리 목록에 통계 4종 추가
+├── TargetStatisticsResponseContractIT.java       + 6건의 응답 규격 (SC-501)
+├── target/                                       + 목표금액 2층 (US1) — 7개 시험
+└── statistics/                                   + 조회 분기·저장·불변 (US2·US3) — 12개 시험
+
+.gitignore                                        ~ **/target 이 자바 패키지까지 삼켜
+                                                    !**/src/**/target/ 예외 추가
 ```
 
 **Structure Decision**: 기존 구조를 그대로 쓴다. 새 모듈은 만들지 않는다.
@@ -188,11 +237,26 @@ app-mod/money-backend-app/src/test/java/com/dbdomino/moneylog/backend/
 - **`WeekBoundaryResolver`** — 주 경계 계산(월요일 시작, 1일이 월요일이 아니면 첫 주는
   1일부터 첫 일요일까지, 마지막 주는 말일에서 끊음)이 즉석 계산과 저장본 읽기 양쪽에 걸린다.
   저장본은 경계를 저장해 두고 그대로 쓰지만(FR-520), 즉석 계산은 매번 만든다.
-- **`TargetResolver`** — 적용 금액(`월별 ?? 기본`) 판정이 5.1·5.2·5.5 세 곳에 필요하다.
-  `null`과 `0`의 비대칭을 한 곳에 가둔다.
+- **`TargetResolver`** — 적용 금액(`월별 ?? 기본`) 판정을 한 곳에 가둔다. `null`과 `0`의
+  비대칭이 여기 산다 — 월별이 `null`이면 "저장한 적 없음"이라 기본으로 떨어지고, `0`이면
+  "그 달엔 쓰지 않겠다"라 0이 그대로 적용 금액이다.
 
-`YearMonthValue`는 `005`가 만든 것을 재사용한다. 연·월 범위 검증(FR-525)과 미래 월 판정
-(FR-527)이 같은 합성 비교를 쓴다.
+  **쓰는 곳은 통계(5.5·5.6)뿐이다.** 계획 단계에서는 5.1·5.2도 쓸 것으로 봤으나, 두
+  API의 응답 필드가 `defaultTargetAmount`·`monthlyTargetAmount` **두 개**여서(FR-507 ·
+  5.1·5.2 필드 표) 적용 금액을 서버가 합칠 자리가 없다 — 화면이 `monthly ?? default`로
+  낸다. 서버가 적용 금액을 직접 쓰는 것은 `tbl_statistics_expend_group.target_amount`에
+  넣을 때뿐이다.
+
+`YearMonthValue`는 `005`가 만든 것을 재사용한다. 미래 월 판정(FR-527)이 그 합성 비교
+(`연 × 12 + 월`)를 그대로 쓴다.
+
+**다만 연 범위는 006이 좁혀야 한다.** 005의 값 객체는 `MIN_YEAR=1900`·`MAX_YEAR=9999`로
+고정돼 있는데 FR-525는 **2000~2100**이다. 그대로 재사용하면 `year=1999`가 통과해
+`3603`이 나가지 않는다. 범위를 인자로 받는 오버로드를 더하고 **005의 기존 시그니처·동작은
+바꾸지 않는다** — 그쪽 호출부 넷(4.5·4.6·4.8·4.9)이 딸려 움직인다.
+
+두 상수는 **한 곳**에 둔다. 이 범위가 5.1·5.2·5.4·5.5·5.6 **다섯 곳**에 걸리므로 각 DTO가
+숫자를 직접 적으면 한 곳만 고쳐도 나머지 넷이 갈린다.
 
 `core-mod`는 이번에도 건드리지 않는다.
 

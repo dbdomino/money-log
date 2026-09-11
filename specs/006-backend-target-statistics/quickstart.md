@@ -86,7 +86,7 @@ psql -h localhost -U moneyloguser -d moneylogdb -c \
 ```bash
 ./gradlew :app-mod:money-backend-app:bootRun     # 백엔드 (:8081)
 
-./gradlew :data-mod:test                          # 스키마 IT 77건
+./gradlew :data-mod:test                          # 스키마 IT 80건
 ./gradlew :app-mod:money-backend-app:test         # 002~006
 ```
 
@@ -138,6 +138,7 @@ psql -h localhost -U moneyloguser -d moneylogdb -c \
 | 28 | 지출 0원인 **삭제 표시된** 수단 | 수단별 요약에 **없다** | FR-521a ② |
 | 29 | 그 달 지출이 **있는** 삭제 표시된 수단 | 수단별 요약에 **있다** | FR-521a ① |
 | 30 | 목표가 0원인 유형의 사용률 | **`0`** | US2-9·FR-522 |
+| 30-1 | 사용률 89.99 · **90.00** · **110.00** · 110.01 의 `status` | `UNDER` · **`OK`** · **`OK`** · `OVER` | FR-523 |
 | 31 | 목표 1,000원에 지출 1,000만원 | 사용률이 **`9999.99`로 잘린다** (저장 실패 아님) | FR-522 |
 | 32 | 지출 합계가 0인 달의 비율 | `fixedPercent`·`regularPercent` 둘 다 **`0`** | FR-513 |
 | 33 | 월에 13 | `3603` | US2-10 |
@@ -167,6 +168,8 @@ psql -h localhost -U moneyloguser -d moneylogdb -c \
 | 44 | 저장 후 **목표금액을 바꾸고** 통계 조회 | 저장본의 목표·사용률·상태는 **저장 당시 값** | Edge Case |
 | 45 | **미래 월** 저장 시도 | `3604` | FR-527 |
 | 46 | **이번 달** 저장 | **성공** (초과가 아니다) | FR-527 |
+| 46-1 | 5.6의 연·월을 **Query·Path**로 보냄 | 받지 않는다 (**Body**로만) — Body가 비어 `3603` | FR-524 |
+| 46-2 | 같은 달을 **두 번** 저장(상세 유니크) | 두 번째도 성공한다 — 삭제·삽입 순서가 어긋나면 `9000` | FR-517 |
 | 47 | 지출·소득이 **한 건도 없는 달** 저장 | **성공.** 합계·비율 6값이 전부 `0` | SC-511·FR-528 |
 | 48 | 47번 저장 후 조회 | `source=SAVED`이고 값이 전부 0 | SC-511 |
 | 49 | 47번의 유형별 상세 | **빈 배열** | FR-528 |
@@ -197,16 +200,19 @@ psql -h localhost -U moneyloguser -d moneylogdb -c \
 | 항목 | 확인 수단 |
 |---|---|
 | 명세 선행 개정 | §0의 `grep` |
-| API 6건 동작 | 시나리오 1~54 |
+| API 6건 동작 | 시나리오 1~54 (30-1·46-1·46-2 포함 **57건**) |
 | SC-501~511 (11건) | 위 표의 "대응" 열 |
 | `null` vs `0` 비대칭 | 시나리오 5·6·7·8 |
 | 수단별 모집단 두 집합 | 시나리오 27·28·29 |
 | 저장본 불변 3갈래 | 시나리오 39·43·44 |
 | 사용률 상한 | 시나리오 31 |
+| `status` 경계 | 시나리오 30-1 — DB CHECK 이 세 값만 받는다 |
+| 재저장의 삭제·삽입 순서 | 시나리오 46-2 — Hibernate 는 INSERT 를 DELETE 보다 먼저 낸다 |
+| 연·월 입력 경로 | 시나리오 46-1 — 5.6 은 Body 로만 받는다 |
 | FK 0건 | 시나리오 51 (`psql` 직접 확인) |
 | `005`와의 경계 | 시나리오 36 |
 | 스키마 무변경 | `git diff sql/schema-moneylogdb.sql` → 변경 없음 |
-| `:data-mod:test` | 77건 통과 |
+| `:data-mod:test` | 80건 통과 (005 까지의 결과. 006 은 data-mod 를 건드리지 않는다) |
 | `:app-mod:money-backend-app:test` | 002~005 기존 + 006 신규 통과 |
 | 헌장 게이트 6개 | [plan.md § Constitution Check](./plan.md#constitution-check) |
 
@@ -230,3 +236,29 @@ psql -h localhost -U moneyloguser -d moneylogdb -c \
 
 `001`이 만든 **15개 테이블이 전부 쓰인다** — 006이 마지막 6개(목표금액 2종·통계 4종)를
 처음으로 쓴다.
+
+### 완료 기록 (2026-09-07)
+
+백엔드 Phase 를 여기서 닫는다.
+
+| 항목 | 결과 |
+|---|---|
+| API | **56건 / 40개 경로** (`openapi.yaml` · Swagger 양방향 대조 통과) |
+| `:app-mod:money-backend-app:test` | **692건** 통과 (002~005 기존 + 006 신규) |
+| `:data-mod:test` | **80건** 통과 — 006 은 `data-mod` 의 Entity·제약을 바꾸지 않았다 |
+| 스키마 덤프 | **무변경.** 마지막 변경은 002 의 `1edf308`(2026-09-02)이고 003~006 의 구현 커밋은 덤프를 건드리지 않았다 |
+| 15개 테이블 | 전부 쓰인다 — 006 이 마지막 6개(목표금액 2종·통계 4종)를 처음 썼다 |
+| 헌장 게이트 6개 | [plan.md § Constitution Check](./plan.md#constitution-check) 의 "구현 이후 (최종 확인)" |
+
+**명세 개정은 계획한 2건보다 늘었다.** Phase 1 에서 3건, Phase 3 에서 4건, Phase 5 에서
+1건이다. 늘어난 쪽은 전부 **구현하다 발견한 명세의 빈칸**이었고, 원칙 V 대로 구현을
+바꾸지 않고 명세를 먼저 고쳤다.
+
+**구현하며 실제로 잡힌 함정 셋** — 셋 다 시험으로 고정했고, 기전을 빼고 돌려 시험이
+정말 잡는지 확인했다.
+
+| 함정 | 증상 | 잡은 시험 |
+|---|---|---|
+| upsert 를 "조회 후 INSERT" 로 두면 동시 요청 하나가 유니크 위반 | `9000` | `TargetConcurrencyIT` 외 3건 |
+| 상세 삭제 뒤 `flush()` 를 빠뜨리면 Hibernate 가 INSERT 를 DELETE 보다 먼저 냄 | 두 번째 저장부터 `9000` | `StatisticsResaveIT` 5건 |
+| `.gitignore` 의 `**/target` 이 자바 패키지 `.../backend/target` 까지 삼킴 | 테스트 기반 클래스가 커밋되지 않음 | 커밋 단계에서 발견 |
