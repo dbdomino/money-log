@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<!--
+  1.8 회원 목록과 그 위의 모달 둘(1.9 추가 · 1.10 수정). 007 의 로그인 후 껍데기를 쓴다.
+
+  화면기획의 proto/member-admin-list.html 을 옮기며 세 곳을 고쳤다.
+    · 검색이 한 칸이 아니라 두 칸이다. 백엔드가 두 조건을 AND 로 묶으므로 한 값을 둘에
+      똑같이 실으면 사용자 기대와 정반대로 동작한다.
+    · 회원이 언제 만들어졌는지를 보여 주던 열을 뺐다. 백엔드 목록 응답에 그 값이 없다.
+    · 정지를 되돌리는 버튼을 뺐다. 정지를 푸는 API 가 없다.
+
+  권한과 상태는 숫자 대신 말로 보인다. 1·3 은 화면 밖의 값이다.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: page('회원 관리', ~{::section})}">
+<body>
+<section>
+  <div class="page-header">
+    <h1>회원 관리</h1>
+    <div class="page-header-actions">
+      <a class="btn btn-primary" th:href="@{/admin/members(m='create')}">회원 추가</a>
+    </div>
+  </div>
+
+  <div class="alert alert-info" th:if="${notice != null}" role="status" th:text="${notice}">안내</div>
+  <div th:replace="~{fragments/form-error :: formTop}"></div>
+
+  <!-- 검색. 쪽 번호를 싣지 않아 새 검색은 언제나 첫 쪽에서 시작한다. -->
+  <form class="page-toolbar" th:action="@{/admin/members}" method="get">
+    <div class="field">
+      <label for="search-memberId">아이디</label>
+      <input class="input" id="search-memberId" name="memberId" type="text"
+             th:value="${search.memberId()}">
+    </div>
+    <div class="field">
+      <label for="search-nickname">닉네임</label>
+      <input class="input" id="search-nickname" name="nickname" type="text"
+             th:value="${search.nickname()}">
+    </div>
+    <button type="submit" class="btn btn-secondary">검색</button>
+  </form>
+  <!-- 적지 않으면 관리자는 "또는"으로 기대하고, 결과가 비었을 때 데이터가 없다고 읽는다. -->
+  <p class="form-hint form-hint--block">
+    두 칸을 함께 넣으면 둘 다 맞는 회원만 나옵니다.
+  </p>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+      <tr>
+        <th>아이디</th><th>닉네임</th><th>이메일</th><th>권한</th><th>상태</th><th>관리</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="member : ${members}">
+        <td th:text="${member.memberId()}">hong</td>
+        <td th:text="${member.nickname()}">홍길동</td>
+        <td th:text="${member.email()}"></td>
+        <td th:text="${member.roleLabel()}">일반</td>
+        <td>
+          <span class="badge" th:classappend="${member.isDeactivated()} ? 'badge-danger' : 'badge-success'"
+                th:text="${member.statusLabel()}">활성</span>
+        </td>
+        <td class="actions">
+          <a class="btn btn-ghost btn-sm"
+             th:href="@{/admin/members(m='edit', id=${member.memberId()})}">수정</a>
+          <!-- 정지된 회원에게는 정지 버튼을 그리지 않는다. 되돌리는 길이 없으므로 한 번
+               정지된 계정에 같은 동작을 다시 권할 이유가 없다. -->
+          <button type="button" class="btn btn-ghost btn-sm" th:unless="${member.isDeactivated()}"
+                  th:attr="data-modal-open='confirm-deactivate-' + ${member.memberId()}">정지</button>
+        </td>
+      </tr>
+      <tr th:if="${#lists.isEmpty(members)}">
+        <td colspan="6">조건에 맞는 회원이 없습니다.</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 쪽 이동. 검색어 둘을 함께 싣는다 — 빠뜨리면 쪽을 넘길 때 검색이 풀린다. -->
+  <div class="pagination">
+    <a th:if="${page > 0}"
+       th:href="@{/admin/members(memberId=${search.memberId()}, nickname=${search.nickname()}, page=${page - 1})}">이전</a>
+    <span class="info">
+      <span th:text="${page + 1}">1</span> / <span th:text="${totalPages}">1</span> 쪽 ·
+      전체 <span th:text="${totalCount}">0</span>명
+    </span>
+    <a th:if="${page + 1 < totalPages}"
+       th:href="@{/admin/members(memberId=${search.memberId()}, nickname=${search.nickname()}, page=${page + 1})}">다음</a>
+  </div>
+
+  <!-- 정지 확인 다이얼로그. 007 의 공통 다이얼로그를 쓰고 본문은 이 화면이 넘긴다.
+       담는 것 셋 — 대상이 누구인지, 되돌릴 수 없다는 것, 다시 로그인할 수 없다는 것. -->
+  <th:block th:each="member : ${members}" th:unless="${member.isDeactivated()}">
+    <div th:replace="~{fragments/confirm-dialog :: confirmDialog(
+            'confirm-deactivate-' + ${member.memberId()},
+            '회원 정지',
+            ${member.memberId()} + '(' + ${member.nickname()} + ') 회원을 정지합니다. '
+              + '정지는 화면에서 되돌릴 수 없습니다. '
+              + '정지된 계정은 로그아웃과 달리 다시 로그인할 수 없습니다.'
+              + (${sessionUser != null and sessionUser.memberId() == member.memberId()}
+                 ? ' 지금 로그인한 본인 계정입니다. 정지하면 다음 요청부터 본인도 막힙니다.' : ''),
+            '정지',
+            @{/admin/members/{id}/deactivate(id=${member.memberId()})})}"></div>
+  </th:block>
+
+  <!-- 1.9 회원 추가 모달 -->
+  <div th:replace="~{fragments/modal-shell :: modalShell(
+          'modal-member-create', '회원 추가', ~{::div.member-create-body}, '추가')}"></div>
+  <div class="member-create-body" hidden>
+    <form id="form-modal-member-create" th:action="@{/admin/members}" method="post">
+      <div class="form-group">
+        <label for="create-memberId">아이디</label>
+        <input class="input" id="create-memberId" name="memberId" type="text" required
+               th:value="${openModal == 'create'} ? ${param.memberId} : ''">
+        <span th:replace="~{fragments/form-error :: fieldError('memberId')}"></span>
+      </div>
+      <div class="form-group">
+        <label for="create-password">비밀번호</label>
+        <input class="input" id="create-password" name="password" type="password" required
+               autocomplete="new-password">
+        <p class="form-hint">8자 이상, 영어 대·소문자·특수문자·숫자 중 3종류 이상</p>
+        <span th:replace="~{fragments/form-error :: fieldError('password')}"></span>
+      </div>
+      <div class="form-group">
+        <label for="create-nickname">닉네임</label>
+        <input class="input" id="create-nickname" name="nickname" type="text" required
+               th:value="${openModal == 'create'} ? ${param.nickname} : ''">
+      </div>
+      <div class="form-group">
+        <label for="create-role">권한</label>
+        <!-- 고를 수 있는 값이 둘뿐이다. 자유 입력을 두면 화면이 고를 수 없는 값을
+             백엔드가 받게 되고, 그 요청은 9001 로 거절된다. -->
+        <select class="select" id="create-role" name="role" required>
+          <option value="3">일반</option>
+          <option value="1">관리자</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="create-email">이메일 (선택)</label>
+        <input class="input" id="create-email" name="email" type="email"
+               th:value="${openModal == 'create'} ? ${param.email} : ''">
+        <span th:replace="~{fragments/form-error :: fieldError('email')}"></span>
+      </div>
+      <div class="form-group">
+        <label for="create-phone">폰 (선택)</label>
+        <input class="input" id="create-phone" name="phone" type="tel" inputmode="numeric"
+               th:value="${openModal == 'create'} ? ${param.phone} : ''">
+        <p class="form-hint">하이픈을 넣어도 됩니다. 숫자만 저장됩니다</p>
+      </div>
+      <div class="form-group">
+        <label for="create-intro">소개 (선택)</label>
+        <textarea class="textarea" id="create-intro" name="intro"></textarea>
+      </div>
+    </form>
+  </div>
+
+  <!-- 1.10 회원 수정 모달. 값은 모달이 열리기 전에 서버가 조회해 실어 둔다. -->
+  <div th:replace="~{fragments/modal-shell :: modalShell(
+          'modal-member-edit', '회원 수정', ~{::div.member-edit-body}, '저장')}"></div>
+  <div class="member-edit-body" hidden>
+    <form id="form-modal-member-edit" method="post"
+          th:action="@{/admin/members/{id}(id=${editTarget != null} ? ${editTarget.memberId()} : ${editTargetId})}">
+      <div class="form-group">
+        <label for="edit-memberId">아이디</label>
+        <input class="input" id="edit-memberId" type="text" readonly
+               th:value="${editTarget != null} ? ${editTarget.memberId()} : ${editTargetId}">
+      </div>
+      <div class="form-group">
+        <label for="edit-nickname">닉네임</label>
+        <input class="input" id="edit-nickname" name="nickname" type="text" required
+               th:value="${openModal == 'edit' and editTarget == null} ? ${param.nickname}
+                         : (${editTarget != null} ? ${editTarget.nickname()} : '')">
+      </div>
+      <div class="form-group">
+        <label for="edit-role">권한</label>
+        <select class="select" id="edit-role" name="role" required>
+          <option value="3" th:selected="${editTarget != null and !editTarget.isAdmin()}">일반</option>
+          <option value="1" th:selected="${editTarget != null and editTarget.isAdmin()}">관리자</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="edit-email">이메일</label>
+        <input class="input" id="edit-email" name="email" type="email"
+               th:value="${openModal == 'edit' and editTarget == null} ? ${param.email}
+                         : (${editTarget != null} ? ${editTarget.email()} : '')">
+        <p class="form-hint">비우고 저장하면 이메일이 지워집니다</p>
+        <span th:replace="~{fragments/form-error :: fieldError('email')}"></span>
+      </div>
+      <div class="form-group">
+        <label for="edit-phone">폰</label>
+        <input class="input" id="edit-phone" name="phone" type="tel" inputmode="numeric"
+               th:value="${openModal == 'edit' and editTarget == null} ? ${param.phone}
+                         : (${editTarget != null} ? ${editTarget.phone()} : '')">
+        <p class="form-hint">하이픈을 넣어도 됩니다. 숫자만 저장되고, 비우면 지워집니다</p>
+      </div>
+      <div class="form-group">
+        <label for="edit-intro">소개</label>
+        <textarea class="textarea" id="edit-intro" name="intro"
+                  th:text="${editTarget != null} ? ${editTarget.intro()} : ''"></textarea>
+        <p class="form-hint">비우고 저장하면 소개가 지워집니다</p>
+      </div>
+      <div class="form-group">
+        <label for="edit-newPassword">새 비밀번호</label>
+        <!-- th:value 를 두지 않는다. 실패로 다시 그릴 때도 비운다. -->
+        <input class="input" id="edit-newPassword" name="newPassword" type="password"
+               autocomplete="new-password" placeholder="변경할 때만 입력">
+        <p class="form-hint">변경할 때만 입력하세요. 비워 두면 비밀번호는 그대로입니다</p>
+        <span th:replace="~{fragments/form-error :: fieldError('password')}"></span>
+      </div>
+    </form>
+  </div>
+
+  <!--
+    모달을 여는 일은 007 의 스크립트가 한다. 주소에 ?m= 가 실려 온 경우는 007 의 딥링크
+    처리가 스스로 열지만, 제출이 실패해 다시 그린 경우는 주소에 그 값이 없다. 서버가 이미
+    어느 모달인지 알고 있으므로 그 판정을 스크립트에 넘긴다 — 007 의 공개 API 를 부르는
+    것이라 공통 코드를 고치지 않는다.
+  -->
+  <span id="open-modal-marker" hidden th:if="${openModal != null}"
+        th:attr="data-open-modal=${openModal}"></span>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var marker = document.getElementById("open-modal-marker");
+      var mapAttr = document.body.getAttribute("data-modal-map");
+      if (!marker || !mapAttr || !window.MoneyLogModal) return;
+      try {
+        var id = JSON.parse(mapAttr)[marker.getAttribute("data-open-modal")];
+        if (id) window.MoneyLogModal.open(id);
+      } catch (e) {
+        /* 지도가 깨졌으면 모달만 열리지 않는다. 목록은 그대로 보인다 */
+      }
+    });
+  </script>
+</section>
+</body>
+</html>

@@ -94,8 +94,10 @@ class AuthInterceptorTest {
         when(backendApiClient.get(eq("/auth/validate"), eq(TokenValidateResult.class)))
                 .thenReturn(new TokenValidateResult(true, "admin", SessionUser.ROLE_ADMIN, 86_400));
 
+        // 007 시점에는 이 주소에 화면이 없어 404 로 "판정을 통과했다"를 확인했다. 008 이
+        // 회원 목록을 세운 뒤로는 그 화면이 실제로 그려지는 것이 통과의 증거다.
         mockMvc.perform(get(ADMIN_URL).session(LoggedInSessions.admin()))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk());
     }
 
     @Test
