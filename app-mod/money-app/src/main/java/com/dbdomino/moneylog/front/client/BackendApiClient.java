@@ -122,15 +122,35 @@ public class BackendApiClient {
     }
 
     /**
-     * 파일을 실어 보내는 생성. 아이콘 업로드(009)와 엑셀 일괄 등록(010)이 쓴다.
-     *
-     * <p>multipart 는 POST 에만 둔다. 수정에 파일을 실을 일이 생기면 그때 백엔드 계약부터
-     * 정하고 여기 더한다.
+     * 파일을 실어 보내는 생성. 아이콘 등록(009)과 엑셀 일괄 등록(010)이 쓴다.
      */
     public <T> T postMultipart(String path, MultiValueMap<String, ?> parts, Class<T> type) {
         rejectPathVariables(path);
         rejectQueryString(path);
         return call(HttpMethod.POST, path, null, parts, MediaType.MULTIPART_FORM_DATA, type, true);
+    }
+
+    /**
+     * 파일을 실어 보내는 <b>수정</b>. 지출유형 아이콘 교체(009)가 쓴다.
+     *
+     * <p>007 은 파일을 생성에만 실을 것으로 보고 {@link #postMultipart} 만 두었는데, 백엔드
+     * 지출유형 수정이 처음부터 <b>PATCH + multipart</b> 였다. 그 조합을 부를 방법이 없어
+     * 009 가 여기 더했다 — 화면 쪽에 자체 호출 코드를 만들면 <b>봉투를 푸는 자리가 둘이
+     * 되고</b>, 이 클래스를 하나로 묶은 이유(어느 화면 하나가 응답 코드 확인을 빠뜨리면
+     * 실패가 성공으로 읽힌다)가 그대로 되살아난다.
+     *
+     * <p>{@link #patch} 와 나눠 둔 이유는 본문 형식이 다르기 때문이다. 한 메서드가 형식을
+     * 골라 주면 호출부가 무엇을 보내는지 읽어서 세야 한다.
+     *
+     * <p><b>보내지 않은 칸은 백엔드가 그대로 유지한다.</b> 파일 칸을 빼면 기존 파일이 남으므로,
+     * 바꾸지 않을 때는 그 칸을 {@code parts} 에 담지 않는다 — 빈 파일 칸을 담으면 0바이트
+     * 파일을 올리는 요청이 되어 형식 오류로 거절된다.
+     */
+    public <T> T patchMultipart(String pathTemplate, MultiValueMap<String, ?> parts,
+            Class<T> type, Object... pathVariables) {
+        rejectQueryString(pathTemplate);
+        return call(HttpMethod.PATCH, pathTemplate, null, parts, MediaType.MULTIPART_FORM_DATA,
+                type, true, pathVariables);
     }
 
     /**
