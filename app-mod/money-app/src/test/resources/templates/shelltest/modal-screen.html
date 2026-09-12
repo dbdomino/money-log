@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<!--
+  시험 전용 화면. 운영 화면이 아니라 src/test 에 둔다.
+
+  화면 1.6 에는 모달이 없어 딥링크와 모달 껍데기를 걸 대상이 없다. 008~012 를 기다리면 007 의
+  껍데기가 검증되지 않은 채 다음 기능이 그 위에 얹힌다. 그래서 껍데기만 쓰는 최소 화면을
+  시험 소스에 두고 그것으로 확인한다.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: page('시험 화면', ~{::section})}">
+<body>
+<section>
+  <div class="page-header"><h1>시험 화면</h1></div>
+
+  <button type="button" class="btn btn-primary" data-modal-open="modal-shelltest-create">등록</button>
+
+  <div th:replace="~{fragments/modal-shell :: modalShell(
+          'modal-shelltest-create', '시험 등록', ~{::form}, '등록')}"></div>
+
+  <form id="form-modal-shelltest-create" method="post" th:action="@{/shelltest}">
+    <div class="form-group">
+      <label for="name">이름</label>
+      <input class="input" id="name" name="name">
+    </div>
+  </form>
+
+  <div th:replace="~{fragments/confirm-dialog :: confirmDialog(
+          'confirm-shelltest-delete', '시험 삭제',
+          '지우면 되돌릴 수 없습니다.', '삭제', @{/shelltest/delete})}"></div>
+</section>
+</body>
+</html>

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<!--
+  화면 1.6 권한 없음. 화면기획의 proto/error-forbidden.html 을 옮겼다.
+
+  어떤 주소가 막혔는지, 어떤 권한이 필요한지 밝히지 않는다. 그것을 적으면 관리자 기능이
+  어디에 있는지 알려 주는 안내문이 된다.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/auth :: page('권한 없음', ~{::section})}">
+<body>
+<section style="text-align:center">
+  <h1>권한 없음</h1>
+  <p class="form-hint">이 페이지에 접근할 권한이 없습니다.</p>
+
+  <div style="margin-top:24px;display:flex;gap:8px;justify-content:center">
+    <a class="btn btn-secondary" th:href="@{/ledger}">가계부로</a>
+    <a class="btn btn-primary" th:href="@{/auth/login}">로그인</a>
+  </div>
+</section>
+</body>
+</html>

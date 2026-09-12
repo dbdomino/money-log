@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<!--
+  1.1 로그인. 007 의 로그인 전 껍데기를 쓴다.
+
+  화면기획의 proto/auth-login.html 을 옮긴 것이며, 예시 값과 "실제 API 호출 없음" 문구를
+  걷어내고 폼을 화면 주소로 보낸 것이 이식의 전부다.
+
+  비밀번호 칸은 어떤 경우에도 값을 채우지 않는다. 실패로 다시 그릴 때도 비운다 — 한 번만
+  허용해도 평문이 HTML 에 실리고 그 HTML 은 브라우저 캐시와 방문 기록에 남는다.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/auth :: page('로그인', ~{::section})}">
+<body>
+<section>
+  <!-- 세션이 끝나 밀려난 사유. 007 이 실어 보낸 문구를 그대로 보인다. -->
+  <div th:replace="~{fragments/form-error :: sessionNotice}"></div>
+
+  <!-- 로그인 실패 안내. 1003 이든 1004 든 폼 상단에만 둔다 — 칸에 붙이는 순간
+       그 아이디가 실재하는지 드러난다. -->
+  <div th:replace="~{fragments/form-error :: formTop}"></div>
+
+  <form th:action="@{/auth/login}" method="post">
+    <div class="form-group">
+      <label for="memberId">아이디</label>
+      <!-- 가입 직후 넘어온 아이디(모델)가 먼저이고, 없으면 방금 제출한 값(요청 파라미터)을
+           되채운다. 둘 다 없으면 빈 칸이다. -->
+      <input class="input" id="memberId" name="memberId" type="text" autocomplete="username"
+             th:value="${memberId} != null ? ${memberId} : ${param.memberId}" required>
+    </div>
+    <div class="form-group">
+      <label for="password">비밀번호</label>
+      <!-- th:value 를 두지 않는다. 값을 채우는 길 자체를 만들지 않는 것이 규약이다. -->
+      <input class="input" id="password" name="password" type="password"
+             autocomplete="current-password" required>
+    </div>
+    <button class="btn btn-primary btn-block" type="submit">로그인</button>
+  </form>
+
+  <div class="auth-links">
+    <a th:href="@{/auth/signup}">회원가입</a>
+    <a th:href="@{/auth/find-id}">아이디 찾기</a>
+    <a th:href="@{/auth/find-password}">비밀번호 찾기</a>
+  </div>
+</section>
+</body>
+</html>

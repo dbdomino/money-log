@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<!--
+  1.2 회원가입. 007 의 로그인 전 껍데기를 쓴다.
+
+  화면기획의 proto/auth-signup.html 을 옮겼다. 예시 값과 "실제 API 호출 없음" 문구를 걷어내고
+  폼을 화면 주소로 보냈다.
+
+  비밀번호 규칙 문구는 _공통.md 의 것을 그대로 쓴다. 화면이 문구를 새로 쓰면 백엔드가 규칙을
+  고쳤을 때 화면만 옛 안내를 보인다.
+
+  실패로 다시 그릴 때 값은 요청 파라미터에서 되읽고 비밀번호 두 칸은 비운다.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/auth :: page('회원가입', ~{::section})}">
+<body>
+<section>
+  <div th:replace="~{fragments/form-error :: formTop}"></div>
+
+  <form th:action="@{/auth/signup}" method="post">
+    <div class="form-group">
+      <label for="memberId">아이디</label>
+      <input class="input" id="memberId" name="memberId" type="text" autocomplete="username"
+             th:value="${param.memberId}" required>
+      <span th:replace="~{fragments/form-error :: fieldError('memberId')}"></span>
+    </div>
+
+    <div class="form-group">
+      <label for="password">비밀번호</label>
+      <input class="input" id="password" name="password" type="password"
+             autocomplete="new-password" required>
+      <!-- 규칙을 입력 전부터 보인다. 다 채운 뒤에 알려 주면 사용자가 처음부터 다시 친다. -->
+      <p class="form-hint">8자 이상, 영어 대·소문자·특수문자·숫자 중 3종류 이상</p>
+      <span th:replace="~{fragments/form-error :: fieldError('password')}"></span>
+    </div>
+
+    <div class="form-group">
+      <label for="passwordConfirm">비밀번호 확인</label>
+      <input class="input" id="passwordConfirm" name="passwordConfirm" type="password"
+             autocomplete="new-password" required>
+      <span th:replace="~{fragments/form-error :: fieldError('passwordConfirm')}"></span>
+    </div>
+
+    <div class="form-group">
+      <label for="nickname">닉네임</label>
+      <input class="input" id="nickname" name="nickname" type="text"
+             th:value="${param.nickname}" required>
+    </div>
+
+    <div class="form-group">
+      <label for="email">이메일 (선택)</label>
+      <input class="input" id="email" name="email" type="email" th:value="${param.email}">
+      <span th:replace="~{fragments/form-error :: fieldError('email')}"></span>
+    </div>
+
+    <div class="form-group">
+      <label for="phone">폰 (선택)</label>
+      <!-- 숫자 자판을 띄우는 것은 브라우저가 맡고, 하이픈을 걷어내는 것은 서버가 한다.
+           스크립트가 막힌 환경에서도 저장값이 같아야 한다. -->
+      <input class="input" id="phone" name="phone" type="tel" inputmode="numeric"
+             th:value="${param.phone}">
+      <p class="form-hint">하이픈을 넣어도 됩니다. 숫자만 저장됩니다</p>
+    </div>
+
+    <div class="form-group">
+      <label for="intro">소개 (선택)</label>
+      <textarea class="textarea" id="intro" name="intro" th:text="${param.intro}"></textarea>
+    </div>
+
+    <button class="btn btn-primary btn-block" type="submit">가입</button>
+  </form>
+
+  <div class="auth-links"><a th:href="@{/auth/login}">로그인으로</a></div>
+</section>
+</body>
+</html>

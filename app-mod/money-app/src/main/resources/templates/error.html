@@ -1,10 +1,31 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>Error</title>
-</head>
+<!--
+  백엔드에 닿지 못했거나 처리 중 예외가 난 경우가 여기 온다.
+
+  레이아웃은 로그인 전 쪽이다. 로그인 후 레이아웃을 쓰면 사이드바가 회원 권한을 필요로 하는데,
+  세션이 없거나 깨진 상태에서도 떠야 하는 화면이라 로그인 여부와 무관하게 그려지는 쪽이어야
+  한다. 화면 1.6 이 같은 레이아웃을 쓰는 것과 같은 이유다.
+
+  데이터를 얻지 못했다는 사실을 글로 보여 준다. 빈 목록으로 그리면 사용자가 자기 데이터가
+  사라졌다고 읽는다.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/auth :: page('오류', ~{::section})}">
 <body>
-<h1>An error occurred</h1>
-<p>Sorry, something went wrong.</p>
+<section style="text-align:center">
+  <h1>요청을 처리하지 못했습니다</h1>
+
+  <p class="form-hint" th:text="${message} ?: '알 수 없는 오류가 발생했습니다.'">
+    알 수 없는 오류가 발생했습니다.
+  </p>
+
+  <!-- 백엔드가 준 코드는 바꾸지 않고 그대로 보여 준다. 문의할 때 이 숫자가 단서다. -->
+  <p class="form-hint" th:if="${resCode}" th:text="'오류 코드 ' + ${resCode}">오류 코드</p>
+
+  <div style="margin-top:24px;display:flex;gap:8px;justify-content:center">
+    <a class="btn btn-secondary" th:href="@{/ledger}">가계부로</a>
+    <a class="btn btn-primary" th:href="@{/auth/login}">로그인</a>
+  </div>
+</section>
 </body>
 </html>

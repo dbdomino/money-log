@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  로그인 후 레이아웃의 사이드바. 메뉴 12개와 현재 화면 표시를 여기서만 관리한다.
+
+  activeMenu 는 각 화면이 모델에 담는다. 등록 메뉴 셋(지출·소득·고정지출)은 전용 페이지가
+  아니라 부모 페이지의 모달이므로 부모와 같은 activeMenu 를 쓴다 — 지출 등록 모달을 열었는데
+  월별 목록 메뉴가 꺼져 보이면 사용자는 다른 화면으로 온 줄 안다.
+
+  회원 관리 메뉴는 관리자일 때만 HTML 에 그린다. 숨김 스타일로 가리면 페이지 소스에서
+  주소가 그대로 읽힌다 — 가린 것이 아니라 안 보이게만 한 것이 된다.
+-->
+<aside class="sidebar" id="sidebar" th:fragment="sidebar">
+  <div class="sidebar-brand">money-log</div>
+
+  <div class="sidebar-section">가계부</div>
+  <ul class="sidebar-nav">
+    <li><a th:href="@{/ledger}" th:classappend="${activeMenu == 'ledger'} ? 'is-active'">월별 목록</a></li>
+    <li><a th:href="@{/ledger(m='expense-create')}"
+           th:classappend="${activeMenu == 'ledger'} ? 'is-active'">지출 등록</a></li>
+    <li><a th:href="@{/ledger(m='income-create')}"
+           th:classappend="${activeMenu == 'ledger'} ? 'is-active'">소득 등록</a></li>
+    <li><a th:href="@{/ledger/excel}" th:classappend="${activeMenu == 'excel'} ? 'is-active'">엑셀 일괄 등록</a></li>
+    <li><a th:href="@{/fixed-expenses}"
+           th:classappend="${activeMenu == 'fixed-list'} ? 'is-active'">고정지출 설정 목록</a></li>
+    <li><a th:href="@{/fixed-expenses(m='create')}"
+           th:classappend="${activeMenu == 'fixed-list'} ? 'is-active'">고정지출 등록</a></li>
+  </ul>
+
+  <div class="sidebar-section">설정</div>
+  <ul class="sidebar-nav">
+    <li><a th:href="@{/payments}" th:classappend="${activeMenu == 'payments'} ? 'is-active'">지출·소득 수단</a></li>
+    <li><a th:href="@{/expend-groups}"
+           th:classappend="${activeMenu == 'expend-groups'} ? 'is-active'">지출유형</a></li>
+    <li><a th:href="@{/targets/default}" th:classappend="${activeMenu == 'targets'} ? 'is-active'">목표금액</a></li>
+    <li><a th:href="@{/statistics}" th:classappend="${activeMenu == 'statistics'} ? 'is-active'">월별 통계</a></li>
+    <li><a th:href="@{/member/profile}" th:classappend="${activeMenu == 'profile'} ? 'is-active'">본인 정보</a></li>
+    <li th:if="${sessionUser != null and sessionUser.isAdmin()}">
+      <a th:href="@{/admin/members}"
+         th:classappend="${activeMenu == 'admin-members'} ? 'is-active'">회원 관리</a>
+    </li>
+  </ul>
+</aside>
+</body>
+</html>

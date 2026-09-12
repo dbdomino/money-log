@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  폼 실패 안내 조각 둘. 화면 여덟 개가 같은 방식으로 실패를 보인다.
+
+  formTop  : 폼 상단 안내. 응답 코드와 백엔드 문구를 함께 보인다.
+  fieldError: 칸 아래 안내. 그 칸을 가리키는 코드일 때만 보인다.
+
+  값은 FormFailure 가 모델에 담는다. 담기지 않은 요청에서는 둘 다 그려지지 않는다.
+
+  두 조각이 서로를 가린다 — 실패 칸이 form 이면 상단만, 특정 칸이면 그 칸만 보인다.
+  둘 다 보이게 두면 같은 문구가 화면에 두 번 뜬다.
+
+  입력값을 되비추지 않는다. 문구는 백엔드가 준 것 그대로이고 화면이 만들지 않는다.
+
+  쓰는 쪽:
+    <div th:replace="~{fragments/form-error :: formTop}"></div>
+    <span th:replace="~{fragments/form-error :: fieldError('email')}"></span>
+-->
+
+<!-- 폼 상단. 어느 칸인지 가릴 수 없는 실패와, 일부러 칸에 붙이지 않는 실패가 여기 뜬다. -->
+<div class="alert alert-error" th:fragment="formTop"
+     th:if="${failMessage != null and failField == 'form'}" role="alert">
+  <!-- 숫자를 함께 보이는 이유는 문의할 때 그것이 단서이기 때문이다. 문구는 다듬어져도
+       코드는 그대로라 로그와 맞춰 볼 수 있다. -->
+  <span th:if="${failResCode != null}" th:text="'[' + ${failResCode} + '] '">[9001] </span>
+  <span th:text="${failMessage}">요청 값이 올바르지 않습니다.</span>
+</div>
+
+<!-- 칸 아래. 그 칸을 가리키는 코드일 때만 보인다. -->
+<p class="form-hint" style="color: var(--color-danger)" th:fragment="fieldError(field)"
+     th:if="${failMessage != null and failField == field}" role="alert"
+     th:text="${failMessage}">이미 사용 중인 값입니다.</p>
+
+<!--
+  세션이 끝나 밀려났을 때 007 이 실어 보낸 문구. 로그인 화면만 쓴다.
+
+  실패 안내와 자리를 나눈 이유는 성격이 다르기 때문이다. 실패 안내는 방금 한 일이 안 된
+  것이고, 이것은 하지도 않은 일이 일어난 것이다 — 사용자가 왜 밀려났는지 알아야 한다.
+-->
+<div class="alert alert-info" th:fragment="sessionNotice" th:if="${message != null}" role="status"
+     th:text="${message}">세션이 만료되었습니다. 다시 로그인해 주세요.</div>
+</body>
+</html>

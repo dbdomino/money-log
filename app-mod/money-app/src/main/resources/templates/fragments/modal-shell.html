@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  모달 껍데기. 딤·카드·헤더(제목 + 닫기)·푸터(취소/확인) 자리를 제공하고 본문은 각 화면이
+  채운다.
+
+  닫는 길이 넷이다 — 취소 버튼·닫기(X)·Esc·딤 클릭. 앞의 둘은 data-modal-close 표시로,
+  뒤의 둘은 modal.js 가 문서 전체에 건 처리로 동작한다. 화면이 따로 스크립트를 쓰지 않는다.
+
+  쓰는 쪽:
+    <div th:replace="~{fragments/modal-shell :: modalShell(
+            'modal-payment-create', '수단 등록', ~{::form}, '등록')}"></div>
+-->
+<div class="modal-root" th:fragment="modalShell(id, title, content, confirmLabel)"
+     th:id="${id}" aria-hidden="true" role="dialog" th:aria-labelledby="${id} + '-title'">
+
+  <!-- 딤. 클릭하면 닫힌다. -->
+  <div class="modal-backdrop" data-modal-close></div>
+
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h2 th:id="${id} + '-title'" th:text="${title}">제목</h2>
+      <button type="button" class="modal-close" data-modal-close aria-label="닫기">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <th:block th:replace="${content}">본문이 들어가는 자리</th:block>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-modal-close>취소</button>
+      <!-- 확인 버튼의 동작은 본문의 폼이 정한다. 껍데기는 자리와 문구만 준다. -->
+      <button type="submit" class="btn btn-primary" th:form="'form-' + ${id}"
+              th:text="${confirmLabel}">확인</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
