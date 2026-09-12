@@ -11,13 +11,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.dbdomino.moneylog.front.client.BackendApiClient;
 import com.dbdomino.moneylog.front.client.BinaryPayload;
+import com.dbdomino.moneylog.front.support.LoggedInSessions;
 import com.dbdomino.moneylog.front.session.SessionUser;
 import com.dbdomino.moneylog.front.session.TokenValidateResult;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -60,7 +60,7 @@ class AuthInterceptorTest {
                 .thenReturn(new TokenValidateResult(true, "hong", SessionUser.ROLE_MEMBER, 86_400));
 
         // 통과하면 매핑된 화면이 없어 404 다. 판정에 걸렸다면 302 였을 것이다.
-        mockMvc.perform(get(PROTECTED_URL).session(loggedIn(SessionUser.ROLE_MEMBER)))
+        mockMvc.perform(get(PROTECTED_URL).session(LoggedInSessions.member()))
                 .andExpect(status().isNotFound());
     }
 
@@ -70,7 +70,7 @@ class AuthInterceptorTest {
         when(backendApiClient.get(eq("/auth/validate"), eq(TokenValidateResult.class)))
                 .thenReturn(new TokenValidateResult(true, "hong", SessionUser.ROLE_MEMBER, 86_400));
 
-        mockMvc.perform(get(ADMIN_URL).session(loggedIn(SessionUser.ROLE_MEMBER)))
+        mockMvc.perform(get(ADMIN_URL).session(LoggedInSessions.member()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(header().string("Location", "/error/forbidden"));
     }
@@ -94,7 +94,7 @@ class AuthInterceptorTest {
         when(backendApiClient.get(eq("/auth/validate"), eq(TokenValidateResult.class)))
                 .thenReturn(new TokenValidateResult(true, "admin", SessionUser.ROLE_ADMIN, 86_400));
 
-        mockMvc.perform(get(ADMIN_URL).session(loggedIn(SessionUser.ROLE_ADMIN)))
+        mockMvc.perform(get(ADMIN_URL).session(LoggedInSessions.admin()))
                 .andExpect(status().isNotFound());
     }
 
@@ -121,13 +121,4 @@ class AuthInterceptorTest {
         verify(backendApiClient, never()).get(eq("/auth/validate"), eq(TokenValidateResult.class));
     }
 
-    /** 로그인 상태를 세션에 직접 심는다. 로그인 화면(008)이 없어도 US2 를 검증할 수 있다. */
-    private static MockHttpSession loggedIn(int role) {
-        MockHttpSession session = new MockHttpSession();
-        session.setAttribute("accessToken", "access-1");
-        session.setAttribute("refreshToken", "refresh-1");
-        session.setAttribute("memberId", role == SessionUser.ROLE_ADMIN ? "admin" : "hong");
-        session.setAttribute("role", role);
-        return session;
-    }
 }

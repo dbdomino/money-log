@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.dbdomino.moneylog.front.client.BackendApiClient;
 import com.dbdomino.moneylog.front.client.BinaryPayload;
+import com.dbdomino.moneylog.front.support.LoggedInSessions;
 import com.dbdomino.moneylog.front.session.SessionUser;
 import com.dbdomino.moneylog.front.session.TokenValidateResult;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -45,7 +45,7 @@ class UrlMapTest {
     @Test
     @DisplayName("로그인한 사용자의 루트는 월별 가계부다")
     void 로그인하면_루트는_가계부다() throws Exception {
-        mockMvc.perform(get("/").session(loggedIn()))
+        mockMvc.perform(get("/").session(LoggedInSessions.member()))
                 .andExpect(status().isFound())
                 .andExpect(header().string("Location", "/ledger"));
     }
@@ -77,7 +77,7 @@ class UrlMapTest {
     @Test
     @DisplayName("구 수정 주소는 부모 목록 + 모달 딥링크로 간다")
     void 구_수정_주소는_부모와_딥링크로() throws Exception {
-        mockMvc.perform(get("/payments/1/edit").session(loggedIn()))
+        mockMvc.perform(get("/payments/1/edit").session(LoggedInSessions.member()))
                 .andExpect(status().isMovedPermanently())
                 .andExpect(header().string("Location", "/payments?m=edit&id=1"));
     }
@@ -85,7 +85,7 @@ class UrlMapTest {
     @Test
     @DisplayName("구 등록 주소는 식별자 없이 모달만 연다")
     void 구_등록_주소는_모달만_연다() throws Exception {
-        mockMvc.perform(get("/ledger/expenses/new").session(loggedIn()))
+        mockMvc.perform(get("/ledger/expenses/new").session(LoggedInSessions.member()))
                 .andExpect(status().isMovedPermanently())
                 .andExpect(header().string("Location", "/ledger?m=expense-create"));
     }
@@ -93,7 +93,7 @@ class UrlMapTest {
     @Test
     @DisplayName("고정지출 월별은 식별자 자리보다 먼저 잡힌다")
     void 고정지출_월별은_식별자보다_먼저다() throws Exception {
-        mockMvc.perform(get("/fixed-expenses/monthly").session(loggedIn()))
+        mockMvc.perform(get("/fixed-expenses/monthly").session(LoggedInSessions.member()))
                 .andExpect(status().isMovedPermanently())
                 .andExpect(header().string("Location", "/fixed-expenses?m=monthly"));
     }
@@ -105,7 +105,7 @@ class UrlMapTest {
                 .thenReturn(new BinaryPayload(new byte[] {1}, "image/png", null));
 
         // 새면 증상이 "아이콘이 하나도 안 보인다"라 원인을 짐작하기 어렵다.
-        mockMvc.perform(get("/expend-groups/icons/1_2.png").session(loggedIn()))
+        mockMvc.perform(get("/expend-groups/icons/1_2.png").session(LoggedInSessions.member()))
                 .andExpect(status().isOk());
     }
 
@@ -120,16 +120,8 @@ class UrlMapTest {
     @Test
     @DisplayName("목록에 없는 주소는 보내지 않는다")
     void 목록에_없으면_보내지_않는다() throws Exception {
-        mockMvc.perform(get("/payments/1/archive").session(loggedIn()))
+        mockMvc.perform(get("/payments/1/archive").session(LoggedInSessions.member()))
                 .andExpect(status().isNotFound());
     }
 
-    private static MockHttpSession loggedIn() {
-        MockHttpSession session = new MockHttpSession();
-        session.setAttribute("accessToken", "access-1");
-        session.setAttribute("refreshToken", "refresh-1");
-        session.setAttribute("memberId", "hong");
-        session.setAttribute("role", SessionUser.ROLE_MEMBER);
-        return session;
-    }
 }
