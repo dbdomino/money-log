@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<!--
+  2.1 수단 목록과 그 위의 모달 셋(2.2 등록 · 2.3 상세 · 2.4 수정). 007 의 로그인 후 껍데기를
+  쓴다.
+
+  화면기획의 proto/payment-list.html 을 옮기며 두 곳을 고쳤다.
+    · 상태 열을 더했다. 프로토타입에는 사용 열만 있어 삭제 표시된 행을 구분할 수 없다.
+    · 관리 열에 삭제 버튼을 더했다. 프로토타입에는 상세·수정뿐이라 지울 방법이 없다.
+
+  구분과 용도는 영문 값 대신 말로 보인다. CARD·EXPENSE 는 화면 밖의 값이다.
+
+  유효기간 열을 두지 않는다. 계좌에는 그 값이 없어 절반이 빈 칸이 되고, 빈 칸은 "유효기간을
+  모르는 카드"로 읽힌다. 유효기간은 상세 모달에서 보인다.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: page('지출·소득 수단', ~{::section})}">
+<body>
+<!-- editing: 제출이 실패해 다시 그리는 중인가. 그때는 사용자가 고른 값을 되채운다 —
+     되받은 값으로 덮으면 사용자가 방금 바꾼 것이 사라진다. -->
+<section th:with="editing=${openModal == 'edit' and target == null}">
+  <div class="page-header">
+    <h1>지출·소득 수단</h1>
+    <div class="page-header-actions">
+      <a class="btn btn-primary" th:href="@{/payments(m='create')}">수단 등록</a>
+    </div>
+  </div>
+
+  <div class="alert alert-info" th:if="${notice != null}" role="status" th:text="${notice}">안내</div>
+  <div th:replace="~{fragments/form-error :: formTop}"></div>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+      <tr>
+        <th>이름</th><th>구분</th><th>용도</th><th>사용</th><th>상태</th><th>관리</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="method : ${methods}">
+        <td th:text="${method.name()}">국민카드</td>
+        <td th:text="${method.typeLabel()}">카드</td>
+        <td th:text="${method.purposeLabel()}">지출용</td>
+        <td>
+          <span th:replace="~{fragments/status-badge :: inUse(
+                  ${method.inUseLabel()}, ${method.inUse() == null or method.inUse()})}"></span>
+        </td>
+        <td>
+          <span th:replace="~{fragments/status-badge :: deleted(
+                  ${method.statusLabel()}, ${method.isDeleted()})}"></span>
+        </td>
+        <td class="actions">
+          <a class="btn btn-ghost btn-sm"
+             th:href="@{/payments(m='detail', id=${method.paymentMethodId()})}">상세</a>
+          <!-- 삭제된 행에는 수정·삭제를 그리지 않는다. 다시 삭제하면 거절되고, 고쳐도
+               지출·소득 입력의 선택 목록에 돌아오지 않는다. -->
+          <a class="btn btn-ghost btn-sm" th:unless="${method.isDeleted()}"
+             th:href="@{/payments(m='edit', id=${method.paymentMethodId()})}">수정</a>
+          <button type="button" class="btn btn-ghost btn-sm" th:unless="${method.isDeleted()}"
+                  th:attr="data-modal-open='confirm-payment-delete-' + ${method.paymentMethodId()}">삭제</button>
+        </td>
+      </tr>
+      <tr th:if="${#lists.isEmpty(methods)}">
+        <td colspan="6">등록한 수단이 없습니다.</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 삭제 확인 다이얼로그. 007 의 공통 다이얼로그를 쓰고 본문은 이 화면이 넘긴다.
+       담는 것 셋 — 대상이 무엇인지, 과거 내역의 이름은 남는다는 것, 되돌릴 수 없다는 것.
+       ②를 모르면 사용자는 과거 내역이 함께 사라질까 봐 지우지 못한다. -->
+  <th:block th:each="method : ${methods}" th:unless="${method.isDeleted()}">
+    <div th:replace="~{fragments/confirm-dialog :: confirmDialog(
+            'confirm-payment-delete-' + ${method.paymentMethodId()},
+            '수단 삭제',
+            ${method.name()} + ' 수단을 삭제합니다. '
+              + '과거 내역의 수단 이름은 그대로 남습니다. '
+              + '삭제는 되돌릴 수 없고, 지출·소득 입력에서 고를 수 없게 됩니다.',
+            '삭제',
+            @{/payments/{id}/delete(id=${method.paymentMethodId()})})}"></div>
+  </th:block>
+
+  <!-- 2.2 등록 모달 -->
+  <div th:replace="~{fragments/modal-shell :: modalShell(
+          'modal-payment-create', '수단 등록', ~{::div.payment-create-body}, '등록')}"></div>
+  <div class="payment-create-body" hidden>
+    <form id="form-modal-payment-create" th:action="@{/payments}" method="post"
+          data-expiry-form>
+      <div class="form-group">
+        <label for="create-name">이름</label>
+        <input class="input" id="create-name" name="name" type="text" required
+               th:value="${openModal == 'create'} ? ${param.name} : ''">
+      </div>
+      <div class="form-group">
+        <label for="create-type">구분</label>
+        <!-- 고를 수 있는 값이 둘뿐이다. 자유 입력을 두면 화면이 고를 수 없는 값을 서버가
+             받게 되고, 사용자에게는 자기가 고른 것이 거절된 것으로 보인다. -->
+        <select class="select" id="create-type" name="type" required data-expiry-toggle
+                th:with="chosen=${openModal == 'create' and param.type != null} ? ${param.type[0]} : ''">
+          <option value="CARD" th:selected="${chosen != 'ACCOUNT'}">카드</option>
+          <option value="ACCOUNT" th:selected="${chosen == 'ACCOUNT'}">계좌</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="create-purpose">용도</label>
+        <select class="select" id="create-purpose" name="purpose" required
+                th:with="chosen=${openModal == 'create' and param.purpose != null} ? ${param.purpose[0]} : ''">
+          <option value="" th:selected="${chosen == ''}">고르세요</option>
+          <option value="EXPENSE" th:selected="${chosen == 'EXPENSE'}">지출용</option>
+          <option value="INCOME" th:selected="${chosen == 'INCOME'}">소득용</option>
+        </select>
+        <p class="form-hint">한 수단은 지출용과 소득용 중 한쪽만 갖습니다</p>
+        <span th:replace="~{fragments/form-error :: fieldError('purpose')}"></span>
+      </div>
+      <div class="form-group">
+        <label for="create-inUse">사용 여부</label>
+        <select class="select" id="create-inUse" name="inUse" required
+                th:with="chosen=${openModal == 'create' and param.inUse != null} ? ${param.inUse[0]} : 'true'">
+          <option value="true" th:selected="${chosen != 'false'}">사용</option>
+          <option value="false" th:selected="${chosen == 'false'}">사용 안 함</option>
+        </select>
+      </div>
+      <!-- 구분이 카드일 때만 보인다. 접고 펴는 것은 브라우저가 하고, 계좌일 때 값을
+           보내지 않는 보장은 서버가 한다. -->
+      <div class="form-group" data-expiry-field>
+        <label for="create-cardExpiry">카드 유효기간</label>
+        <input class="input" id="create-cardExpiry" name="cardExpiry" type="month"
+               th:value="${openModal == 'create'} ? ${param.cardExpiry} : ''">
+        <p class="form-hint">카드일 때만 저장됩니다</p>
+        <span th:replace="~{fragments/form-error :: fieldError('cardExpiry')}"></span>
+      </div>
+    </form>
+  </div>
+
+  <!-- 2.3 상세 모달. 읽기 전용이고 「수정」이 수정 모달 주소로 넘긴다. -->
+  <div th:replace="~{fragments/modal-shell :: modalShell(
+          'modal-payment-detail', '수단 상세', ~{::div.payment-detail-body}, '닫기')}"></div>
+  <div class="payment-detail-body" hidden>
+    <dl class="detail-dl" th:if="${target != null}">
+      <dt>이름</dt><dd th:text="${target.name()}">국민카드</dd>
+      <dt>구분</dt><dd th:text="${target.typeLabel()}">카드</dd>
+      <dt>용도</dt><dd th:text="${target.purposeLabel()}">지출용</dd>
+      <dt>사용 여부</dt><dd th:text="${target.inUseLabel()}">사용</dd>
+      <dt>상태</dt><dd th:text="${target.statusLabel()}">정상</dd>
+      <!-- 목록에 유효기간 열이 없어 여기가 확인하는 유일한 자리다. 계좌면 그리지 않는다. -->
+      <th:block th:if="${target.hasCardExpiry()}">
+        <dt>카드 유효기간</dt><dd th:text="${target.cardExpiry()}">2027-05</dd>
+      </th:block>
+    </dl>
+    <div class="auth-links" th:if="${target != null and !target.isDeleted()}">
+      <a th:href="@{/payments(m='edit', id=${target.paymentMethodId()})}">수정</a>
+    </div>
+  </div>
+
+  <!-- 2.4 수정 모달. 값은 모달이 열리기 전에 서버가 조회해 실어 둔다. -->
+  <div th:replace="~{fragments/modal-shell :: modalShell(
+          'modal-payment-edit', '수단 수정', ~{::div.payment-edit-body}, '저장')}"></div>
+  <div class="payment-edit-body" hidden>
+    <form id="form-modal-payment-edit" method="post" data-expiry-form
+          th:action="@{/payments/{id}(id=${target != null} ? ${target.paymentMethodId()} : ${targetId})}">
+      <div class="form-group">
+        <label for="edit-name">이름</label>
+        <input class="input" id="edit-name" name="name" type="text" required
+               th:value="${openModal == 'edit' and target == null} ? ${param.name}
+                         : (${target != null} ? ${target.name()} : '')">
+      </div>
+      <div class="form-group">
+        <label for="edit-type">구분</label>
+        <select class="select" id="edit-type" name="type" required data-expiry-toggle
+                th:with="chosen=${editing and param.type != null} ? ${param.type[0]}
+                                 : (${target != null and !target.isCard()} ? 'ACCOUNT' : 'CARD')">
+          <option value="CARD" th:selected="${chosen != 'ACCOUNT'}">카드</option>
+          <option value="ACCOUNT" th:selected="${chosen == 'ACCOUNT'}">계좌</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="edit-purpose">용도</label>
+        <!-- 실패로 다시 그릴 때 사용자가 고른 값을 그대로 둔다. 원래 값으로 되돌리면
+             사용자는 자기가 무엇을 바꿨는지 모른 채 저장을 반복한다. -->
+        <select class="select" id="edit-purpose" name="purpose" required
+                th:with="chosen=${editing and param.purpose != null} ? ${param.purpose[0]}
+                                 : (${target != null} ? ${target.purpose()} : '')">
+          <option value="EXPENSE" th:selected="${chosen == 'EXPENSE'}">지출용</option>
+          <option value="INCOME" th:selected="${chosen == 'INCOME'}">소득용</option>
+        </select>
+        <span th:replace="~{fragments/form-error :: fieldError('purpose')}"></span>
+      </div>
+      <div class="form-group">
+        <label for="edit-inUse">사용 여부</label>
+        <select class="select" id="edit-inUse" name="inUse" required
+                th:with="chosen=${editing and param.inUse != null} ? ${param.inUse[0]}
+                                 : ((${target != null and target.inUse() != null and !target.inUse()}) ? 'false' : 'true')">
+          <option value="true" th:selected="${chosen != 'false'}">사용</option>
+          <option value="false" th:selected="${chosen == 'false'}">사용 안 함</option>
+        </select>
+      </div>
+      <div class="form-group" data-expiry-field>
+        <label for="edit-cardExpiry">카드 유효기간</label>
+        <input class="input" id="edit-cardExpiry" name="cardExpiry" type="month"
+               th:value="${openModal == 'edit' and target == null} ? ${param.cardExpiry}
+                         : (${target != null} ? ${target.cardExpiry()} : '')">
+        <p class="form-hint">카드일 때만 저장됩니다</p>
+        <span th:replace="~{fragments/form-error :: fieldError('cardExpiry')}"></span>
+      </div>
+    </form>
+  </div>
+
+  <th:block th:replace="~{fragments/modal-open :: opener}"></th:block>
+
+  <!--
+    구분에 따라 유효기간 칸을 접고 편다. 입력 중의 편의이며 보장이 아니다 — 계좌인데 값이
+    남아 있어도 화면 모듈이 요청에서 빼므로, 이 스크립트가 막혀도 저장은 그대로 동작한다.
+  -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      Array.prototype.forEach.call(document.querySelectorAll("[data-expiry-form]"), function (form) {
+        var picker = form.querySelector("[data-expiry-toggle]");
+        var field = form.querySelector("[data-expiry-field]");
+        if (!picker || !field) return;
+        function sync() {
+          field.hidden = picker.value !== "CARD";
+        }
+        picker.addEventListener("change", sync);
+        sync();
+      });
+    });
+  </script>
+</section>
+</body>
+</html>
