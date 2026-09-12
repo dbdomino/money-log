@@ -171,3 +171,36 @@
 | 삭제가 `POST` 이고 확인 다이얼로그를 거친다 | §5 |
 | 삭제 확인 본문이 두 화면에서 다르다 | §5 |
 | 목록 요청에 조회 구간이 실리지 않는다 | research 4 |
+
+---
+
+## 7. 이 기능이 부르는 백엔드 API
+
+화면 8개가 백엔드 003 의 API **11건**을 부른다.
+
+| 묶음 | API |
+|---|---|
+| 수단 (2.1~2.4) | `PaymentMethodList` · `PaymentMethodGet` · `PaymentMethodCreate` · `PaymentMethodUpdate` · `PaymentMethodDelete` |
+| 지출유형 (2.5~2.8) | `ExpendGroupList` · `ExpendGroupGet` · `ExpendGroupCreate` · `ExpendGroupUpdate` · `ExpendGroupDelete` |
+| 아이콘 | `ExpendGroupIconGet` — **화면이 직접 부르지 않는다.** 007 의 중계가 인증을 실어 대신 부른다 |
+
+**사용 중 목록 2건은 009 가 부르지 않는다.** `PaymentMethodListActive` 와
+`ExpendGroupListActive` 는 지출·소득 입력의 선택 목록이 쓰며 010·011 이 부른다. 009 는
+관리 목록만 만든다(§2).
+
+---
+
+## 8. 백엔드가 쓰는 값과 화면이 보이는 말
+
+백엔드 계약의 값을 화면에 그대로 내보내지 않는다. **화면 밖의 값**이기 때문이다.
+
+| 자리 | 백엔드 값 | 화면이 보이는 말 |
+|---|---|---|
+| 수단 구분 | `CARD` · `ACCOUNT` | 「카드」 · 「계좌」 |
+| 수단 용도 | `EXPENSE` · `INCOME` | 「지출용」 · 「소득용」 |
+| 사용 여부 | 참 · 거짓 | 「사용」 · 「사용 안 함」 |
+| 삭제 여부 | 참 · 거짓 | 「정상」 · 「삭제됨」 |
+| 기본 유형 여부 | 참 · 거짓 | 「기본」 · 「직접 만듦」 |
+
+**고르는 칸도 같은 규칙이다.** 사용자는 말을 고르고 화면 모듈이 값으로 옮긴다. 자유 입력을
+두지 않아 **화면이 고를 수 없는 값을 서버가 받는 일이 없다**.
