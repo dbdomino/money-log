@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<!--
+  2.5 지출유형 목록과 그 위의 모달 셋(2.6 등록 · 2.7 상세 · 2.8 수정). 007 의 로그인 후
+  껍데기를 쓴다.
+
+  화면기획의 proto/expend-group-list.html 을 옮기며 두 곳을 고쳤다.
+    · 상태 열을 더했다. 프로토타입에는 사용 열만 있어 삭제 표시된 행을 구분할 수 없다.
+    · 관리 열에 삭제 버튼을 더했다. 프로토타입에는 상세·수정뿐이라 지울 방법이 없다.
+
+  아이콘은 화면 모듈 주소로 건다. 백엔드 주소를 직접 걸면 인증이 붙지 않아 전부 실패하고,
+  그 실패는 이미지 깨짐으로만 보여 원인을 짐작하기 어렵다.
+
+  아이콘이 없으면 이미지 태그 자체를 그리지 않는다. 빈 주소를 건 이미지는 브라우저가 현재
+  페이지를 다시 받아 와 깨진 표시를 남긴다.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: page('지출유형', ~{::section})}">
+<body>
+<!-- editing: 제출이 실패해 다시 그리는 중인가. 그때는 사용자가 고른 값을 되채운다. -->
+<section th:with="editing=${openModal == 'edit' and target == null}">
+  <div class="page-header">
+    <h1>지출유형</h1>
+    <div class="page-header-actions">
+      <a class="btn btn-primary" th:href="@{/expend-groups(m='create')}">유형 등록</a>
+    </div>
+  </div>
+
+  <div class="alert alert-info" th:if="${notice != null}" role="status" th:text="${notice}">안내</div>
+  <!-- 사용 중인 유형은 지울 수 없지만 목적을 이룰 다른 길이 있다. 대안을 적지 않으면
+       사용자는 막혔다고만 읽는다. -->
+  <div class="alert alert-info" th:if="${alternative != null}" role="status"
+       th:text="${alternative}">대안</div>
+  <div th:replace="~{fragments/form-error :: formTop}"></div>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+      <tr>
+        <th>아이콘</th><th>이름</th><th>구분</th><th>사용</th><th>상태</th><th>관리</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="group : ${groups}">
+        <td>
+          <img th:if="${group.hasIcon()}" width="24" height="24" alt=""
+               th:src="@{/expend-groups/icons/{filename}(filename=${group.iconFilename()})}">
+          <!-- 아이콘이 없으면 이미지를 걸지 않는다. 자리가 비어 보이는 것과 깨진 것은 다르다. -->
+          <span th:unless="${group.hasIcon()}" class="form-hint" aria-hidden="true">—</span>
+        </td>
+        <td th:text="${group.name()}">식비</td>
+        <td th:text="${group.originLabel()}">기본</td>
+        <td>
+          <span th:replace="~{fragments/status-badge :: inUse(
+                  ${group.inUseLabel()}, ${group.inUse() == null or group.inUse()})}"></span>
+        </td>
+        <td>
+          <span th:replace="~{fragments/status-badge :: deleted(
+                  ${group.statusLabel()}, ${group.isDeleted()})}"></span>
+        </td>
+        <td class="actions">
+          <a class="btn btn-ghost btn-sm"
+             th:href="@{/expend-groups(m='detail', id=${group.expendGroupId()})}">상세</a>
+          <a class="btn btn-ghost btn-sm" th:unless="${group.isDeleted()}"
+             th:href="@{/expend-groups(m='edit', id=${group.expendGroupId()})}">수정</a>
+          <!-- 기본 유형에는 삭제 버튼을 그리지 않는다. 목록 응답이 기본인지 알려 주므로
+               누를 수 없는 버튼을 둘 이유가 없다. -->
+          <button type="button" class="btn btn-ghost btn-sm"
+                  th:unless="${group.isDeleted() or group.isDefaultGroup()}"
+                  th:attr="data-modal-open='confirm-expend-group-delete-' + ${group.expendGroupId()}">삭제</button>
+        </td>
+      </tr>
+      <tr th:if="${#lists.isEmpty(groups)}">
+        <td colspan="6">등록한 지출유형이 없습니다.</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 삭제 확인 다이얼로그. 담는 것 셋 — 대상이 무엇인지, 이름이 계속 점유된다는 것,
+       되돌릴 수 없다는 것. ②가 수단과 다른 점이며 사용자가 가장 자주 부딪히는 사실이다. -->
+  <th:block th:each="group : ${groups}"
+            th:unless="${group.isDeleted() or group.isDefaultGroup()}">
+    <div th:replace="~{fragments/confirm-dialog :: confirmDialog(
+            'confirm-expend-group-delete-' + ${group.expendGroupId()},
+            '지출유형 삭제',
+            ${group.name()} + ' 유형을 삭제합니다. '
+              + '삭제해도 그 이름은 계속 점유되어 같은 이름으로 다시 만들 수 없습니다. '
+              + '삭제는 되돌릴 수 없고, 지출 입력에서 고를 수 없게 됩니다.',
+            '삭제',
+            @{/expend-groups/{id}/delete(id=${group.expendGroupId()})})}"></div>
+  </th:block>
+
+  <!-- 2.6 등록 모달 -->
+  <div th:replace="~{fragments/modal-shell :: modalShell(
+          'modal-expend-group-create', '지출유형 등록', ~{::div.expend-group-create-body}, '등록')}"></div>
+  <div class="expend-group-create-body" hidden>
+    <form id="form-modal-expend-group-create" th:action="@{/expend-groups}" method="post"
+          enctype="multipart/form-data" data-icon-form>
+      <div class="form-group">
+        <label for="create-name">이름</label>
+        <input class="input" id="create-name" name="name" type="text" required
+               th:value="${openModal == 'create'} ? ${param.name} : ''">
+        <p class="form-hint" th:if="${nameHint != null}" th:text="${nameHint}"></p>
+        <span th:replace="~{fragments/form-error :: fieldError('name')}"></span>
+      </div>
+      <div class="form-group">
+        <label for="create-inUse">사용 여부</label>
+        <select class="select" id="create-inUse" name="inUse" required
+                th:with="chosen=${openModal == 'create' and param.inUse != null} ? ${param.inUse[0]} : 'true'">
+          <option value="true" th:selected="${chosen != 'false'}">사용</option>
+          <option value="false" th:selected="${chosen == 'false'}">사용 안 함</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="create-iconFile">아이콘 (선택)</label>
+        <input class="input" id="create-iconFile" name="iconFile" type="file"
+               accept="image/png,image/jpeg,image/gif" data-icon-input>
+        <!-- 제약을 입력 전부터 적는다. 고른 뒤에만 알려 주면 파일을 찾아 다시 골라야 한다. -->
+        <p class="form-hint">png·jpg·gif 형식, 1MB 이하</p>
+        <p class="form-hint">형식은 확장자가 아니라 파일 내용으로 판정합니다</p>
+        <span th:replace="~{fragments/form-error :: fieldError('iconFile')}"></span>
+        <!-- 저장 전 미리보기. 브라우저가 고른 파일을 읽어 그리며 백엔드를 부르지 않는다. -->
+        <img data-icon-preview hidden width="48" height="48" alt="고른 아이콘 미리보기">
+      </div>
+    </form>
+  </div>
+
+  <!-- 2.7 상세 모달. 읽기 전용이고 「수정」이 수정 모달 주소로 넘긴다. -->
+  <div th:replace="~{fragments/modal-shell :: modalShell(
+          'modal-expend-group-detail', '지출유형 상세', ~{::div.expend-group-detail-body}, '닫기')}"></div>
+  <div class="expend-group-detail-body" hidden>
+    <th:block th:if="${target != null}">
+      <p>
+        <img th:if="${target.hasIcon()}" width="48" height="48" alt=""
+             th:src="@{/expend-groups/icons/{filename}(filename=${target.iconFilename()})}">
+        <span th:unless="${target.hasIcon()}" class="form-hint">아이콘 없음</span>
+      </p>
+      <dl class="detail-dl">
+        <dt>이름</dt><dd th:text="${target.name()}">식비</dd>
+        <dt>구분</dt><dd th:text="${target.originLabel()}">기본</dd>
+        <dt>사용 여부</dt><dd th:text="${target.inUseLabel()}">사용</dd>
+        <dt>상태</dt><dd th:text="${target.statusLabel()}">정상</dd>
+      </dl>
+      <div class="auth-links" th:unless="${target.isDeleted()}">
+        <a th:href="@{/expend-groups(m='edit', id=${target.expendGroupId()})}">수정</a>
+      </div>
+    </th:block>
+  </div>
+
+  <!-- 2.8 수정 모달. 값은 모달이 열리기 전에 서버가 조회해 실어 둔다. -->
+  <div th:replace="~{fragments/modal-shell :: modalShell(
+          'modal-expend-group-edit', '지출유형 수정', ~{::div.expend-group-edit-body}, '저장')}"></div>
+  <div class="expend-group-edit-body" hidden>
+    <form id="form-modal-expend-group-edit" method="post" enctype="multipart/form-data"
+          data-icon-form
+          th:action="@{/expend-groups/{id}(id=${target != null} ? ${target.expendGroupId()} : ${targetId})}">
+      <div class="form-group">
+        <label for="edit-name">이름</label>
+        <!-- 기본 유형이면 잠근다. 목록 응답이 알려 주므로 고칠 수 없는 칸을 열어 두고
+             저장에서 실패시킬 이유가 없다. -->
+        <input class="input" id="edit-name" name="name" type="text" required
+               th:readonly="${target != null and target.isDefaultGroup()}"
+               th:value="${editing and param.name != null} ? ${param.name[0]}
+                         : (${target != null} ? ${target.name()} : '')">
+        <p class="form-hint" th:if="${target != null and target.isDefaultGroup()}">
+          기본 유형의 이름은 바꿀 수 없습니다
+        </p>
+        <p class="form-hint" th:if="${nameHint != null}" th:text="${nameHint}"></p>
+        <span th:replace="~{fragments/form-error :: fieldError('name')}"></span>
+      </div>
+      <div class="form-group">
+        <label for="edit-inUse">사용 여부</label>
+        <!-- 기본 유형도 이 칸은 바꿀 수 있다. 막힌 것은 이름과 삭제 둘뿐이다. -->
+        <select class="select" id="edit-inUse" name="inUse" required
+                th:with="chosen=${editing and param.inUse != null} ? ${param.inUse[0]}
+                                 : ((${target != null and target.inUse() != null and !target.inUse()}) ? 'false' : 'true')">
+          <option value="true" th:selected="${chosen != 'false'}">사용</option>
+          <option value="false" th:selected="${chosen == 'false'}">사용 안 함</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>현재 아이콘</label>
+        <p>
+          <img th:if="${target != null and target.hasIcon()}" width="48" height="48" alt=""
+               th:src="@{/expend-groups/icons/{filename}(filename=${target.iconFilename()})}">
+          <span th:unless="${target != null and target.hasIcon()}" class="form-hint">아이콘 없음</span>
+        </p>
+      </div>
+      <div class="form-group">
+        <label for="edit-iconFile">아이콘 바꾸기 (선택)</label>
+        <input class="input" id="edit-iconFile" name="iconFile" type="file"
+               accept="image/png,image/jpeg,image/gif" data-icon-input>
+        <!-- 비어 있는 것이 정상 상태라는 것을 사용자가 알아야 한다. -->
+        <p class="form-hint">변경할 때만 고르세요. 비워 두면 지금 아이콘이 그대로 남습니다</p>
+        <p class="form-hint">png·jpg·gif 형식, 1MB 이하</p>
+        <!-- 브라우저가 파일 입력에 값을 넣는 것을 허용하지 않아 되채울 수 없다.
+             적지 않으면 사용자는 이름만 고쳐 저장하고 아이콘은 올라가지 않은 채 성공한다. -->
+        <p class="form-hint" th:if="${failMessage != null}">
+          저장이 실패하면 고른 파일이 지워집니다. 아이콘도 바꾸려면 다시 골라 주세요
+        </p>
+        <span th:replace="~{fragments/form-error :: fieldError('iconFile')}"></span>
+        <img data-icon-preview hidden width="48" height="48" alt="고른 아이콘 미리보기">
+      </div>
+    </form>
+  </div>
+
+  <th:block th:replace="~{fragments/modal-open :: opener}"></th:block>
+
+  <!--
+    고른 파일을 저장 전에 보여 준다. 브라우저가 파일을 읽어 그리는 화면 조작이며 API 호출이
+    아니다 — 007 이 "화면 스크립트는 API 를 부르지 않는다"로 정한 선 안에 있다.
+
+    스크립트가 막히면 미리보기만 사라지고 선택과 저장은 그대로 동작한다.
+  -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      Array.prototype.forEach.call(document.querySelectorAll("[data-icon-form]"), function (form) {
+        var input = form.querySelector("[data-icon-input]");
+        var preview = form.querySelector("[data-icon-preview]");
+        if (!input || !preview || !window.FileReader) return;
+        input.addEventListener("change", function () {
+          var file = input.files && input.files[0];
+          if (!file) {
+            preview.hidden = true;
+            preview.removeAttribute("src");
+            return;
+          }
+          var reader = new FileReader();
+          reader.onload = function (e) {
+            preview.src = e.target.result;
+            preview.hidden = false;
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+    });
+  </script>
+</section>
+</body>
+</html>
