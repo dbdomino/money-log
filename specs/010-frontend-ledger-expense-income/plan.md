@@ -190,10 +190,14 @@ app-mod/money-app/src/main/java/com/dbdomino/moneylog/front/
     ├── LedgerExcelController.java        양식 받기 · 업로드
     ├── LedgerRow.java · LedgerMonth.java 화면이 보여 주는 값
     ├── LedgerQuery.java                  연·월과 필터를 주소로 들고 다닌다
+    ├── LedgerPageModel.java              목록·합계·필터·모달 값을 모델에 담는 한 자리
+    ├── ExcelUploadResult.java            업로드 성공 건수 · 행 오류 목록
     └── form/
 
 app-mod/money-app/src/main/resources/templates/
-├── layout/ · fragments/              (007)(008)(009)
+├── layout/                           (007)
+├── fragments/                        (007)(008)(009)
+│   └── ledger-badge.html             ← 010: 행 종류 넷을 그리는 뱃지 조각
 ├── auth/ · member/ · admin/          (008)
 ├── payments/ · expend-groups/        (009)
 └── ledger/                           ← 010: list (+ 모달 넷) · excel
