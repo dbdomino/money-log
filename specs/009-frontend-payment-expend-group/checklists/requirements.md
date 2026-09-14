@@ -6,7 +6,7 @@
 
 ## Content Quality
 
-- [ ] No implementation details (languages, frameworks, APIs) — **의도적 미충족.** 화면이 부르는 API 이름과 백엔드가 확정한 에러코드는 이 스펙의 계약이라 이름 없이는 요구사항을 검증할 수 없다. 001~007 과 같은 관례다
+- [x] No implementation details (languages, frameworks, APIs)
 - [x] Focused on user value and business needs
 - [x] Written for non-technical stakeholders
 - [x] All mandatory sections completed
@@ -27,7 +27,7 @@
 - [x] All functional requirements have clear acceptance criteria
 - [x] User scenarios cover primary flows
 - [x] Feature meets measurable outcomes defined in Success Criteria
-- [ ] No implementation details leak into specification — 위 첫 항목과 같은 사유
+- [x] No implementation details leak into specification
 
 ## Notes
 
@@ -40,3 +40,21 @@
 ### 남은 판단
 
 - 이 스펙이 목록+모달 패턴의 기준이 된다. 010~012 가 같은 모양을 따르므로 여기서 정한 것이 뒤에 영향을 준다.
+
+### 구현 세부를 계약으로 옮긴 기록 (2026-09-13)
+
+착수 시점에는 위 두 항목을 **의도적 미충족**으로 두었다. 008 에서 같은 항목을 정리하며
+확인한 것이 있다 — **007 의 스펙에는 주소도 API 이름도 코드 값도 한 건 없고**, 첫머리에
+"그것을 어떤 수단으로 만드는지는 plan·contracts·quickstart 에 있다"고 못 박아 넘겨 두었다.
+009 도 같은 방식으로 맞췄다. 잃은 정보는 없다.
+
+| 옮긴 것 | 어디로 |
+|---|---|
+| 실패 코드 13건과 붙는 칸·화면 표 | [contracts/list-modal.md](../contracts/list-modal.md) §4 |
+| 부르는 API 11건과 010·011 이 부르는 2건 | [contracts/list-modal.md](../contracts/list-modal.md) §7 |
+| 백엔드 값과 화면이 보이는 말의 대응 | [contracts/list-modal.md](../contracts/list-modal.md) §8 |
+| 화면 8개의 주소 | [contracts/payment-methods.md](../contracts/payment-methods.md) · [expend-groups.md](../contracts/expend-groups.md) |
+
+스펙 본문은 실패를 **뜻으로** 적는다 — "`3005` 로 거절된다"가 아니라 "사용 내역이 있어 바꿀
+수 없다는 사유가 표시된다"이다. 요구사항은 그대로 검증할 수 있고, 백엔드가 코드를 재배치해도
+스펙을 고칠 일이 없다.

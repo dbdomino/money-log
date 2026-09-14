@@ -59,9 +59,11 @@ class AuthInterceptorTest {
         when(backendApiClient.get(eq("/auth/validate"), eq(TokenValidateResult.class)))
                 .thenReturn(new TokenValidateResult(true, "hong", SessionUser.ROLE_MEMBER, 86_400));
 
-        // 통과하면 매핑된 화면이 없어 404 다. 판정에 걸렸다면 302 였을 것이다.
+        // 007 시점에는 이 주소에 화면이 없어 404 로 "판정을 통과했다"를 확인했다. 009 가
+        // 수단 목록을 세운 뒤로는 그 화면이 실제로 그려지는 것이 통과의 증거다.
+        // 판정에 걸렸다면 302 였을 것이다.
         mockMvc.perform(get(PROTECTED_URL).session(LoggedInSessions.member()))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk());
     }
 
     @Test
