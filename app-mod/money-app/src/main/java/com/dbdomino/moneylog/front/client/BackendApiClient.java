@@ -194,7 +194,7 @@ public class BackendApiClient {
                 throw new BackendUnavailableException(
                         "파일을 기다린 호출에 성공 봉투가 왔습니다. 백엔드 응답 규격이 어긋났습니다.");
             }
-            throw new BackendApiException(envelope.resCode(), envelope.message());
+            throw new BackendApiException(envelope.resCode(), envelope.message(), envelope.data());
         }
 
         if (raw.body() == null || raw.body().length == 0) {
@@ -258,7 +258,10 @@ public class BackendApiClient {
                 throw new SessionExpiredException(envelope.resCode(), envelope.message());
             }
 
-            throw new BackendApiException(envelope.resCode(), envelope.message());
+            // 봉투의 data 를 통째로 실어 올린다. 엑셀 행 오류처럼 구조를 가진 실패가
+            // 있는데, 문구 하나만 꺼내면 그 정보가 화면에 닿지 않는다(010 research 1).
+            // 쓰지 않는 화면은 이 값을 보지 않으므로 지금까지의 동작이 그대로다.
+            throw new BackendApiException(envelope.resCode(), envelope.message(), envelope.data());
         }
     }
 

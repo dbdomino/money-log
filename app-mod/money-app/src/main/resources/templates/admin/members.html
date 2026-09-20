@@ -106,7 +106,7 @@
   <!-- 1.9 회원 추가 모달 -->
   <div th:replace="~{fragments/modal-shell :: modalShell(
           'modal-member-create', '회원 추가', ~{::div.member-create-body}, '추가')}"></div>
-  <div class="member-create-body" hidden>
+  <div hidden><div class="member-create-body">
     <form id="form-modal-member-create" th:action="@{/admin/members}" method="post">
       <div class="form-group">
         <label for="create-memberId">아이디</label>
@@ -152,12 +152,12 @@
         <textarea class="textarea" id="create-intro" name="intro"></textarea>
       </div>
     </form>
-  </div>
+  </div></div>
 
   <!-- 1.10 회원 수정 모달. 값은 모달이 열리기 전에 서버가 조회해 실어 둔다. -->
   <div th:replace="~{fragments/modal-shell :: modalShell(
           'modal-member-edit', '회원 수정', ~{::div.member-edit-body}, '저장')}"></div>
-  <div class="member-edit-body" hidden>
+  <div hidden><div class="member-edit-body">
     <form id="form-modal-member-edit" method="post"
           th:action="@{/admin/members/{id}(id=${editTarget != null} ? ${editTarget.memberId()} : ${editTargetId})}">
       <div class="form-group">
@@ -208,7 +208,7 @@
         <span th:replace="~{fragments/form-error :: fieldError('password')}"></span>
       </div>
     </form>
-  </div>
+  </div></div>
 
   <!--
     모달을 여는 일은 007 의 스크립트가 한다. 주소에 ?m= 가 실려 온 경우는 007 의 딥링크

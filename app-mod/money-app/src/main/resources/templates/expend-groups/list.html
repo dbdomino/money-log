@@ -93,7 +93,7 @@
   <!-- 2.6 등록 모달 -->
   <div th:replace="~{fragments/modal-shell :: modalShell(
           'modal-expend-group-create', '지출유형 등록', ~{::div.expend-group-create-body}, '등록')}"></div>
-  <div class="expend-group-create-body" hidden>
+  <div hidden><div class="expend-group-create-body">
     <form id="form-modal-expend-group-create" th:action="@{/expend-groups}" method="post"
           enctype="multipart/form-data" data-icon-form>
       <div class="form-group">
@@ -123,12 +123,12 @@
         <img data-icon-preview hidden width="48" height="48" alt="고른 아이콘 미리보기">
       </div>
     </form>
-  </div>
+  </div></div>
 
   <!-- 2.7 상세 모달. 읽기 전용이고 「수정」이 수정 모달 주소로 넘긴다. -->
   <div th:replace="~{fragments/modal-shell :: modalShell(
           'modal-expend-group-detail', '지출유형 상세', ~{::div.expend-group-detail-body}, '닫기')}"></div>
-  <div class="expend-group-detail-body" hidden>
+  <div hidden><div class="expend-group-detail-body">
     <th:block th:if="${target != null}">
       <p>
         <img th:if="${target.hasIcon()}" width="48" height="48" alt=""
@@ -145,12 +145,12 @@
         <a th:href="@{/expend-groups(m='edit', id=${target.expendGroupId()})}">수정</a>
       </div>
     </th:block>
-  </div>
+  </div></div>
 
   <!-- 2.8 수정 모달. 값은 모달이 열리기 전에 서버가 조회해 실어 둔다. -->
   <div th:replace="~{fragments/modal-shell :: modalShell(
           'modal-expend-group-edit', '지출유형 수정', ~{::div.expend-group-edit-body}, '저장')}"></div>
-  <div class="expend-group-edit-body" hidden>
+  <div hidden><div class="expend-group-edit-body">
     <form id="form-modal-expend-group-edit" method="post" enctype="multipart/form-data"
           data-icon-form
           th:action="@{/expend-groups/{id}(id=${target != null} ? ${target.expendGroupId()} : ${targetId})}">
@@ -202,7 +202,7 @@
         <img data-icon-preview hidden width="48" height="48" alt="고른 아이콘 미리보기">
       </div>
     </form>
-  </div>
+  </div></div>
 
   <th:block th:replace="~{fragments/modal-open :: opener}"></th:block>
 
