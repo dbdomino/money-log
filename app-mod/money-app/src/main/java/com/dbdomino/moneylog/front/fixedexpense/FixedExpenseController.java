@@ -6,7 +6,6 @@ import com.dbdomino.moneylog.front.client.BackendApiException;
 import com.dbdomino.moneylog.front.fixedexpense.form.FixedExpenseForm;
 import com.dbdomino.moneylog.front.support.FormFailure;
 import com.dbdomino.moneylog.front.web.ModalParam;
-import com.dbdomino.moneylog.front.web.Paging;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 import java.util.Set;
@@ -47,14 +46,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class FixedExpenseController {
 
     /**
-     * 이 화면이 여는 모달 넷.
+     * 이 컨트롤러가 여는 모달 셋. <b>넷 중 {@code monthly} 는 빠져 있다.</b>
      *
-     * <p><b>{@code monthly} 만 성격이 다르다</b> — 나머지 셋은 설정 하나를 다루는데 그것은
-     * <b>그 달 전체</b>를 본다. 그래서 대상 식별자를 싣지 않는다.
+     * <p>셋은 설정 하나를 다루는데 그것은 <b>그 달 전체</b>를 본다 — 다루는 저장 단위가
+     * 다르고 대상 식별자도 싣지 않는다. 그래서 {@code FixedExpenseMonthlyController} 가
+     * 맡고, 이 목록 매핑은 {@code m!=monthly} 로 그 요청을 비켜 준다.
+     *
+     * <p><b>주소는 둘이 같다</b>({@code /fixed-expenses}) — 모달이 부모 목록 위에 얹히는
+     * 구조라 그래야 하고, 갈라지는 자리는 매핑의 조건 하나뿐이다.
      */
     private static final Set<String> MODALS = Set.of(
             FixedExpensePageModel.MODAL_CREATE, FixedExpensePageModel.MODAL_DETAIL,
-            FixedExpensePageModel.MODAL_EDIT, FixedExpensePageModel.MODAL_MONTHLY);
+            FixedExpensePageModel.MODAL_EDIT);
 
     private final FixedExpensePageModel pageModel;
     private final BackendApiClient backendApiClient;
@@ -73,14 +76,14 @@ public class FixedExpenseController {
      * <p><b>사용자가 시작점을 직접 넣는 칸을 두지 않는다</b> — 쪽 번호만 받고 환산기가
      * 시작점을 만든다.
      */
-    @GetMapping("/fixed-expenses")
+    @GetMapping(value = "/fixed-expenses", params = "m!=monthly")
     public String list(
             @RequestParam(name = "page", required = false, defaultValue = "0") int page,
             @RequestParam(name = "m", required = false) String modal,
             @RequestParam(name = "id", required = false) Long targetId,
             Model model) {
 
-        pageModel.putList(model, pagingOf(page));
+        pageModel.putList(model, FixedExpensePageModel.pagingOf(page));
         resolveModal(model, modal, targetId)
                 .ifPresent(value -> model.addAttribute(ModalParam.MODEL_ATTRIBUTE, value));
         return FixedExpensePageModel.VIEW;
@@ -96,8 +99,8 @@ public class FixedExpenseController {
      * <p><b>없는 것과 남의 것을 가르지 않는다.</b> 백엔드가 한 코드로 묶었고 화면도 풀지
      * 않는다 — 가르면 식별자를 훑어 남의 고정지출이 실재하는지 알아낼 수 있다.
      *
-     * <p><b>월별 내역은 대상을 조회하지 않는다.</b> 그 달 전체를 보는 화면이라 가리킬 설정이
-     * 없다 — 목록과 단건 수정은 {@code FixedExpenseMonthlyController} 가 맡는다.
+     * <p><b>월별 내역은 여기 오지 않는다.</b> 그 달 전체를 보는 화면이라 가리킬 설정이
+     * 없고, 목록과 단건 수정을 {@code FixedExpenseMonthlyController} 가 맡는다.
      */
     private Optional<String> resolveModal(Model model, String modal, Long targetId) {
         Optional<String> resolved = ModalParam.resolve(modal, MODALS);
@@ -106,8 +109,7 @@ public class FixedExpenseController {
         }
 
         String value = resolved.get();
-        if (FixedExpensePageModel.MODAL_CREATE.equals(value)
-                || FixedExpensePageModel.MODAL_MONTHLY.equals(value)) {
+        if (FixedExpensePageModel.MODAL_CREATE.equals(value)) {
             return resolved;
         }
 
@@ -192,7 +194,7 @@ public class FixedExpenseController {
 
         FormFailure.applyTo(model, exception);
         applyFixedExpenseField(model, exception);
-        pageModel.putList(model, pagingOf(intParam(request, "page")));
+        pageModel.putList(model, FixedExpensePageModel.pagingOf(intParam(request, "page")));
 
         String path = request.getRequestURI();
         if (path.endsWith("/delete")) {
@@ -229,11 +231,6 @@ public class FixedExpenseController {
 
     // ── 도우미 ──────────────────────────────────────────────────────────
 
-    /** 쪽 번호를 환산기로 바꾼다. 음수는 첫 쪽으로 본다 — 주소를 오타로 친 것을 막지 않는다. */
-    private static Paging pagingOf(Integer page) {
-        return page == null || page < 0 ? Paging.first() : Paging.of(page, Paging.DEFAULT_LIMIT);
-    }
-
     /**
      * 실패 착지가 쪽 번호를 요청에서 직접 읽는다.
      *
@@ -255,7 +252,7 @@ public class FixedExpenseController {
 
     /** 성공한 뒤 목록을 다시 그린다. 쪽 번호는 제출에 실려 온 값을 그대로 쓴다. */
     private String redraw(Model model, FixedExpenseParams params, String notice) {
-        pageModel.putList(model, pagingOf(params.page));
+        pageModel.putList(model, FixedExpensePageModel.pagingOf(params.page));
         model.addAttribute("notice", notice);
         return FixedExpensePageModel.VIEW;
     }

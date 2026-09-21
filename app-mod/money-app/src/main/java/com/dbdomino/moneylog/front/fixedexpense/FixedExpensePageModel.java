@@ -77,6 +77,19 @@ public class FixedExpensePageModel {
     }
 
     /**
+     * 쪽 번호를 007 의 환산기로 바꾼다. 음수는 첫 쪽으로 본다.
+     *
+     * <p>컨트롤러 둘이 함께 쓴다 — 월별 내역 모달도 <b>부모 목록을 함께 그리기 때문</b>이다.
+     * 각자 두면 한쪽만 고친 차이가 남고, 증상은 「모달을 열면 목록이 첫 쪽으로 돌아간다」로만
+     * 보인다.
+     *
+     * <p>주소를 오타로 친 것을 오류로 막지 않는다 — 007 이 모달 딥링크를 그렇게 정했다.
+     */
+    public static Paging pagingOf(Integer page) {
+        return page == null || page < 0 ? Paging.first() : Paging.of(page, Paging.DEFAULT_LIMIT);
+    }
+
+    /**
      * 설정 목록을 조회해 모델에 담는다.
      *
      * <p>응답이 비어 와도 <b>빈 목록으로 그린다</b> — 여기서 터지면 사용자는 고정지출 관리가

@@ -41,6 +41,51 @@ final class FixedExpenseFixture {
         return page(0, 10);
     }
 
+    // ── 그 달 내역 ──────────────────────────────────────────────────────
+
+    /**
+     * 2026년 7월 내역.
+     *
+     * <p><b>합계를 목록의 합과 일부러 다르게</b> 두었다 — 행의 합은 555,000 인데 합계는
+     * 900,000 이다. 상단 합계는 <b>그 달 전체 기준</b>이고 목록은 좁혀질 수 있어 둘은 다를
+     * 수 있다. 화면이 목록을 다시 더해 맞추면 이 자료에서 두 값이 갈린다.
+     *
+     * <p>둘째 행만 <b>직접 고친 행</b>이다. 뱃지가 고친 행에만 붙는지 본다.
+     */
+    static MonthlyResult monthly() {
+        return new MonthlyResult(2026, 7, 900_000L, List.of(
+                new MonthlyRow(1L, 2026, 7, "월세", 500_000L, "2026-07-05", "원룸 월세",
+                        1L, "국민카드", 2L, "주거", false),
+                new MonthlyRow(2L, 2026, 7, "통신비", 55_000L, "2026-07-25", "휴대폰 요금",
+                        1L, "국민카드", 3L, "통신", true)));
+    }
+
+    /** 단건 수정 뒤의 그 달. 첫 행에 직접 수정 표시가 켜져 있다. */
+    static MonthlyResult monthlyAfterUpdate() {
+        return new MonthlyResult(2026, 7, 900_000L, List.of(
+                new MonthlyRow(1L, 2026, 7, "월세", 550_000L, "2026-07-10", "7월만 관리비 포함",
+                        1L, "국민카드", 2L, "주거", true),
+                new MonthlyRow(2L, 2026, 7, "통신비", 55_000L, "2026-07-25", "휴대폰 요금",
+                        1L, "국민카드", 3L, "통신", true)));
+    }
+
+    /** 적용 기간이 이 달을 포함하지 않는 달. 빈 달 안내를 보는 자료다. */
+    static MonthlyResult monthlyEmpty() {
+        return MonthlyResult.empty(2026, 7);
+    }
+
+    /**
+     * 결제일이 <b>말일로 보정된</b> 달.
+     *
+     * <p>매달 결제일이 31 인데 2026년 2월은 28일까지다. 서버가 맞춘 값이며 화면은 받은
+     * 날짜를 그대로 보인다 — 화면이 보정하면 같은 규칙이 두 곳에 생긴다.
+     */
+    static MonthlyResult monthlyAdjusted() {
+        return new MonthlyResult(2026, 2, 500_000L, List.of(
+                new MonthlyRow(1L, 2026, 2, "월세", 500_000L, "2026-02-28", "원룸 월세",
+                        1L, "국민카드", 2L, "주거", false)));
+    }
+
     // ── 선택 목록 ───────────────────────────────────────────────────────
 
     /**

@@ -305,6 +305,140 @@
     </div>
   </div></div>
 
+  <!--
+    4.6 월별 고정지출 내역 모달.
+
+    프로토타입에서 가져온 것은 껍데기뿐이다. 거기의 modal-fx-monthly 는 연·월·금액 세 칸짜리
+    단건 수정 폼인데, 확정 계약의 이 화면은 그 달 목록 + 단건 수정 + 반영이다. 프로토타입이
+    만들어질 때는 월별 내역이 「설정 하나의 그 달 금액을 덮어쓰는 일」로 보였다.
+
+    금액 열을 「그 달 금액」으로 적는다. 4.2 의 「기본 금액」과 같은 말로 부르면 사용자는
+    하나로 읽고 「고쳤는데 지난달이 안 바뀐다」를 버그로 신고한다.
+
+    결제일은 받은 날짜를 그대로 보인다. 매달 결제일이 그 달 말일보다 크면 서버가 말일로
+    맞추는데, 화면이 그 보정을 다시 계산하면 같은 규칙이 두 곳에 생기고 윤년처럼 드문 달에서
+    두 값이 갈린다.
+
+    단건 수정은 같은 모달을 편집 상태로 다시 연다. 007 의 모달 스크립트는 겹친 모달을
+    가정하지 않는다 — Esc 가 전부 닫는 구조라, 겹치면 위의 것만 닫으려 해도 둘 다 닫히고
+    사용자가 고치던 값이 사라진다.
+  -->
+  <div th:replace="~{fragments/modal-shell :: modalShell(
+          'modal-fixed-monthly', '월별 고정지출 내역', ~{::div.fixed-monthly-body},
+          ${editingRow != null} ? '저장' : '닫기')}"></div>
+  <div hidden><div class="fixed-monthly-body"
+                  th:with="rowEditing=${failMessage != null and editingRow != null},
+                           parentPage=${paging != null} ? ${paging.page()} : 0">
+    <th:block th:if="${monthly != null}">
+
+      <!-- 연·월. 주소에 들고 다니므로 뒤로 가기와 새 탭에서도 같은 달이 뜬다. -->
+      <div class="monthly-head">
+        <a class="btn btn-ghost btn-sm"
+           th:href="@{/fixed-expenses(m='monthly', y=${monthlyPrev.year()},
+                     mm=${monthlyPrev.month()}, page=${parentPage})}">이전 달</a>
+        <strong th:text="${monthlyQuery.year()} + '년 ' + ${monthlyQuery.month()} + '월'">2026년 7월</strong>
+        <a class="btn btn-ghost btn-sm"
+           th:href="@{/fixed-expenses(m='monthly', y=${monthlyNext.year()},
+                     mm=${monthlyNext.month()}, page=${parentPage})}">다음 달</a>
+        <!-- 그 달 전체 기준이다. 화면이 목록을 다시 더해 맞추지 않는다. -->
+        <span class="monthly-total"
+              th:text="'그 달 합계 ' + ${#numbers.formatInteger(monthly.sum(), 0, 'COMMA')} + '원'">그 달 합계 0원</span>
+      </div>
+
+      <!-- 편집 상태. 같은 모달이 목록 대신 이 폼을 보인다. -->
+      <form th:if="${editingRow != null}" id="form-modal-fixed-monthly" method="post"
+            th:action="@{/fixed-expenses/monthly/{y}/{mm}/{id}(y=${monthlyQuery.year()},
+                       mm=${monthlyQuery.month()}, id=${editingRowId})}">
+        <!-- 실패 착지가 같은 달·같은 대상·같은 쪽으로 돌아오게 함께 나른다. -->
+        <input type="hidden" name="y" th:value="${monthlyQuery.year()}">
+        <input type="hidden" name="mm" th:value="${monthlyQuery.month()}">
+        <input type="hidden" name="id" th:value="${editingRowId}">
+        <input type="hidden" name="page" th:value="${parentPage}">
+
+        <div th:replace="~{fragments/form-error :: formTop}"></div>
+
+        <p class="form-hint">
+          <strong th:text="${editingRow.fixedExpenseName()}">월세</strong> 의
+          <strong th:text="${monthlyQuery.year()} + '년 ' + ${monthlyQuery.month()} + '월'">2026년 7월</strong>
+          값만 고칩니다. 다른 달은 그대로입니다.
+        </p>
+        <!-- 이름과 지출유형 칸을 두지 않는다. 그 둘은 4.5 에서 바꾼다. -->
+        <div class="form-group">
+          <label for="row-amount">그 달 금액</label>
+          <input class="input" id="row-amount" name="amount" type="number" min="1" required
+                 th:value="${rowEditing} ? ${param.amount} : ${editingRow.amount()}">
+        </div>
+        <div class="form-group">
+          <label for="row-paymentDate">결제일</label>
+          <!-- 그 달 안이어야 한다. 화면이 먼저 알리고 밖의 날짜는 서버가 거절한다 —
+               둘은 서로를 대신하지 않는다. 주소를 직접 쳐서 올 수 있다. -->
+          <input class="input" id="row-paymentDate" name="paymentDate" type="date" required
+                 th:min="${monthlyQuery.firstDay()}" th:max="${monthlyQuery.lastDay()}"
+                 th:value="${rowEditing} ? ${param.paymentDate} : ${editingRow.paymentDate()}">
+          <p class="form-hint">결제일은 그 달 안이어야 합니다</p>
+        </div>
+        <div class="form-group">
+          <label for="row-content">내용</label>
+          <input class="input" id="row-content" name="content" type="text" required
+                 th:value="${rowEditing} ? ${param.content} : ${editingRow.content()}">
+        </div>
+        <div class="form-group">
+          <label for="row-paymentMethodId">수단</label>
+          <!-- 등록과 같은 사용 중 목록(지출용)이다. -->
+          <select class="select" id="row-paymentMethodId" name="paymentMethodId" required
+                  th:with="chosen=${rowEditing and param.paymentMethodId != null} ? ${param.paymentMethodId[0]}
+                                   : ${#strings.toString(editingRow.paymentMethodId())}">
+            <option th:each="method : ${paymentMethods}" th:value="${method.paymentMethodId()}"
+                    th:text="${method.name()}"
+                    th:selected="${chosen == #strings.toString(method.paymentMethodId())}">국민카드</option>
+          </select>
+          <span th:replace="~{fragments/form-error :: fieldError('paymentMethodId')}"></span>
+        </div>
+        <p class="auth-links">
+          <a th:href="@{/fixed-expenses(m='monthly', y=${monthlyQuery.year()},
+                       mm=${monthlyQuery.month()}, page=${parentPage})}">목록으로</a>
+        </p>
+      </form>
+
+      <!-- 그 달 목록. -->
+      <div class="table-wrap" th:unless="${editingRow != null}">
+        <table class="table">
+          <thead>
+          <tr>
+            <th>이름</th><th>수단</th><th>유형</th><th>결제일</th>
+            <th>그 달 금액</th><th>상태</th><th>관리</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="row : ${monthly.rows()}">
+            <td th:text="${row.fixedExpenseName()}">월세</td>
+            <td th:text="${row.paymentMethodName()}">국민카드</td>
+            <td th:text="${row.expendGroupName()}">주거</td>
+            <td th:text="${row.paymentDate()}">2026-07-05</td>
+            <td class="num" th:text="${#numbers.formatInteger(row.amount(), 0, 'COMMA')} + '원'">500,000원</td>
+            <td>
+              <!-- 직접 고친 행에만 붙는다. 이 표시가 반영의 전제다 — 구분이 없으면
+                   반영을 누를 때 무엇이 보존되는지 알 수 없다. -->
+              <span th:replace="~{fragments/modified-badge :: modified(${row.isModified()})}"></span>
+            </td>
+            <td class="actions">
+              <a class="btn btn-ghost btn-sm"
+                 th:href="@{/fixed-expenses(m='monthly', y=${monthlyQuery.year()},
+                           mm=${monthlyQuery.month()}, id=${row.fixedExpenseId()},
+                           page=${parentPage})}">수정</a>
+            </td>
+          </tr>
+          <!-- 빈 목록만 두면 사용자는 불러오지 못한 것으로 읽는다. 적용 기간이 이 달을
+               포함하지 않으면 나오지 않는다는 것이 이유다. -->
+          <tr th:if="${monthly.isEmpty()}">
+            <td colspan="7">이 달에 해당하는 고정지출이 없습니다.</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </th:block>
+  </div></div>
+
   <th:block th:replace="~{fragments/modal-open :: opener}"></th:block>
 </section>
 </body>

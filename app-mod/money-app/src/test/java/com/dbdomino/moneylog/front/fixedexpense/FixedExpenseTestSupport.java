@@ -47,6 +47,35 @@ final class FixedExpenseTestSupport {
         stubList(client, FixedExpenseFixture.firstPage());
     }
 
+    /** 그 달 내역 응답을 세운다. */
+    static void stubMonthly(BackendApiClient client, MonthlyResult result) {
+        when(client.getByQuery(eq(FixedExpenseMonthlyController.MONTHLY_PATH), any(),
+                eq(MonthlyResult.class)))
+                .thenReturn(result);
+    }
+
+    /**
+     * 월별 내역 모달의 표 본문만 잘라낸다.
+     *
+     * <p>모달이 <b>부모 목록 위에 얹히므로</b> 한 화면에 표가 둘이다. 앞의 것은 설정
+     * 목록이라 {@link #tableBody(String)} 로 자르면 그 달 행이 하나도 없다.
+     */
+    static String monthlyBody(String html) {
+        int start = html.lastIndexOf("<tbody>");
+        int end = html.indexOf("</tbody>", start);
+        return start < 0 || end < 0 ? "" : html.substring(start, end);
+    }
+
+    /** 월별 내역 모달의 연·월·합계 줄만 잘라낸다. */
+    static String monthlyHead(String html) {
+        int start = html.indexOf("class=\"monthly-head\"");
+        if (start < 0) {
+            return "";
+        }
+        int end = html.indexOf("</div>", start);
+        return end < 0 ? html.substring(start) : html.substring(start, end);
+    }
+
     /** 표 본문만 잘라낸다. 도구줄·모달의 문자열이 섞이지 않게 한다. */
     static String tableBody(String html) {
         int start = html.indexOf("<tbody>");
