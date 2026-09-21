@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<!--
+  3.5 지출·소득 엑셀 일괄 등록. 007 의 로그인 후 껍데기를 쓴다.
+
+  화면기획의 proto/ledger-excel.html 을 옮기며 두 곳을 고쳤다.
+    · 파일 선택 필터를 .xlsx 하나로 줄였다. 프로토타입이 .xls 를 함께 허용하는데 백엔드는
+      받지 않아, 그대로 두면 「고를 수는 있는데 거절당하는 형식」이 남는다.
+    · 결과 표에서 성공 행을 걷어냈다. 한 행이라도 틀리면 전체가 등록되지 않는 것이 계약이라,
+      성공 행을 섞어 보이면 「몇 건은 들어갔다」로 읽힌다.
+
+  성공과 실패의 모양이 다르다. 성공은 건수 셋이고 실패는 행 번호·열·사유의 표다.
+  한 자리에 섞어 그리지 않는다.
+
+  화면이 엑셀을 파싱하지 않는다. 행 수는 크기로 가늠해 경고하고 판정은 서버가 한다 —
+  파싱하면 저장 규칙이 두 곳에 생긴다.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: page('엑셀 일괄 등록', ~{::section})}">
+<body>
+<section>
+  <div class="page-header">
+    <h1>엑셀 일괄 등록</h1>
+  </div>
+
+  <div class="panel panel--md">
+    <!-- 제약을 입력 전부터 보인다. 올린 뒤에야 알려 주면 사용자는 기다린 시간을 잃는다. -->
+    <p class="form-hint form-hint--block">
+      양식을 받아 지출·소득 행을 채운 뒤 올립니다.
+      <b>.xlsx 형식만</b> 올릴 수 있고 <b>한 번에 300행까지</b>입니다(머리글 제외).
+      한 행이라도 틀리면 <b>전체가 등록되지 않습니다.</b>
+    </p>
+
+    <div style="margin-bottom:16px">
+      <!-- 화면 모듈 주소를 건다. 백엔드 주소를 직접 걸면 인증이 붙지 않아 받지 못한다. -->
+      <a class="btn btn-secondary" th:href="@{/ledger/excel/template}">양식 다운로드</a>
+    </div>
+
+    <div th:replace="~{fragments/form-error :: formTop}"></div>
+
+    <form method="post" th:action="@{/ledger/excel}" enctype="multipart/form-data"
+          data-excel-form>
+      <div class="form-group">
+        <label for="excel-file">엑셀 파일</label>
+        <!-- 필터는 고르기를 돕는 장치일 뿐 검사가 아니다. 확장자만 바꾼 파일은 서버가
+             내용으로 판정해 거절한다. -->
+        <input class="input" id="excel-file" name="file" type="file" accept=".xlsx" required
+               data-excel-input>
+        <p class="form-hint" data-excel-warning hidden role="alert"></p>
+      </div>
+      <button type="submit" class="btn btn-primary">업로드</button>
+    </form>
+  </div>
+
+  <!-- 성공. 건수 셋과 가계부로 가는 길을 함께 둔다 — 올린 것이 실제로 들어갔는지
+       확인할 자리가 있어야 한다. -->
+  <div class="panel panel--md" style="margin-top:var(--space-4)" th:if="${uploadResult != null}">
+    <h2 style="font-size:1rem;margin:0 0 12px">등록 결과</h2>
+    <div class="summary-row">
+      <div class="summary-item">
+        <div class="label">전체</div>
+        <div class="value" th:text="${uploadResult.imported()}">0</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">지출</div>
+        <div class="value is-expense" th:text="${uploadResult.expenses()}">0</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">소득</div>
+        <div class="value is-income" th:text="${uploadResult.incomes()}">0</div>
+      </div>
+    </div>
+    <p><a th:href="@{/ledger}">가계부에서 확인하기</a></p>
+  </div>
+
+  <!-- 행 오류. 칸 하나짜리 폼이라 붙일 칸이 없고 오류가 여럿이라 한 줄로 보일 수 없다. -->
+  <div class="panel panel--md" style="margin-top:var(--space-4)" th:if="${rowErrors != null}">
+    <h2 style="font-size:1rem;margin:0 0 12px">고쳐야 할 행</h2>
+
+    <!-- 표 위에 적는다. 화면이 "몇 건은 들어갔다"고 말하지 않는다. -->
+    <div class="alert alert-error" role="alert">
+      <b>한 행이라도 틀리면 전체가 등록되지 않습니다.</b>
+      아래 행을 고쳐 다시 올려 주세요. 지금은 <b>한 건도 등록되지 않았습니다.</b>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+        <tr><th>행</th><th>열</th><th>사유</th></tr>
+        </thead>
+        <tbody>
+        <!-- 행 번호 순이다. 사용자가 엑셀을 열어 위에서부터 고치기 때문이다. -->
+        <tr th:each="error : ${rowErrors}">
+          <td th:text="${error.row()}">5</td>
+          <td th:text="${error.column()}">C</td>
+          <td th:text="${error.message()}">금액은 0보다 커야 합니다</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!--
+    올리기 전 경고. 300행을 넘길 만한 크기에 브라우저가 알린다.
+
+    막는 것이 아니라 알리는 것이다 — 가늠이 틀릴 수 있으므로 사용자가 그래도 올리겠다면
+    보내고, 정확한 판정은 서버가 한다. 행 수를 정확히 세려면 파일을 파싱해야 하는데 그것은
+    화면이 할 일이 아니다.
+  -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var form = document.querySelector("[data-excel-form]");
+      if (!form) return;
+      var input = form.querySelector("[data-excel-input]");
+      var warning = form.querySelector("[data-excel-warning]");
+      if (!input || !warning) return;
+
+      // 300행짜리 xlsx 가 대략 이 크기를 넘는다. 어림이며 판정이 아니다.
+      var ROUGH_LIMIT_BYTES = 120 * 1024;
+
+      input.addEventListener("change", function () {
+        var file = input.files && input.files[0];
+        if (!file) {
+          warning.hidden = true;
+          return;
+        }
+        if (file.size > ROUGH_LIMIT_BYTES) {
+          warning.textContent =
+            "파일이 커서 300행을 넘을 수 있습니다. 넘으면 서버가 거절합니다. "
+            + "그래도 올리려면 그대로 업로드하세요.";
+          warning.hidden = false;
+        } else {
+          warning.hidden = true;
+        }
+      });
+    });
+  </script>
+</section>
+</body>
+</html>

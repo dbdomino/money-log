@@ -83,7 +83,7 @@
   <!-- 2.2 등록 모달 -->
   <div th:replace="~{fragments/modal-shell :: modalShell(
           'modal-payment-create', '수단 등록', ~{::div.payment-create-body}, '등록')}"></div>
-  <div class="payment-create-body" hidden>
+  <div hidden><div class="payment-create-body">
     <form id="form-modal-payment-create" th:action="@{/payments}" method="post"
           data-expiry-form>
       <div class="form-group">
@@ -130,12 +130,12 @@
         <span th:replace="~{fragments/form-error :: fieldError('cardExpiry')}"></span>
       </div>
     </form>
-  </div>
+  </div></div>
 
   <!-- 2.3 상세 모달. 읽기 전용이고 「수정」이 수정 모달 주소로 넘긴다. -->
   <div th:replace="~{fragments/modal-shell :: modalShell(
           'modal-payment-detail', '수단 상세', ~{::div.payment-detail-body}, '닫기')}"></div>
-  <div class="payment-detail-body" hidden>
+  <div hidden><div class="payment-detail-body">
     <dl class="detail-dl" th:if="${target != null}">
       <dt>이름</dt><dd th:text="${target.name()}">국민카드</dd>
       <dt>구분</dt><dd th:text="${target.typeLabel()}">카드</dd>
@@ -150,12 +150,12 @@
     <div class="auth-links" th:if="${target != null and !target.isDeleted()}">
       <a th:href="@{/payments(m='edit', id=${target.paymentMethodId()})}">수정</a>
     </div>
-  </div>
+  </div></div>
 
   <!-- 2.4 수정 모달. 값은 모달이 열리기 전에 서버가 조회해 실어 둔다. -->
   <div th:replace="~{fragments/modal-shell :: modalShell(
           'modal-payment-edit', '수단 수정', ~{::div.payment-edit-body}, '저장')}"></div>
-  <div class="payment-edit-body" hidden>
+  <div hidden><div class="payment-edit-body">
     <form id="form-modal-payment-edit" method="post" data-expiry-form
           th:action="@{/payments/{id}(id=${target != null} ? ${target.paymentMethodId()} : ${targetId})}">
       <div class="form-group">
@@ -203,7 +203,7 @@
         <span th:replace="~{fragments/form-error :: fieldError('cardExpiry')}"></span>
       </div>
     </form>
-  </div>
+  </div></div>
 
   <th:block th:replace="~{fragments/modal-open :: opener}"></th:block>
 

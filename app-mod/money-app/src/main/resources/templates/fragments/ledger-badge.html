@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  가계부 행의 종류를 그리는 뱃지 조각. 지출·할부·소득·고정지출 넷이며 프로토타입이 쓰던
+  네 가지 모양을 그대로 쓴다.
+
+  뱃지가 먼저 오는 이유는 그 행에 왜 빈 칸이 있는지를 종류가 설명하기 때문이다. 소득에는
+  지출유형이 없고, 소득·고정지출에는 장소가 없다. 종류를 모르면 빈 칸이 데이터 결손으로
+  읽힌다.
+
+  조각으로 두는 이유는 011·012 의 화면도 같은 종류를 보이기 때문이다. 화면마다 만들면 같은
+  종류가 다른 색으로 보이고, 사용자가 한 번 배운 것이 다음 화면에서 통하지 않는다.
+
+  말과 모양은 LedgerRow 가 정한다. 여기서 종류 문자열을 다시 비교하지 않는다 — 비교하면
+  같은 판단이 두 곳에 생기고, 한 곳만 고쳐도 다른 곳이 남는다.
+
+  status-badge 와 합치지 않는다. 저쪽은 "되돌릴 수 있는가"를 보이는 상태 뱃지이고 이것은
+  "무엇인가"를 보이는 종류 뱃지다. 성격이 달라 색 규칙도 다르다.
+
+  쓰는 쪽:
+    <td><span th:replace="~{fragments/ledger-badge :: rowType(
+            ${row.typeLabel()}, ${row.typeBadgeClass()})}"></span></td>
+-->
+<span class="badge" th:fragment="rowType(label, badgeClass)"
+      th:classappend="${badgeClass}" th:text="${label}">지출</span>
+</body>
+</html>
