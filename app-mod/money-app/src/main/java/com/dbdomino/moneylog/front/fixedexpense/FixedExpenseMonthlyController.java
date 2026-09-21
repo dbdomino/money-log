@@ -7,6 +7,8 @@ import com.dbdomino.moneylog.front.fixedexpense.form.MonthlyRowForm;
 import com.dbdomino.moneylog.front.support.FormFailure;
 import com.dbdomino.moneylog.front.web.ModalParam;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -51,6 +53,9 @@ public class FixedExpenseMonthlyController {
     static final String MONTHLY_PATH = "/fixed-expenses/monthly";
     static final String MONTHLY_ITEM_PATH =
             "/fixed-expenses/monthly/{year}/{month}/{fixedExpenseId}";
+
+    /** 반영. 연·월을 <b>본문</b>으로 받는다 — POST 는 주소에 값을 싣지 않는다. */
+    static final String SYNC_PATH = "/fixed-expenses/monthly/sync";
 
     /** 모달 안에서 고치는 중인 행. 있으면 편집 상태로 그린다. */
     static final String EDITING_ROW = "editingRow";
@@ -104,20 +109,32 @@ public class FixedExpenseMonthlyController {
      * 방금 받은 목록 안에 이미 있기 때문이다 — 한 화면에서 같은 값을 두 번 받게 된다.
      */
     private void putMonthly(Model model, MonthlyQuery query, Long targetId) {
-        MonthlyResult result;
+        applyMonthly(model, query, fetchMonthly(model, query), targetId);
+    }
+
+    /** 그 달 내역을 조회한다. 연·월 값 오류는 빈 목록과 안내로 눕힌다. */
+    private MonthlyResult fetchMonthly(Model model, MonthlyQuery query) {
         try {
-            result = backendApiClient.getByQuery(
+            MonthlyResult result = backendApiClient.getByQuery(
                     MONTHLY_PATH, query.toBackendQuery(), MonthlyResult.class);
-            if (result == null) {
-                result = MonthlyResult.empty(query.year(), query.month());
-            }
+            return result == null ? MonthlyResult.empty(query.year(), query.month()) : result;
         } catch (BackendApiException e) {
             if (e.getResCode() != ErrorCode.FIXED_EXPENSE_MONTH_INVALID.code()) {
                 throw e;
             }
             model.addAttribute("notice", e.getMessage());
-            result = MonthlyResult.empty(query.year(), query.month());
+            return MonthlyResult.empty(query.year(), query.month());
         }
+    }
+
+    /**
+     * 받은 그 달 내역을 모델에 담는다.
+     *
+     * <p><b>조회한 것과 반영이 돌려준 것이 같은 자리에 담긴다</b> — 목록을 그리는 코드가
+     * 하나여야 반영 뒤의 표와 조회 뒤의 표가 달라 보일 일이 없다.
+     */
+    private static void applyMonthly(Model model, MonthlyQuery query, MonthlyResult result,
+            Long targetId) {
 
         model.addAttribute("monthly", result);
         model.addAttribute("monthlyQuery", query);
@@ -156,6 +173,50 @@ public class FixedExpenseMonthlyController {
         model.addAttribute(ModalParam.MODEL_ATTRIBUTE, FixedExpensePageModel.MODAL_MONTHLY);
         model.addAttribute("notice", "그 달 내역을 수정했습니다. 다른 달은 그대로입니다.");
         return FixedExpensePageModel.VIEW;
+    }
+
+    // ── 반영 ────────────────────────────────────────────────────────────
+
+    /**
+     * 그 달 내역을 <b>설정 기준으로 다시 만든다.</b>
+     *
+     * <p>US2 가 만든 「지난 달은 안 따라온다」의 <b>유일한 해결책</b>이다. 적용 기간에
+     * 걸리는데 없는 것은 추가하고, 직접 고치지 않은 것은 갱신하고, <b>직접 고친 것은
+     * 보존하고</b>, 기간이 더는 그 달을 포함하지 않는 것은 지운다.
+     *
+     * <p><b>응답의 목록과 합계로 갱신하고 다시 조회하지 않는다.</b> 다시 부르면 그사이 바뀐
+     * 값이 섞여 「방금 반영한 결과」가 아닌 것을 보게 된다.
+     *
+     * <p>실패는 <b>목록의 안내</b>로 보인다 — 반영은 모달이 없는 자리다.
+     *
+     * @param overwriteModified 직접 수정분까지 되돌릴지. <b>기본 꺼짐</b>이며 켠 쪽은 확인
+     *        문구가 다른 다이얼로그를 거쳐 들어온다
+     */
+    @PostMapping(SYNC_PATH)
+    public String sync(
+            @RequestParam(name = MonthlyQuery.PARAM_YEAR, required = false) Integer year,
+            @RequestParam(name = MonthlyQuery.PARAM_MONTH, required = false) Integer month,
+            @RequestParam(name = "overwriteModified", defaultValue = "false")
+                    boolean overwriteModified,
+            @RequestParam(name = "page", required = false) Integer page,
+            Model model) {
+
+        MonthlyQuery query = MonthlyQuery.of(year, month);
+        SyncResult result = backendApiClient.post(
+                SYNC_PATH, syncBody(query, overwriteModified), SyncResult.class);
+
+        pageModel.putList(model, FixedExpensePageModel.pagingOf(page));
+        applyMonthly(model, query, result.toMonthly(), null);
+        model.addAttribute("syncResult", result);
+        model.addAttribute(ModalParam.MODEL_ATTRIBUTE, FixedExpensePageModel.MODAL_MONTHLY);
+        return FixedExpensePageModel.VIEW;
+    }
+
+    /** 반영 요청 본문. 연·월은 POST 규칙에 따라 <b>주소가 아니라 본문</b>으로 간다. */
+    private static Map<String, Object> syncBody(MonthlyQuery query, boolean overwriteModified) {
+        Map<String, Object> body = new LinkedHashMap<>(query.toBackendQuery());
+        body.put("overwriteModified", overwriteModified);
+        return body;
     }
 
     // ── 실패 착지 ───────────────────────────────────────────────────────
