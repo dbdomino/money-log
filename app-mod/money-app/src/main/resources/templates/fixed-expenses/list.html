@@ -189,6 +189,29 @@
   <div th:replace="~{fragments/modal-shell :: modalShell(
           'modal-fixed-edit', '고정지출 수정', ~{::div.fixed-edit-body}, '저장')}"></div>
   <div hidden><div class="fixed-edit-body">
+    <!--
+      파급 범위 안내. 등록 모달에는 두지 않는다 — 새로 만드는 것에는 따라올 과거가 없다.
+
+      기본값을 고치면 백엔드가 미래 달이면서 사용자가 직접 고치지 않은 월별 내역을 함께
+      갱신한다. 응답에 드러나지 않는 부작용이라 화면이 적지 않으면 사용자는 지난달이 바뀌지
+      않은 것을 버그로 읽는다.
+
+      저장 뒤가 아니라 저장 전이다. 뒤에 알리면 「그럴 줄 알았으면 안 고쳤다」가 되고 되돌릴
+      방법도 마땅치 않다. 그래서 폼보다 앞에 둔다.
+
+      건수를 계산하지 않는다. 「몇 건이 바뀝니다」를 내려면 월별 내역을 전부 뒤져야 하고,
+      무엇이 따라오는가의 판정 규칙이 화면과 백엔드 두 곳에 생긴다. 규칙을 말로 적는다.
+
+      가는 길을 이 안에 둔다. 안내를 읽은 그 자리에서 갈 수 있어야 하고, 닫고 찾아가게 하면
+      무엇을 하려 했는지 잊는다.
+    -->
+    <div class="alert alert-info update-scope-notice" role="status">
+      <p>고친 값은 <strong>미래 달 중 직접 고치지 않은 내역에만</strong> 반영됩니다.</p>
+      <p><strong>직접 고친 달은 그대로</strong> 남습니다.</p>
+      <p>이번 달과 지난 달은 바뀌지 않습니다.
+        지난 달을 맞추려면 <a th:href="@{/fixed-expenses(m='monthly')}">월별 내역에서 반영하기</a>를 씁니다.</p>
+    </div>
+
     <form id="form-modal-fixed-edit" method="post"
           th:action="@{/fixed-expenses/{id}(id=${target != null} ? ${target.fixedExpenseId()} : ${targetId})}">
       <div class="form-group">
